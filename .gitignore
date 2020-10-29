@@ -19,6 +19,6 @@ types
 coverage.json
 
 .openzeppelin/.session
-.openzeppelin/dev-*
+.openzeppelin/*-31337.json
 
 .env.*
