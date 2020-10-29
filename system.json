@@ -1,0 +1,82 @@
+{
+  "layers": {
+    "layer1": {
+      "contracts": {
+        "PerpToken": {
+          "name": "PerpToken",
+          "address": "0x28b8F0064F01539827dA2c05E4941586903b6126"
+        },
+        "RootBridge": {
+          "name": "RootBridge",
+          "address": "0x21758B9fC60acd626b9CF2407b354049514415FB"
+        },
+        "ChainlinkL1": {
+          "name": "ChainlinkL1",
+          "address": "0xB892d5453c9E2d08dcF5cC33142aB7D9957115c6"
+        }
+      },
+      "accounts": [],
+      "network": "rinkeby",
+      "externalContracts": {
+        "foundationMultisig": "0xa5D2462Af09a1Ea1C0102e9F9A0f58ac15a4A6fA",
+        "foundationTreasury": "0xb649aDDe53f562bC5e083A8FaAD1b4b3A5CddD03",
+        "tether": "0x40D3B2F06f198D2B789B823CdBEcD1DB78090D74",
+        "keeper": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
+        "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
+        "ambBridgeOnEth": "0xD4075FB57fCf038bFc702c915Ef9592534bED5c1",
+        "multiTokenMediatorOnEth": "0x30F693708fc604A57F1958E3CFa059F902e6d4CB"
+      }
+    },
+    "layer2": {
+      "contracts": {
+        "MetaTxGateway": {
+          "name": "MetaTxGateway",
+          "address": "0xe2099166BF6B5bC931a70484b04d555b573D381E"
+        },
+        "ClientBridge": {
+          "name": "ClientBridge",
+          "address": "0x2a5DDB1688b8e0bf307C9D7F490918bD87E6201a"
+        },
+        "InsuranceFund": {
+          "name": "InsuranceFund",
+          "address": "0x36E2084cF6f5Ca859b80B45495A075e95825C68e"
+        },
+        "L2PriceFeed": {
+          "name": "L2PriceFeed",
+          "address": "0x05C251Cd4667389A96572E96F59AaCD1C7991266"
+        },
+        "ClearingHouse": {
+          "name": "ClearingHouse",
+          "address": "0x396B48C8cF4b906185e1B1E0feBb92Ec03600Bf1"
+        },
+        "ETHUSDT": {
+          "name": "Amm",
+          "address": "0x54Ca03c9Fe76Fc63d281A00F98C27D3866c1d761"
+        },
+        "BTCUSDT": {
+          "name": "Amm",
+          "address": "0xf1ad2F49e890055F35faE66602bb1A7F7DBa7E93"
+        },
+        "ClearingHouseViewer": {
+          "name": "ClearingHouseViewer",
+          "address": "0x6cEB6675E3d69E7c75Ac8699D8B3B5A3a9Dd59C0"
+        },
+        "AmmReader": {
+          "name": "AmmReader",
+          "address": "0xCdBCF210c235982346647ed5A98c4A53e043e42F"
+        }
+      },
+      "accounts": [],
+      "network": "xdai",
+      "externalContracts": {
+        "foundationTreasury": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
+        "keeper": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
+        "arbitrageur": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
+        "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
+        "ambBridgeOnXDai": "0xc38D4991c951fE8BCE1a12bEef2046eF36b0FA4A",
+        "multiTokenMediatorOnXDai": "0xA34c65d76b997a824a5E384471bBa73b0013F5DA",
+        "tether": "0xe0B887D54e71329318a036CF50f30Dbe4444563c"
+      }
+    }
+  }
+}

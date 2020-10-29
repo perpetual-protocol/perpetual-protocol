@@ -1,0 +1,25 @@
+## `{{name}}`
+
+{{{natspec.userdoc}}}
+
+{{{natspec.devdoc}}}
+
+
+
+{{#each ownFunctions}}
+### `{{name}}({{args}}){{#if outputs}} → {{outputs}}{{/if}}` ({{visibility}})
+
+{{{natspec.userdoc}}}
+
+{{{natspec.devdoc}}}
+
+Parameters:
+{{#each natspec.params}}
+ - {{param}} → {{description}}
+{{/each}}
+
+Returns:
+{{#each natspec.returns}}
+ - {{param}} {{description}}
+{{/each}}
+{{/each}}

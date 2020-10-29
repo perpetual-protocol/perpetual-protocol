@@ -1,0 +1,26 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "./build",
+        "composite": true,
+        "resolveJsonModule": true,
+    },
+    "include": [
+        "./tests/**/*",
+        "./build/contracts/**/*.json",
+        "./scripts/**/*",
+        "../../scripts/**/*",
+        "./publish/**/*",
+        "../../publish/**/*",
+        "./publish/settings/*.json",
+        "./ethereum.json",
+    ],
+    "exclude": [],
+    "files": [
+        "./buidler.config.ts",
+        "./index.d.ts",
+        "./node_modules/truffle-typings/index.d.ts",
+        "./node_modules/@nomiclabs/buidler-web3/src/type-extensions.d.ts",
+        "./node_modules/@nomiclabs/buidler-truffle5/src/type-extensions.d.ts"
+    ]
+}

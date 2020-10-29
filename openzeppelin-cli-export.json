@@ -1,0 +1,87 @@
+{
+  "networks": {
+    "kovan": {
+      "proxies": {
+        "perp-monorepo/InsuranceFund": [
+          {
+            "address": "0x854f2F1658F3fa0F24517Df2B22cCef08B7D13cf",
+            "version": "0.0.1",
+            "implementation": "0xd2daE295F4BA14C8795dceF6De944c977bd62970",
+            "admin": "0x73F4334b282182a52a8de1D5C68C07F6FC6Fe84C",
+            "kind": "Upgradeable"
+          }
+        ],
+        "perp-monorepo/ChainlinkPriceFeed": [
+          {
+            "address": "0x4F8cA788EEd2e6EB93971654865f9609557F01D1",
+            "version": "0.0.1",
+            "implementation": "0xecE6f2bF3Fe27BBa6FD0838e039a9258Db64275D",
+            "admin": "0x73F4334b282182a52a8de1D5C68C07F6FC6Fe84C",
+            "kind": "Upgradeable"
+          }
+        ],
+        "perp-monorepo/AmmMgr": [
+          {
+            "address": "0xbEE9a98c32cB9335C9Ba7E81B5A8a216a3FfEBe8",
+            "version": "0.0.1",
+            "implementation": "0x17046f06E688e172C741b418C402bCA983Ef9215",
+            "admin": "0x73F4334b282182a52a8de1D5C68C07F6FC6Fe84C",
+            "kind": "Upgradeable"
+          }
+        ],
+        "perp-monorepo/ClearingHouseVault": [
+          {
+            "address": "0x7c0030Ee6d6f2B4f9FaDdd8ab80E3EBa4346a15a",
+            "version": "0.0.1",
+            "implementation": "0x49f0871a557134b63FBF4520df312af5dbEa9A23",
+            "admin": "0x73F4334b282182a52a8de1D5C68C07F6FC6Fe84C",
+            "kind": "Upgradeable"
+          }
+        ],
+        "perp-monorepo/ClearingHouse": [
+          {
+            "address": "0x183C42f7BefBA64E164a5BBE93c4cdf4A893A3d2",
+            "version": "0.0.1",
+            "implementation": "0x777e5f9A16777Fc0f07C21E1972e775a02Bf5e08",
+            "admin": "0x73F4334b282182a52a8de1D5C68C07F6FC6Fe84C",
+            "kind": "Upgradeable"
+          }
+        ],
+        "perp-monorepo/ETHUSDT": [
+          {
+            "address": "0x1706CB843F9B332aAB4BB058CCfd4922A3c8C744",
+            "version": "0.0.1",
+            "implementation": "0x868a912b9eD287edb3B596DC286EBb24a2B2B44F",
+            "admin": "0x73F4334b282182a52a8de1D5C68C07F6FC6Fe84C",
+            "kind": "Upgradeable"
+          }
+        ],
+        "perp-monorepo/BTCUSDT": [
+          {
+            "address": "0xEc321FDc8EF5BfB11313488F351831364291b901",
+            "version": "0.0.1",
+            "implementation": "0x27A038EC4Abd9DDd554BEb308E06a41ed55185C6",
+            "admin": "0x73F4334b282182a52a8de1D5C68C07F6FC6Fe84C",
+            "kind": "Upgradeable"
+          }
+        ]
+      }
+    }
+  },
+  "compiler": {
+    "compilerSettings": {
+      "evmVersion": "istanbul",
+      "optimizer": {
+        "enabled": true,
+        "runs": "200"
+      }
+    },
+    "manager": "openzeppelin",
+    "artifactsDir": "build/contracts",
+    "contractsDir": "src",
+    "solcVersion": "0.6.9",
+    "typechain": {
+      "enabled": false
+    }
+  }
+}
