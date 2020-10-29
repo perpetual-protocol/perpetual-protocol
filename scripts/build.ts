@@ -2,15 +2,11 @@ import { buidlerArguments } from "@nomiclabs/buidler"
 import fs from "fs"
 import { resolve } from "path"
 import { ls } from "shelljs"
-import { paths } from "../../../scripts/common"
 import { ContractMetadata, Network } from "./common"
 import { asyncExec } from "../../../scripts/helper"
 import { ARTIFACTS_DIR } from "../constants"
 import { SystemMetadataDao } from "../publish/SystemMetadataDao"
 import { SettingsDao } from "../publish/SettingsDao"
-
-const packageName = "contract"
-const packageDir = resolve(paths.packages, packageName)
 
 function printByteCodeSize(contractName: string, artifactPath: string): number {
     const jsonStr = fs.readFileSync(artifactPath, "utf8")
@@ -55,7 +51,7 @@ function getContractName(fullPath: string): string {
 function generateContractMetadata(): void {
     const map: Record<string, any> = {}
     const codeSizeMap = new Map()
-    const artifactsDir = resolve(packageDir, ARTIFACTS_DIR)
+    const artifactsDir = resolve(ARTIFACTS_DIR)
     ls(`${artifactsDir}/*.json`).map(fullPath => {
         const contractName = getContractName(fullPath)
         const metadata: ContractMetadata = {
@@ -82,11 +78,11 @@ function generateContractMetadata(): void {
 }
 
 async function build(): Promise<void> {
-    const artifactDir = resolve(packageDir, ARTIFACTS_DIR)
+    const artifactDir = resolve(ARTIFACTS_DIR)
     await asyncExec("buidler compile")
-    await asyncExec(`typechain --target truffle-v5 ${artifactDir}/**/*.json --outDir ${packageDir}/types`)
-    await asyncExec(`typechain --target web3-v1 ${artifactDir}/**/*.json --outDir ${packageDir}/types/web3`)
-    await asyncExec(`typechain --target ethers ${artifactDir}/**/*.json --outDir ${packageDir}/types/ethers`)
+    await asyncExec(`typechain --target truffle-v5 ${artifactDir}/**/*.json --outDir ./types`)
+    await asyncExec(`typechain --target web3-v1 ${artifactDir}/**/*.json --outDir ./types/web3`)
+    await asyncExec(`typechain --target ethers ${artifactDir}/**/*.json --outDir ./types/ethers`)
     generateContractMetadata()
 }
 

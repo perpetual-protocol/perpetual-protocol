@@ -1,9 +1,8 @@
 import { spawn } from "child_process"
 import { resolve } from "path"
 import { rm } from "shelljs"
-import { paths } from "../../../scripts/common"
 import { DeployMode } from "../scripts/common"
-import { asyncExec, getNpmBin } from "../../../scripts/helper"
+import { getNpmBin } from "../../../scripts/helper"
 import { deploy } from "./deploy"
 
 export async function devEvm(onDeployed?: () => Promise<boolean>): Promise<void> {
@@ -16,7 +15,7 @@ export async function devEvm(onDeployed?: () => Promise<boolean>): Promise<void>
     const buidlerBin = resolve(npmBin, "buidler")
 
     // remove dev file json from openzeppelin for initializing it again
-    rm("-f", `${paths.packages}/contract/.openzeppelin/dev-*.json`)
+    rm("-f", "./contract/.openzeppelin/dev-*.json")
 
     return new Promise((resolve, reject) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

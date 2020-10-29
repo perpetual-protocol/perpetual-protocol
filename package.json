@@ -108,7 +108,7 @@
         ],
         "*.sol": [
             "prettier --write",
-            "solhint packages/contract/src/**/*.sol",
+            "solhint src/**/*.sol",
             "git add"
         ]
     }

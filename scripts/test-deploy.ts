@@ -3,7 +3,6 @@ import { providers } from "ethers"
 import { utils } from "ethers"
 import { join } from "path"
 import { cat } from "shelljs"
-import { paths } from "../../../scripts/common"
 import { asyncExec } from "../../../scripts/helper"
 import ClearingHouseArtifact from "../build/contracts/ClearingHouse.json"
 import { ClearingHouse } from "../types/ethers/ClearingHouse"
@@ -14,7 +13,7 @@ async function testDeploy(): Promise<void> {
     const onDeployed = async (): Promise<boolean> => {
         // the reason we don't use es6 import statement on top of file
         // is it is empty until deployed, so the file need to be read here.
-        const jsonFile = join(paths.packages, "contract", "build", "system.json")
+        const jsonFile = join("contract", "build", "system.json")
         const systemMetadata = JSON.parse(cat(jsonFile))
         const provider = new providers.JsonRpcProvider("http://localhost:8545")
         const clearingHouse = (new Contract(

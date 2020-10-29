@@ -2,7 +2,6 @@
 import fetch from "node-fetch"
 import { resolve } from "path"
 import { mkdir, ShellString } from "shelljs"
-import { paths } from "../../../scripts/common"
 import {
     ContractMetadata,
     SystemMetadata,
@@ -66,7 +65,7 @@ export class SystemMetadataDao {
 
     async pushRemote(): Promise<void> {
         await asyncExec(
-            `aws s3 cp ${this.dir}/${
+            `aws s3 cp ./${
                 this.metadataFileName
             } s3://metadata.perp.fi/${this.settingsDao.getStage()}.json --acl public-read --cache-control 'no-store' --profile perp`,
         )
@@ -79,7 +78,7 @@ export class SystemMetadataDao {
     setMetadata(metadata: SystemMetadata): void {
         this.systemMetadataCache = { ...metadata }
         mkdir("-p", this.buildDir)
-        ShellString(JSON.stringify(this.systemMetadataCache, null, 2)).to(`${this.dir}/${this.metadataFileName}`)
+        ShellString(JSON.stringify(this.systemMetadataCache, null, 2)).to(`./${this.metadataFileName}`)
         ShellString(JSON.stringify(this.systemMetadataCache, null, 2)).to(`${this.buildDir}/${this.metadataFileName}`)
     }
 
@@ -97,12 +96,8 @@ export class SystemMetadataDao {
         return "system.json"
     }
 
-    private get dir(): string {
-        return resolve(paths.packages, "contract")
-    }
-
     private get buildDir(): string {
-        return resolve(this.dir, "build")
+        return resolve("build")
     }
 
     setContract(layerType: Layer, contactAlias: string, contract: ContractMetadata): void {
