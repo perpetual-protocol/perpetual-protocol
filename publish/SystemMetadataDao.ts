@@ -11,7 +11,7 @@ import {
     LayerDeploySettings,
     LayerMetadata,
 } from "../scripts/common"
-import { asyncExec } from "../../../scripts/helper"
+import { asyncExec } from "../scripts/helper"
 import { SettingsDao } from "./SettingsDao"
 
 export interface AccountMetadata {

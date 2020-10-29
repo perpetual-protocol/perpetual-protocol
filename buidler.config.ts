@@ -5,7 +5,6 @@ import { BUIDLEREVM_NETWORK_NAME } from "@nomiclabs/buidler/plugins"
 import { HDAccountsConfig } from "@nomiclabs/buidler/types"
 import HDWalletProvider from "@truffle/hdwallet-provider"
 import Web3 from "web3"
-import { asyncExec } from "../../scripts/helper"
 import {
     ARTIFACTS_DIR,
     COVERAGE_URL,

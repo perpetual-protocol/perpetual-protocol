@@ -2,7 +2,7 @@ import { spawn } from "child_process"
 import { resolve } from "path"
 import { rm } from "shelljs"
 import { DeployMode } from "../scripts/common"
-import { getNpmBin } from "../../../scripts/helper"
+import { getNpmBin } from "./helper"
 import { deploy } from "./deploy"
 
 export async function devEvm(onDeployed?: () => Promise<boolean>): Promise<void> {

@@ -1,4 +1,4 @@
-import { asyncExec } from "../../../scripts/helper"
+import { asyncExec } from "./helper"
 import { ARTIFACTS_DIR } from "../constants"
 
 async function testContract(): Promise<void> {

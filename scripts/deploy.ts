@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { asyncExec } from "../../../scripts/helper"
+import { asyncExec } from "./helper"
 import { Stage, TASK_DEPLOY_LAYER } from "./common"
 import { ExecOptions } from "child_process"
 import { SettingsDao } from "../publish/SettingsDao"

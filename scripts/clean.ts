@@ -1,5 +1,5 @@
 import { rm } from "shelljs"
-import { asyncExec } from "../../../scripts/helper"
+import { asyncExec } from "./helper"
 
 async function cleanContract() {
     await asyncExec("buidler clean")
