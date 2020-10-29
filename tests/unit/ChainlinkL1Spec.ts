@@ -1,6 +1,6 @@
 import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
-import { ChainlinkL1Instance, ChainlinkL1MockInstance, RootBridgeMockInstance } from "@perp/contract/types"
+import { ChainlinkL1Instance, ChainlinkL1MockInstance, RootBridgeMockInstance } from "../../types"
 import BN from "bn.js"
 import { expect, use } from "chai"
 import { assertionHelper } from "../helper/assertion-plugin"

@@ -11,7 +11,7 @@ import {
     PerpTokenInstance,
     StakingReserveFakeInstance,
     SupplyScheduleFakeInstance,
-} from "@perp/contract/types"
+} from "../../../types"
 import { default as BN } from "bn.js"
 import { use } from "chai"
 import { utils } from "ethers"
