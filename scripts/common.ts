@@ -54,10 +54,6 @@ export interface ExternalContracts {
     usdc?: string
     perp?: string
 
-    balancerCrpFactory?: string
-    balancerPoolFactory?: string
-    balancerPerpUsdcCrp?: string
-
     testnetFaucet?: string
 }
 

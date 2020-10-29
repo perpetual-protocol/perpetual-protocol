@@ -16,12 +16,7 @@
         "push-metadata": "ts-node --files scripts/push-metadata.ts",
         "dev": "ts-node --files scripts/dev.ts",
         "clean": "ts-node --files scripts/clean.ts",
-        "lint": "solhint src/**/*.sol",
-        "deploy-crp": "buidler run --network homestead scripts/deploy-crp.ts",
-        "approve-crp": "buidler run --network homestead scripts/approve-crp.ts",
-        "create-crp": "buidler run --network homestead scripts/create-crp.ts",
-        "start-trade-crp": "buidler run --network homestead scripts/start-trade-crp.ts",
-        "remove-crp": "buidler run --network homestead scripts/remove-crp.ts"
+        "lint": "solhint src/**/*.sol"
     },
     "author": "",
     "license": "ISC",
