@@ -4,7 +4,6 @@ pragma solidity 0.6.9;
 import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 
-
 // this is functionally identical to https://github.com/bcnmy/metatx-standard/blob/master/src/contracts/EIP712MetaTransaction.sol
 // except it implements openzeppelin Initializable
 contract MetaTxGateway is PerpFiOwnableUpgrade {
@@ -71,7 +70,11 @@ contract MetaTxGateway is PerpFiOwnableUpgrade {
     //
     // FUNCTIONS
     //
-    function initialize(string memory _name, string memory _version, uint256 _chainIdL1) public initializer {
+    function initialize(
+        string memory _name,
+        string memory _version,
+        uint256 _chainIdL1
+    ) public initializer {
         __Ownable_init();
 
         domainSeperatorL1 = keccak256(
@@ -196,6 +199,7 @@ contract MetaTxGateway is PerpFiOwnableUpgrade {
         uint8 sigV
     ) internal view returns (bool) {
         address signer = ecrecover(toTypedMessageHash(domainSeperator, hashMetaTransaction(metaTx)), sigV, sigR, sigS);
+        require(signer != address(0), "invalid signature");
         return signer == user;
     }
 }
