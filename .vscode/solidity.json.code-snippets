@@ -1,0 +1,8 @@
+{
+    "document comment block": {
+        "scope": "solidity",
+        "prefix": "doc",
+        "body": ["/**", " * @notice $1", " * @dev $2", " * @param $3", " * @return $0", " */"],
+        "description": "function comment block2"
+    }
+}
