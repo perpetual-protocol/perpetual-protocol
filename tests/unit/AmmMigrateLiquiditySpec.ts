@@ -54,13 +54,10 @@ describe("Amm migrate liquidity spec", () => {
         const getBaseAssetDeltaThisFundingPeriod = await amm.getBaseAssetDeltaThisFundingPeriod()
         expect(getBaseAssetDeltaThisFundingPeriod).eq("-17777777777777777760")
 
-        const getCumulativePositionMultiplier = await amm.getCumulativePositionMultiplier()
-        expect(getCumulativePositionMultiplier).eq("888888888888888888")
-
-        const liquidityChangedSnapshot = await amm.liquidityChangedSnapshot()
-        expect(liquidityChangedSnapshot[0]).eq(toFullDigit(2500))
-        expect(liquidityChangedSnapshot[1]).eq(toFullDigit(160))
-        expect(liquidityChangedSnapshot[2]).eq("17777777777777777777")
+        const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
+        expect(liquidityChangedSnapshot.quoteAssetReserve).eq(toFullDigit(2500))
+        expect(liquidityChangedSnapshot.baseAssetReserve).eq(toFullDigit(160))
+        expect(liquidityChangedSnapshot.cumulativeNotional).eq("17777777777777777777")
     })
 
     it("decrease liquidity", async () => {
@@ -78,13 +75,11 @@ describe("Amm migrate liquidity spec", () => {
         const getBaseAssetDeltaThisFundingPeriod = await amm.getBaseAssetDeltaThisFundingPeriod()
         expect(getBaseAssetDeltaThisFundingPeriod).eq("-26666666666666666660")
 
-        const getCumulativePositionMultiplier = await amm.getCumulativePositionMultiplier()
-        expect(getCumulativePositionMultiplier).eq("1333333333333333333")
 
-        const liquidityChangedSnapshot = await amm.liquidityChangedSnapshot()
-        expect(liquidityChangedSnapshot[0]).eq(toFullDigit(625))
-        expect(liquidityChangedSnapshot[1]).eq(toFullDigit(40))
-        expect(liquidityChangedSnapshot[2]).eq("26666666666666666666")
+        const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
+        expect(liquidityChangedSnapshot.quoteAssetReserve).eq(toFullDigit(625))
+        expect(liquidityChangedSnapshot.baseAssetReserve).eq(toFullDigit(40))
+        expect(liquidityChangedSnapshot.cumulativeNotional).eq("26666666666666666666")
     })
 
     it("will fail if the liquidity is the same", async () => {
