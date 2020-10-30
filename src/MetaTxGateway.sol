@@ -116,7 +116,7 @@ contract MetaTxGateway is PerpFiOwnableUpgrade {
         bytes32 sigR,
         bytes32 sigS,
         uint8 sigV
-    ) external payable returns (bytes memory) {
+    ) external returns (bytes memory) {
         require(isInWhitelists(to), "!whitelisted");
 
         MetaTransaction memory metaTx = MetaTransaction({
