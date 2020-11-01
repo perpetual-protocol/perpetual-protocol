@@ -199,14 +199,12 @@ contract ClearingHouse is
         __OwnerPausable_init();
         __ReentrancyGuard_init();
 
-        versionRecipient = "1.0.0";
+        versionRecipient = "1.0.0"; // we are not using it atm
         initMarginRatio = Decimal.decimal(_initMarginRatio);
         setMaintenanceMarginRatio(Decimal.decimal(_maintenanceMarginRatio));
         setLiquidationFeeRatio(Decimal.decimal(_liquidationFeeRatio));
         insuranceFund = _insuranceFund;
         trustedForwarder = _trustedForwarder;
-
-        versionRecipient = "1.0.0"; // we are not using it atm
     }
 
     //
