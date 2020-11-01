@@ -209,13 +209,11 @@ describe("Amm Unit Test", () => {
         it("swapInput, Long ", async () => {
             // quote asset = (1000 * 100 / (1000 + 600 ))) - 100 = - 37.5
             const receipt = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(600), toDecimal(0))
-            expect(receipt)
-                .to.emit("SwapInput")
-                .withArgs({
-                    dir: Dir.ADD_TO_AMM,
-                    quoteAssetAmount: toFullDigit(600),
-                    baseAssetAmount: toFullDigit(37.5),
-                })
+            expectEvent(receipt, "SwapInput", {
+                dir: Dir.ADD_TO_AMM.toString(),
+                quoteAssetAmount: toFullDigit(600),
+                baseAssetAmount: toFullDigit(37.5),
+            })
 
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(1600))
             expect(await amm.baseAssetReserve()).to.eq(toFullDigit(62.5))
@@ -224,13 +222,11 @@ describe("Amm Unit Test", () => {
         it("swapInput, short ", async () => {
             // quote asset = (1000 * 100 / (1000 - 600)) - 100 = 150
             const receipt = await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(600), toDecimal(0))
-            expect(receipt)
-                .to.emit("SwapInput")
-                .withArgs({
-                    dir: Dir.REMOVE_FROM_AMM,
-                    quoteAssetAmount: toFullDigit(600),
-                    baseAssetAmount: toFullDigit(150),
-                })
+            expectEvent(receipt, "SwapInput", {
+                dir: Dir.REMOVE_FROM_AMM.toString(),
+                quoteAssetAmount: toFullDigit(600),
+                baseAssetAmount: toFullDigit(150),
+            })
 
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(400))
             expect(await amm.baseAssetReserve()).to.eq(toFullDigit(250))
@@ -239,13 +235,11 @@ describe("Amm Unit Test", () => {
         it("swapOutput, short", async () => {
             // base asset = 1000 - (1000 * 100 / (100 + 150)) = 600
             const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(150), toDecimal(0), true)
-            expect(receipt)
-                .to.emit("SwapOutput")
-                .withArgs({
-                    dir: Dir.ADD_TO_AMM,
-                    quoteAssetAmount: toFullDigit(600),
-                    baseAssetAmount: toFullDigit(150),
-                })
+            expectEvent(receipt, "SwapOutput", {
+                dir: Dir.ADD_TO_AMM.toString(),
+                quoteAssetAmount: toFullDigit(600),
+                baseAssetAmount: toFullDigit(150),
+            })
 
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(400))
             expect(await amm.baseAssetReserve()).to.eq(toFullDigit(250))
@@ -254,13 +248,11 @@ describe("Amm Unit Test", () => {
         it("swapOutput, long", async () => {
             // base asset = (1000 * 100 / (100 - 50)) - 1000 = 1000
             const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(50), toDecimal(0), true)
-            expect(receipt)
-                .to.emit("SwapOutput")
-                .withArgs({
-                    dir: Dir.REMOVE_FROM_AMM,
-                    quoteAssetAmount: toFullDigit(1000),
-                    baseAssetAmount: toFullDigit(50),
-                })
+            expectEvent(receipt, "SwapOutput", {
+                dir: Dir.REMOVE_FROM_AMM.toString(),
+                quoteAssetAmount: toFullDigit(1000),
+                baseAssetAmount: toFullDigit(50),
+            })
 
             // baseAssetReserve = 1000 * 100 / (1000 + 800) = 55.555...
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(2000))
@@ -270,26 +262,22 @@ describe("Amm Unit Test", () => {
         it("swapInput, short and then long", async () => {
             // quote asset = (1000 * 100 / (1000 - 480) - 100 = 92.30769230769...
             const response = await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(480), toDecimal(0))
-            expect(response)
-                .to.emit("SwapInput")
-                .withArgs({
-                    dir: Dir.REMOVE_FROM_AMM,
-                    quoteAssetAmount: toFullDigit(480),
-                    baseAssetAmount: "92307692307692307693",
-                })
+            expectEvent(response, "SwapInput", {
+                dir: Dir.REMOVE_FROM_AMM.toString(),
+                quoteAssetAmount: toFullDigit(480),
+                baseAssetAmount: "92307692307692307693",
+            })
 
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(520))
             expect(await amm.baseAssetReserve()).to.eq("192307692307692307693")
 
             // quote asset = 192.307 - (1000 * 100 / (520 + 960)) = 30.555...
             const response2 = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(960), toDecimal(0))
-            expect(response2)
-                .to.emit("SwapInput")
-                .withArgs({
-                    dir: Dir.ADD_TO_AMM,
-                    quoteAssetAmount: toFullDigit(960),
-                    baseAssetAmount: "124740124740124740125",
-                })
+            expectEvent(response2, "SwapInput", {
+                dir: Dir.ADD_TO_AMM.toString(),
+                quoteAssetAmount: toFullDigit(960),
+                baseAssetAmount: "124740124740124740125",
+            })
 
             // pTokenAfter = 250 - 3000/16 = 1000 / 16
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(1480))
@@ -331,25 +319,21 @@ describe("Amm Unit Test", () => {
         it("swapOutput, short and not dividable", async () => {
             const amount = await amm.getOutputPrice(Dir.ADD_TO_AMM, toDecimal(5))
             const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(5), toDecimal(0), true)
-            expect(receipt)
-                .to.emit("SwapOutput")
-                .withArgs({
-                    dir: Dir.ADD_TO_AMM,
-                    quoteAssetAmount: amount.d,
-                    baseAssetAmount: toFullDigit(5),
-                })
+            expectEvent(receipt, "SwapOutput", {
+                dir: Dir.ADD_TO_AMM.toString(),
+                quoteAssetAmount: amount.d,
+                baseAssetAmount: toFullDigit(5),
+            })
         })
 
         it("swapOutput, long and not dividable", async () => {
             const amount = await amm.getOutputPrice(Dir.REMOVE_FROM_AMM, toDecimal(5))
             const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(5), toDecimal(0), true)
-            expect(receipt)
-                .to.emit("SwapOutput")
-                .withArgs({
-                    dir: Dir.REMOVE_FROM_AMM,
-                    quoteAssetAmount: amount.d,
-                    baseAssetAmount: toFullDigit(5),
-                })
+            expectEvent(receipt, "SwapOutput", {
+                dir: Dir.REMOVE_FROM_AMM.toString(),
+                quoteAssetAmount: amount.d,
+                baseAssetAmount: toFullDigit(5),
+            })
         })
 
         it("swapOutput, long and then short the same size, should got different base asset amount", async () => {
@@ -494,28 +478,28 @@ describe("Amm Unit Test", () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // BUY 24, reserve will be 1024 : 97.66, price is 1024 / 97.66 = 10.49
             const receipt = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(24), toDecimal(0))
-            expect(receipt).to.emit("SwapInput")
+            expectEvent(receipt, "SwapInput")
         })
 
         it("swapInput, price down and under fluctuation", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // SELL 25, reserve will be 975 : 102.56, price is 975 / 102.56 = 9.51
             const receipt = await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(25), toDecimal(0))
-            expect(receipt).to.emit("SwapInput")
+            expectEvent(receipt, "SwapInput")
         })
 
         it("swapOutput, price up and under fluctuation", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // BUY 2.4 base, reserve will be 1024.6 : 97.6, price is 1024.6 / 97.6 = 10.5
             const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(2.4), toDecimal(0), true)
-            expect(receipt).to.emit("SwapOutput")
+            expectEvent(receipt, "SwapOutput")
         })
 
         it("swapOutput, price down and under fluctuation", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // SELL 2.5 base, reserve will be 975.6 : 102.5, price is 975.6 / 102.5 = 9.52
             const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(2.5), toDecimal(0), true)
-            expect(receipt).to.emit("SwapOutput")
+            expectEvent(receipt, "SwapOutput")
         })
 
         it("force error, swapInput, price up but reach the upper limit", async () => {
@@ -609,13 +593,12 @@ describe("Amm Unit Test", () => {
             const receipt = await amm.swapInput(Dir.ADD_TO_AMM, requiredQuoteAsset, toDecimal(0))
 
             // then event.baseAssetAmount should be equal to 10
-            expect(receipt)
-                .to.emit("SwapInput")
-                .withArgs({
-                    dir: Dir.ADD_TO_AMM,
-                    quoteAssetAmount: requiredQuoteAsset.d,
-                    baseAssetAmount: toFullDigit(10),
-                })
+
+            expectEvent(receipt, "SwapInput", {
+                dir: Dir.ADD_TO_AMM.toString(),
+                quoteAssetAmount: requiredQuoteAsset.d,
+                baseAssetAmount: toFullDigit(10),
+            })
         })
 
         it("use getOutputPrice to query price and use it to swapInput(short)", async () => {
@@ -626,13 +609,11 @@ describe("Amm Unit Test", () => {
             const receipt = await amm.swapInput(Dir.REMOVE_FROM_AMM, requiredQuoteAsset, toDecimal(0))
 
             // then event.baseAssetAmount should be equal to 10
-            expect(receipt)
-                .to.emit("SwapInput")
-                .withArgs({
-                    dir: Dir.REMOVE_FROM_AMM,
-                    quoteAssetAmount: requiredQuoteAsset.d,
-                    baseAssetAmount: toFullDigit(10),
-                })
+            expectEvent(receipt, "SwapInput", {
+                dir: Dir.REMOVE_FROM_AMM.toString(),
+                quoteAssetAmount: requiredQuoteAsset.d,
+                baseAssetAmount: toFullDigit(10),
+            })
         })
 
         it("use getInputPrice(long) to swapOutput", async () => {
@@ -644,13 +625,11 @@ describe("Amm Unit Test", () => {
 
             // then event.quoteAsset should be equal to 10
             // if swapOutput is adjusted, the price should be higher (>= 10)
-            expect(receipt)
-                .to.emit("SwapOutput")
-                .withArgs({
-                    dir: Dir.REMOVE_FROM_AMM,
-                    quoteAssetAmount: toFullDigit(10),
-                    baseAssetAmount: receivedBaseAsset.d,
-                })
+            expectEvent(receipt, "SwapOutput", {
+                dir: Dir.REMOVE_FROM_AMM.toString(),
+                quoteAssetAmount: toFullDigit(10),
+                baseAssetAmount: receivedBaseAsset.d,
+            })
         })
 
         it("use getInputPrice(short) to swapOutput", async () => {
@@ -662,13 +641,11 @@ describe("Amm Unit Test", () => {
 
             // then event.quoteAsset should be equal to 10
             // if swapOutput is adjusted, the price should be higher (>= 10)
-            expect(receipt)
-                .to.emit("SwapOutput")
-                .withArgs({
-                    dir: Dir.ADD_TO_AMM,
-                    quoteAssetAmount: "10000000000000000009",
-                    baseAssetAmount: receivedBaseAsset.d,
-                })
+            expectEvent(receipt, "SwapOutput", {
+                dir: Dir.ADD_TO_AMM.toString().toString(),
+                quoteAssetAmount: "10000000000000000009",
+                baseAssetAmount: receivedBaseAsset.d,
+            })
         })
 
         it("swapInput twice, short and long", async () => {

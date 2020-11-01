@@ -583,18 +583,16 @@ describe("ClearingHouse Test", () => {
             // marginRatio = remainMargin / openNotional = 4.62 / 100 = 0.0462 < minMarginRatio(0.05)
             // then anyone (eg. carol) can liquidate alice's position
             const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
-            expect(receipt)
-                .to.emit("PositionChanged")
-                .withArgs({
-                    amm: amm.address,
-                    trader: alice,
-                    side: Side.SELL.toString(),
-                    positionNotional: "84615384615384615377",
-                    exchangedPositionSize: "7575757575757575757",
-                    fee: "0",
-                    positionSizeAfter: "0",
-                    realizedPnl: "-15384615384615384623",
-                })
+            expectEvent(receipt, "PositionChanged", {
+                amm: amm.address,
+                trader: alice,
+                side: Side.SELL.toString(),
+                positionNotional: "84615384615384615377",
+                exchangedPositionSize: "7575757575757575757",
+                fee: "0",
+                positionSizeAfter: "0",
+                realizedPnl: "-15384615384615384623",
+            })
 
             // verify carol get her reward
             // = positionNotional * liquidationFeeRatio = 84.62 * 0.05 = 4.231
@@ -802,7 +800,8 @@ describe("ClearingHouse Test", () => {
             // AMM after: 1015.384615384615384672 : 98.484848484848484854, price: 10.31
             // fluctuation: (12.1 - 10.31) / 10.31 = 0.1479
             // values can be retrieved with amm.quoteAssetReserve() & amm.baseAssetReserve()
-            expect(await clearingHouse.liquidate(amm.address, alice, { from: carol })).to.emit("PositionLiquidated")
+            const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
+            expectEvent(receipt, "PositionLiquidated")
 
             const baseAssetReserve = await amm.baseAssetReserve()
             const quoteAssetReserve = await amm.quoteAssetReserve()
@@ -1041,7 +1040,7 @@ describe("ClearingHouse Test", () => {
                     from: carol,
                 })
                 await forwardBlockTimestamp(15)
-                expect(await clearingHouse.liquidate(amm.address, alice, { from: carol })).to.emit("PositionLiquidated")
+                expectEvent(await clearingHouse.liquidate(amm.address, alice, { from: carol }), "PositionLiquidated")
             })
 
             it("can open position (short) and liquidate, but can't do anything more action in the same block", async () => {
