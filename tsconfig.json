@@ -32,6 +32,7 @@
         "./index.d.ts",
         "./node_modules/truffle-typings/index.d.ts",
         "./node_modules/@nomiclabs/buidler-web3/src/type-extensions.d.ts",
-        "./node_modules/@nomiclabs/buidler-truffle5/src/type-extensions.d.ts"
+        "./node_modules/@nomiclabs/buidler-truffle5/src/type-extensions.d.ts",
+        "./node_modules/@nomiclabs/buidler-waffle/src/type-extensions.d.ts"
     ]
 }
