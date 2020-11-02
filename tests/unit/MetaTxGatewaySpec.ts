@@ -294,6 +294,39 @@ class MetaTxGatewaySpec {
     }
 
     @test
+    async rejectMetaTxZeroAddressAttack(): Promise<void> {
+        const metaTx = {
+            from: "0x0000000000000000000000000000000000000000",
+            to: this.metaTxRecipientMock.options.address,
+            functionSignature: this.metaTxRecipientMock.methods.poke().encodeABI(),
+            nonce: 0,
+        }
+        const invalidSignature =
+            "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefde"
+        const signedResponse = {
+            invalidSignature,
+            r: "0x" + invalidSignature.substring(0, 64),
+            s: "0x" + invalidSignature.substring(64, 128),
+            v: parseInt(invalidSignature.substring(128, 130), 16),
+        }
+
+        await expectRevert(
+            this.metaTxGateway.executeMetaTransaction(
+                metaTx.from,
+                metaTx.to,
+                metaTx.functionSignature,
+                signedResponse.r,
+                signedResponse.s,
+                signedResponse.v,
+                {
+                    from: this.relayer,
+                },
+            ),
+            "invalid signature",
+        )
+    }
+
+    @test
     async fallbackMsgSenderIfNonTrustedForwarder(): Promise<void> {
         expect(await this.metaTxRecipientMock.methods.pokedBy().call()).to.eq(
             "0x0000000000000000000000000000000000000000",

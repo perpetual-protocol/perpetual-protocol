@@ -2,11 +2,11 @@ import { buidlerArguments } from "@nomiclabs/buidler"
 import fs from "fs"
 import { resolve } from "path"
 import { ls } from "shelljs"
-import { ContractMetadata, Network } from "./common"
-import { asyncExec } from "../scripts/helper"
 import { ARTIFACTS_DIR } from "../constants"
-import { SystemMetadataDao } from "../publish/SystemMetadataDao"
 import { SettingsDao } from "../publish/SettingsDao"
+import { SystemMetadataDao } from "../publish/SystemMetadataDao"
+import { asyncExec } from "../scripts/helper"
+import { ContractMetadata, Network } from "./common"
 
 function printByteCodeSize(contractName: string, artifactPath: string): number {
     const jsonStr = fs.readFileSync(artifactPath, "utf8")

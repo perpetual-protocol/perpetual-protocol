@@ -1,6 +1,6 @@
 import { Web3HTTPProviderAdapter } from "@nomiclabs/buidler-web3/dist/web3-provider-adapter"
-import { TASK_COMPILE_GET_COMPILER_INPUT, TASK_COMPILE } from "@nomiclabs/buidler/builtin-tasks/task-names"
-import { BuidlerConfig, extendEnvironment, task, usePlugin } from "@nomiclabs/buidler/config"
+import { TASK_COMPILE, TASK_COMPILE_GET_COMPILER_INPUT } from "@nomiclabs/buidler/builtin-tasks/task-names"
+import { extendEnvironment, task, usePlugin } from "@nomiclabs/buidler/config"
 import { BUIDLEREVM_NETWORK_NAME } from "@nomiclabs/buidler/plugins"
 import { HDAccountsConfig } from "@nomiclabs/buidler/types"
 import HDWalletProvider from "@truffle/hdwallet-provider"
@@ -26,6 +26,7 @@ import { TASK_DEPLOY_LAYER } from "./scripts/common"
 
 usePlugin("@nomiclabs/buidler-truffle5")
 usePlugin("@nomiclabs/buidler-ethers")
+usePlugin("@nomiclabs/buidler-waffle")
 usePlugin("@openzeppelin/buidler-upgrades")
 usePlugin("solidity-coverage")
 usePlugin("buidler-gas-reporter")

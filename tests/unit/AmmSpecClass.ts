@@ -1,5 +1,5 @@
 import { artifacts, web3 } from "@nomiclabs/buidler"
-import { expectRevert } from "@openzeppelin/test-helpers"
+import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { suite, test } from "@testdeck/mocha"
 import { default as BigNumber } from "bn.js"
 import { expect, use } from "chai"
@@ -305,9 +305,8 @@ class AmmSpec {
         // fundingRate = premiumFraction / underlyingPrice = -0.1 / 10.3 ~= -0.97%
         await this.priceFeed.setPrice(toFullDigit(103).divn(10))
         const response = await amm.settleFunding()
-        expect(response)
-            .to.emit("FundingRateUpdated")
-            .withArgs({ rate: "-9708737864077669" })
+
+        expectEvent(response, "FundingRateUpdated", { rate: "-9708737864077669" })
         expect(await amm.fundingRate()).eq("-9708737864077669")
     }
 

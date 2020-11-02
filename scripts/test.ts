@@ -10,7 +10,8 @@ async function testContract(): Promise<void> {
         }
     } else {
         await asyncExec("buidler test")
-        await asyncExec("npm run test:deploy")
+        // TODO should we include this?
+        // await asyncExec("npm run test:deploy")
     }
 }
 

@@ -1,6 +1,7 @@
 import { web3 } from "@nomiclabs/buidler"
-import { expectRevert } from "@openzeppelin/test-helpers"
+import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import BN from "bn.js"
+import { expect } from "chai"
 import {
     MinterInstance,
     PerpTokenInstance,
@@ -68,11 +69,9 @@ describe("PerpToken Test", () => {
             const receipt = await minter.mintReward()
 
             // 100m * 0.5%
-            expect(receipt)
-                .to.emit("PerpMinted")
-                .withArgs({
-                    amount: toFullDigit(500000),
-                })
+            expectEvent(receipt, "PerpMinted", {
+                amount: toFullDigit(500000),
+            })
         })
 
         it("mintReward late but still success", async () => {
@@ -80,11 +79,9 @@ describe("PerpToken Test", () => {
             const receipt = await minter.mintReward()
 
             // 100m * 0.5%
-            expect(receipt)
-                .to.emit("PerpMinted")
-                .withArgs({
-                    amount: toFullDigit(500000),
-                })
+            expectEvent(receipt, "PerpMinted", {
+                amount: toFullDigit(500000),
+            })
         })
 
         it("mintReward and distribute to an invalid rewardRecipient", async () => {
@@ -100,11 +97,9 @@ describe("PerpToken Test", () => {
             await gotoNextMintTime()
 
             const receipt = await minter.mintReward({ from: admin })
-            expect(receipt)
-                .to.emit("PerpMinted")
-                .withArgs({
-                    amount: supply.muln(5).divn(1000),
-                })
+            expectEvent(receipt, "PerpMinted", {
+                amount: supply.muln(5).divn(1000),
+            })
             const newSupply = await perpToken.totalSupply()
 
             // should be 100_500_000
@@ -142,11 +137,9 @@ describe("PerpToken Test", () => {
             const receipt = await minter.mintReward()
 
             // 100M * 0.047497% ~= 47497
-            expect(receipt)
-                .to.emit("PerpMinted")
-                .withArgs({
-                    amount: "47497069730730000000000",
-                })
+            expectEvent(receipt, "PerpMinted", {
+                amount: "47497069730730000000000",
+            })
         })
 
         it("not reach next mintable time", async () => {

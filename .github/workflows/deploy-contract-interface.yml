@@ -1,0 +1,59 @@
+name: Deploy Contract Interface
+
+on:
+    push:
+        tags:
+            - v*
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Get npm cache directory
+              id: npm-cache
+              run: |
+                  echo "::set-output name=dir::$(npm config get cache)"
+            - uses: actions/cache@v2
+              with:
+                  path: |
+                      ${{ steps.npm-cache.outputs.dir }}
+                      **/node_modules
+                  key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: |
+                      ${{ runner.os }}-node-
+
+            - name: Use Node.js 12.x
+              uses: actions/setup-node@v1
+              with:
+                  node-version: 12.x
+                  registry-url: 'https://registry.npmjs.org'
+
+            - name: Install contract dependencies
+              run: npm ci
+              env:
+                CI: true
+
+            - name: Build contract package
+              run: npm run build
+              env:
+                CI: true
+
+            - name: Set package version to environment variable
+              run: echo ::set-env name=PACKAGE_VERSION::$(expr match "$GITHUB_REF" 'refs/tags/\([v0-9.]*\)-')
+
+            - name: config npm package version
+              run: npm version $PACKAGE_VERSION
+
+            - name: Publish to npm
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+              run: npm publish --access public
+
+            - name: Discord notification
+              env:
+                  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+              uses: Ilshidur/action-discord@master
+              with:
+                  args: "contract interface ${{github.ref}} deployed on npm."
