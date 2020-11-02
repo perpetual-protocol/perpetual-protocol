@@ -1,5 +1,5 @@
 import { web3 } from "@nomiclabs/buidler"
-import { expectRevert } from "@openzeppelin/test-helpers"
+import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { expect, use } from "chai"
 import chaiAsPromised from "chai-as-promised"
 import { PerpTokenInstance } from "../../types"
@@ -31,7 +31,7 @@ describe("PerpToken Unit Test", () => {
     describe("basic ERC20", () => {
         beforeEach(async () => {
             const receipt = await perpToken.transfer(alice, toFullDigit(1000), { from: admin })
-            expect(receipt).to.emit("Transfer")
+            expectEvent(receipt, "Transfer")
         })
 
         it("approveAndAllowance", async () => {
@@ -70,7 +70,7 @@ describe("PerpToken Unit Test", () => {
 
             // Approve 10 of allowance
             let receipt = await perpToken.approve(bob, toFullDigit(10), { from: alice })
-            expect(receipt).to.emit("Approval")
+            expectEvent(receipt, "Approval")
 
             // 2. Transfer from not enough allowance, failed.
             await expectRevert(
@@ -80,7 +80,7 @@ describe("PerpToken Unit Test", () => {
 
             // 3. Transfer from success
             receipt = await perpToken.transferFrom(alice, carol, toFullDigit(8), { from: bob })
-            expect(receipt).to.emit("Transfer")
+            expectEvent(receipt, "Transfer")
             expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(992)) // 1000 - 8
             expect(await perpToken.allowance(alice, bob)).to.eq(toFullDigit(2))
             expect(await perpToken.balanceOf(carol)).to.eq(toFullDigit(8))
@@ -95,7 +95,7 @@ describe("PerpToken Unit Test", () => {
 
             // Approve 10 of allowance
             const receipt = await perpToken.approve(bob, toFullDigit(10), { from: alice })
-            expect(receipt).to.emit("Approval")
+            expectEvent(receipt, "Approval")
 
             // 2. Transfer from enough allowance but not enough balance to transfer, failed.
             await expectRevert(

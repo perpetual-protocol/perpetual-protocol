@@ -1,5 +1,5 @@
 import { web3 } from "@nomiclabs/buidler"
-import { expectRevert } from "@openzeppelin/test-helpers"
+import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { expect, use } from "chai"
 import {
     AmmFakeInstance,
@@ -77,12 +77,10 @@ describe("InsuranceFund", () => {
 
         it("withdraw, transfer to withdrawer", async () => {
             const receipt = await insuranceFund.withdraw(quoteToken.address, toDecimal(200), { from: dao })
-            expect(receipt)
-                .to.emit("Withdrawn")
-                .withArgs({
-                    withdrawer: dao,
-                    amount: toFullDigit(200),
-                })
+            expectEvent(receipt, "Withdrawn", {
+                withdrawer: dao,
+                amount: toFullDigit(200),
+            })
         })
 
         it("force error, withdraw to not allowed address", async () => {

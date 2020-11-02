@@ -935,20 +935,15 @@ describe("ClearingHouse - open/close position Test", () => {
             // Since 21.23 - 16.06 >= 0, both badDebts = 0
             // Trader total PnL = -278.77 - 21.23 = -300 since she lost her remaining margin to the insurance fund
 
-            expect(receipt)
-                .to.emit("PositionChanged")
-                .withArgs({
-                    realizedPnl: "-278761061946902654868",
-                    badDebt: "0",
-                    liquidationPenalty: "21238938053097345132",
-                })
-
-            expect(receipt)
-                .to.emit("PositionLiquidated")
-                .withArgs({
-                    liquidationFee: "16061946902654867256",
-                    badDebt: "0",
-                })
+            expectEvent(receipt, "PositionChanged", {
+                realizedPnl: "-278761061946902654868",
+                badDebt: "0",
+                liquidationPenalty: "21238938053097345132",
+            })
+            expectEvent(receipt, "PositionLiquidated", {
+                liquidationFee: "16061946902654867256",
+                badDebt: "0",
+            })
         })
 
         it("alice's position got liquidated and not enough margin left for paying liquidation fee", async () => {
@@ -974,20 +969,15 @@ describe("ClearingHouse - open/close position Test", () => {
             //   liquidation badDebt = 16.06
             // Trader total PnL = -278.77 + 128.77 = -150
 
-            expect(receipt)
-                .to.emit("PositionChanged")
-                .withArgs({
-                    realizedPnl: "-278761061946902654868",
-                    badDebt: "128761061946902654868",
-                    liquidationPenalty: "0",
-                })
-
-            expect(receipt)
-                .to.emit("PositionLiquidated")
-                .withArgs({
-                    liquidationFee: "16061946902654867256",
-                    badDebt: "16061946902654867256",
-                })
+            expectEvent(receipt, "PositionChanged", {
+                realizedPnl: "-278761061946902654868",
+                badDebt: "128761061946902654868",
+                liquidationPenalty: "0",
+            })
+            expectEvent(receipt, "PositionLiquidated", {
+                liquidationFee: "16061946902654867256",
+                badDebt: "16061946902654867256",
+            })
         })
     })
 

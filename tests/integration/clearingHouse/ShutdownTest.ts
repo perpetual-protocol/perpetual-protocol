@@ -1,5 +1,8 @@
 import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
+import { default as BN } from "bn.js"
+import { use } from "chai"
+import { utils } from "ethers"
 import {
     AmmFakeInstance,
     ClearingHouseFakeInstance,
@@ -12,9 +15,6 @@ import {
     StakingReserveFakeInstance,
     SupplyScheduleFakeInstance,
 } from "../../../types"
-import { default as BN } from "bn.js"
-import { use } from "chai"
-import { utils } from "ethers"
 import { assertionHelper } from "../../helper/assertion-plugin"
 import { deployAmm, deployErc20Fake, Dir, Side } from "../../helper/contract"
 import { fullDeploy } from "../../helper/deploy"
@@ -180,12 +180,17 @@ describe("Protocol shutdown test", () => {
             const supply = await perpToken.totalSupply()
             await minter.mintForLoss({ d: supply.divn(9).toString() })
             await insuranceFund.shutdownAllAmm()
-
-            expect(
-                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(100), toDecimal(1), toDecimal(0), {
+            const receipt = await clearingHouse.openPosition(
+                amm.address,
+                Side.BUY,
+                toDecimal(100),
+                toDecimal(1),
+                toDecimal(0),
+                {
                     from: alice,
-                }),
-            ).to.emit("PositionChanged")
+                },
+            )
+            expectEvent(receipt, "PositionChanged")
         })
 
         it("minted perp token is less than 10% in a week but more than 10% at (now - 8days), still can trade", async () => {
@@ -203,11 +208,12 @@ describe("Protocol shutdown test", () => {
             await minter.mintForLoss({ d: supply.divn(8).toString() })
             await forwardBlockTimestamp(2 * ONE_DAY)
 
-            expect(
+            expectEvent(
                 await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(100), toDecimal(1), toDecimal(0), {
                     from: alice,
                 }),
-            ).to.emit("PositionChanged")
+                "PositionChanged",
+            )
         })
 
         it("a week ago, minted perp token is more than 10%, still can trade", async () => {
@@ -217,11 +223,12 @@ describe("Protocol shutdown test", () => {
             await minter.mintForLoss({ d: supply.divn(8).toString() })
             await forwardBlockTimestamp(7 * ONE_DAY + 1)
 
-            expect(
+            expectEvent(
                 await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(100), toDecimal(1), toDecimal(0), {
                     from: alice,
                 }),
-            ).to.emit("PositionChanged")
+                "PositionChanged",
+            )
         })
 
         it("change threshold to 5%", async () => {
@@ -232,11 +239,13 @@ describe("Protocol shutdown test", () => {
             // 0.05 / (1 + 0.05) ~= 4.7%, still can trade
             await minter.mintForLoss({ d: supply.divn(20).toString() })
             await insuranceFund.shutdownAllAmm()
-            expect(
+            expectEvent(
                 await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(100), toDecimal(1), toDecimal(0), {
                     from: alice,
                 }),
-            ).to.emit("PositionChanged")
+                "PositionChanged",
+            )
+
             await forwardBlockTimestamp(7 * ONE_DAY + 1)
 
             // mint totalSupply * 0.111
@@ -259,11 +268,12 @@ describe("Protocol shutdown test", () => {
             await minter.mintForLoss({ d: supply.divn(9).toString() })
             await insuranceFund.shutdownAllAmm()
 
-            expect(
+            expectEvent(
                 await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(100), toDecimal(1), toDecimal(0), {
                     from: alice,
                 }),
-            ).to.emit("PositionChanged")
+                "PositionChanged",
+            )
         })
     })
 
@@ -334,7 +344,7 @@ describe("Protocol shutdown test", () => {
                 toDecimal(0),
                 { from: alice },
             )
-            expect(r).to.emit("PositionChanged")
+            expectEvent(r, "PositionChanged")
         })
 
         it("settle twice", async () => {
