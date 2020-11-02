@@ -38,7 +38,6 @@
         "@openzeppelin/upgrades": "2.8.0",
         "@testdeck/mocha": "0.1.0",
         "@truffle/hdwallet-provider": "1.0.43",
-        "@typechain/ethers-v5": "2.0.0",
         "@typechain/truffle-v5": "0.9.0",
         "@types/chai": "4.2.11",
         "@types/chai-as-promised": "7.1.2",
@@ -57,7 +56,6 @@
         "dotenv": "8.2.0",
         "eslint": "6.8.0",
         "eslint-config-prettier": "6.9.0",
-        "eslint-plugin-flowtype": "4.6.0",
         "eslint-plugin-import": "2.20.1",
         "ethers": "5.0.19",
         "ethereum-waffle": "3.1.2",
@@ -89,7 +87,7 @@
         }
     },
     "lint-staged": {
-        "*.{ts,tsx}": [
+        "*.tsx": [
             "prettier --write",
             "eslint --fix",
             "git add"
