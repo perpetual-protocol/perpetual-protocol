@@ -6,7 +6,12 @@ docs
 publish
 src
 tests
+types
+.eslintignore
+.eslintrc.json
+.prettierrc.yaml
 .solcover.js
+.solhint.json
 buidler.config.ts
 codecov.yml
 constants.d.ts
