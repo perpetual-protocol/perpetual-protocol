@@ -3,7 +3,7 @@ name: Deploy Contract Interface
 on:
     push:
         tags:
-            - v*-contract-interface
+            - v*
 
 jobs:
     deploy:
