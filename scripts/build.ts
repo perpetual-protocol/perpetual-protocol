@@ -2,11 +2,11 @@ import { buidlerArguments } from "@nomiclabs/buidler"
 import fs from "fs"
 import { resolve } from "path"
 import { ls } from "shelljs"
-import { ContractMetadata, Network } from "./common"
-import { asyncExec } from "../scripts/helper"
 import { ARTIFACTS_DIR } from "../constants"
-import { SystemMetadataDao } from "../publish/SystemMetadataDao"
 import { SettingsDao } from "../publish/SettingsDao"
+import { SystemMetadataDao } from "../publish/SystemMetadataDao"
+import { asyncExec } from "../scripts/helper"
+import { ContractMetadata, Network } from "./common"
 
 function printByteCodeSize(contractName: string, artifactPath: string): number {
     const jsonStr = fs.readFileSync(artifactPath, "utf8")
@@ -82,7 +82,7 @@ async function build(): Promise<void> {
     await asyncExec("buidler compile")
     await asyncExec(`typechain --target truffle-v5 ${artifactDir}/**/*.json --outDir ./types`)
     await asyncExec(`typechain --target web3-v1 ${artifactDir}/**/*.json --outDir ./types/web3`)
-    await asyncExec(`typechain --target ethers-v5 ${artifactDir}/**/*.json --outDir ./types/ethers`)
+    await asyncExec(`typechain --target ethers ${artifactDir}/**/*.json --outDir ./types/ethers`)
     generateContractMetadata()
 }
 
