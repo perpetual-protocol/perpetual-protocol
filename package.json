@@ -1,6 +1,6 @@
 {
     "name": "@perp/contract",
-    "version": "1.0.0",
+    "version": "0.12.3",
     "description": "",
     "main": "index.js",
     "directories": {
