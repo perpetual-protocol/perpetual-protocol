@@ -31,7 +31,7 @@ jobs:
                   registry-url: 'https://registry.npmjs.org'
 
             - name: Install contract dependencies
-              run: npm ci
+              run: git config --global url."https://".insteadOf ssh:// && npm ci
               env:
                 CI: true
 
