@@ -27,7 +27,7 @@ jobs:
                   node-version: 12.x
 
             - name: Install contract package dependencies
-              run: npm ci
+              run: git config --global url."https://".insteadOf ssh:// && npm ci
 
             - name: Build contract package
               run: npm run build
@@ -67,7 +67,7 @@ jobs:
                   node-version: 12.x
 
             - name: Install dependencies
-              run: npm ci
+              run: git config --global url."https://".insteadOf ssh:// && npm ci
 
             - name: Run lint
               run: npm run lint
