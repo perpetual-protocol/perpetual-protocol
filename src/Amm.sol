@@ -255,7 +255,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         // premium = twapMarketPrice - twapIndexPrice
         // timeFraction = fundingPeriod(1 hour) / 1 day
         // premiumFraction = premium * timeFraction
-        Decimal.decimal memory underlyingPrice = getUnderlyingPrice();
+        Decimal.decimal memory underlyingPrice = getUnderlyingTwapPrice(spotPriceTwapInterval);
         SignedDecimal.signedDecimal memory premium = MixedDecimal.fromDecimal(getTwapPrice(spotPriceTwapInterval)).subD(
             underlyingPrice
         );
@@ -517,6 +517,14 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
      */
     function getUnderlyingPrice() public view returns (Decimal.decimal memory) {
         return Decimal.decimal(priceFeed.getPrice(priceFeedKey));
+    }
+
+    /**
+     * @notice get underlying twap price provided by oracle
+     * @return underlying price
+     */
+    function getUnderlyingTwapPrice(uint256 _intervalInSeconds) public view returns (Decimal.decimal memory) {
+        return Decimal.decimal(priceFeed.getTwapPrice(priceFeedKey, _intervalInSeconds));
     }
 
     /**

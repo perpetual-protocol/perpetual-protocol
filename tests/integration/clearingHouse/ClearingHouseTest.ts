@@ -127,8 +127,8 @@ describe("ClearingHouse Test", () => {
                 from: alice,
             })
 
-            // given the underlying price is $2.1, and current snapShot price is 400B/250Q = $1.6
-            await mockPriceFeed.setPrice(toFullDigit(2.1))
+            // given the underlying twap price is $2.1, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(2.1))
 
             // when the new fundingRate is -50% which means underlyingPrice < snapshotPrice
             await gotoNextFundingTime()
@@ -163,8 +163,8 @@ describe("ClearingHouse Test", () => {
         })
 
         it("will generate loss for amm when funding rate is positive and amm hold more long position", async () => {
-            // given the underlying price is 1.59, and current snapShot price is 400B/250Q = $1.6
-            await mockPriceFeed.setPrice(toFullDigit(1.59))
+            // given the underlying twap price is 1.59, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(1.59))
 
             // when the new fundingRate is 1% which means underlyingPrice < snapshotPrice
             await gotoNextFundingTime()
@@ -193,8 +193,8 @@ describe("ClearingHouse Test", () => {
         })
 
         it("funding rate is 1%, 1% then -1%", async () => {
-            // given the underlying price is 1.59, and current snapShot price is 400B/250Q = $1.6
-            await mockPriceFeed.setPrice(toFullDigit(1.59))
+            // given the underlying twap price is 1.59, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(1.59))
             await gotoNextFundingTime()
             await clearingHouse.payFunding(amm.address)
             expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(0.01))
@@ -222,7 +222,7 @@ describe("ClearingHouse Test", () => {
 
             // pay -1% funding
             // {balance: 37.5, margin: 299.25} => {balance: 37.5, margin: 299.625}
-            await mockPriceFeed.setPrice(toFullDigit(1.61))
+            await mockPriceFeed.setTwapPrice(toFullDigit(1.61))
             await gotoNextFundingTime()
             await clearingHouse.payFunding(amm.address)
             expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(0.01))
@@ -235,8 +235,8 @@ describe("ClearingHouse Test", () => {
         })
 
         it("funding rate is 1%, -1% then -1%", async () => {
-            // given the underlying price is 1.59, and current snapShot price is 400B/250Q = $1.6
-            await mockPriceFeed.setPrice(toFullDigit(1.59))
+            // given the underlying twap price is 1.59, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(1.59))
             await gotoNextFundingTime()
             await clearingHouse.payFunding(amm.address)
 
@@ -253,7 +253,7 @@ describe("ClearingHouse Test", () => {
             // pay -1% funding
             // {balance: 37.5, margin: 299.625} => {balance: 37.5, margin: 300}
             await gotoNextFundingTime()
-            await mockPriceFeed.setPrice(toFullDigit(1.61))
+            await mockPriceFeed.setTwapPrice(toFullDigit(1.61))
             await clearingHouse.payFunding(amm.address)
             expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(0))
             expect((await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, alice)).margin).eq(
@@ -277,8 +277,8 @@ describe("ClearingHouse Test", () => {
         })
 
         it("has huge funding payment profit that doesn't need margin anymore", async () => {
-            // given the underlying price is 11.6, and current snapShot price is 400B/250Q = $1.6
-            await mockPriceFeed.setPrice(toFullDigit(21.6))
+            // given the underlying twap price is 11.6, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
             await gotoNextFundingTime()
             await clearingHouse.payFunding(amm.address)
 
@@ -297,8 +297,8 @@ describe("ClearingHouse Test", () => {
         })
 
         it("will change nothing if the funding rate is 0", async () => {
-            // when the underlying price is $1.6, and current snapShot price is 400B/250Q = $1.6
-            await mockPriceFeed.setPrice(toFullDigit(1.6))
+            // when the underlying twap price is $1.6, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(1.6))
 
             // when the new fundingRate is 0% which means underlyingPrice = snapshotPrice
             await gotoNextFundingTime()
