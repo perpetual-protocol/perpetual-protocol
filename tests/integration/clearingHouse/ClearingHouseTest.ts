@@ -1637,9 +1637,6 @@ describe("ClearingHouse Test", () => {
                 from: alice,
             })
 
-            // then half the liquidity
-            // await amm.migrateLiquidity(toDecimal(0.5))
-
             // then alice can get her entire margin (250) back if she close her position
             const alicePreBalance = await quoteToken.balanceOf(alice)
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
@@ -1937,6 +1934,73 @@ describe("ClearingHouse Test", () => {
             expect(new BigNumber(positionNotionalAndUnrealizedPnl[0].d).addn(1).divn(10)).to.eq(
                 new BigNumber(positionNotionalAndUnrealizedPnl2[0].d).addn(1).divn(10),
             )
+        })
+
+        it("position changes if someone open/close earlier", async () => {
+            // alice position: 9.090
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+            // bob position: -9.090
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: bob,
+            })
+            await amm.migrateLiquidity(toDecimal(2))
+
+            const posAlice = await clearingHouse.getPosition(amm.address, alice)
+            expect(posAlice.size).to.eq("8695652173913043479")
+
+            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
+
+            // alice's position changes if others open positions
+            const posClosed = await clearingHouse.getPosition(amm.address, alice)
+            expect(posClosed.size).to.eq("9523809523809523810")
+        })
+
+        it("check Pnl after liquidity migration", async () => {
+            // alice position: 9.090
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+            // bob position: -9.090
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: bob,
+            })
+
+            await amm.migrateLiquidity(toDecimal(2))
+
+            const r = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
+            expectEvent.inTransaction(r.tx, clearingHouse, "PositionChanged", { realizedPnl: "-16666666666666666661" })
+
+            const bobPnl = await clearingHouse.getPositionNotionalAndUnrealizedPnl(
+                amm.address,
+                bob,
+                PnlCalcOption.SPOT_PRICE,
+            )
+            expect(bobPnl[1].d).eq("16666666666666666660")
+        })
+
+        it("migration attack, open a huge position right before migration", async () => {
+            // alice position: -4.76
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(5), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+            // bob position: -10
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: bob,
+            })
+
+            // carol position: -894.74
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(85), toDecimal(10), toDecimal(0), {
+                from: carol,
+            })
+            await amm.migrateLiquidity(toDecimal(2))
+
+            const r = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: carol })
+            expectEvent.inTransaction(r.tx, clearingHouse, "PositionChanged", {
+                realizedPnl: "-137",
+                exchangedPositionSize: "1619047619047619047696",
+            })
         })
     })
 

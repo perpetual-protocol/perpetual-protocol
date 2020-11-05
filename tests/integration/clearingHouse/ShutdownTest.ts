@@ -369,7 +369,7 @@ describe("Protocol shutdown test", () => {
             await expectRevert(clearingHouse.settlePosition(amm.address, { from: alice }), "amm is open")
         })
 
-        describe("how much refund trader can get", () => {
+        describe.only("how much refund trader can get", () => {
             beforeEach(async () => {
                 await transfer(admin, bob, 100)
                 await approve(bob, clearingHouse.address, 100)
@@ -456,16 +456,11 @@ describe("Protocol shutdown test", () => {
 
                 // after migrate liquidity, total position = 15.151515
                 await amm.migrateLiquidity(toDecimal(2))
-                const alicePosition = await clearingHouse.getPosition(amm.address, alice)
-                const bobPosition = await clearingHouse.getPosition(amm.address, bob)
-                const carolPosition = await clearingHouse.getPosition(amm.address, carol)
-                const totalPositionSize = new BN(alicePosition.size.d.toString())
-                    .add(new BN(bobPosition.size.d.toString()))
-                    .add(new BN(carolPosition.size.d.toString()))
+                const totalPositionSize = await amm.totalPositionSize()
                 const dir = totalPositionSize.isNeg() ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM
                 const totalPositionNotional = await amm.getOutputPrice(dir, { d: totalPositionSize.toString() })
 
-                const chadAmount = utils.formatEther(totalPositionNotional.d.toString())
+                const chadAmount = utils.formatEther(totalPositionNotional.toString())
                 await transfer(admin, chad, chadAmount)
                 await approve(chad, clearingHouse.address, chadAmount)
 
@@ -480,6 +475,7 @@ describe("Protocol shutdown test", () => {
                         from: chad,
                     },
                 )
+
                 const receipt = await amm.shutdown()
                 await expectEvent.inTransaction(receipt.tx, amm, "Shutdown", {
                     settlementPrice: "0",
@@ -516,7 +512,7 @@ describe("Protocol shutdown test", () => {
                 expect(await quoteToken.balanceOf(clearingHouse.address)).eq(0)
             })
 
-            it("get trader's collateral back after migrate liquidity ", async () => {
+            it.only("get trader's collateral back after migrate liquidity ", async () => {
                 await transfer(admin, chad, 100)
                 await approve(chad, clearingHouse.address, 100)
 
@@ -543,12 +539,12 @@ describe("Protocol shutdown test", () => {
 
                 // position notional value (20100 - 20199.98) = -100
                 // total position size = 1.94(after liquidity migrated) + (-2.93) = -0.986
-                // settle price should be -100 / -0.986 = 101.5
+                // settle price should be -100 / -0.986 = 101.9
                 const receipt = await amm.shutdown()
-                expect(await amm.getSettlementPrice()).to.eq("101504999999999999991")
+                expect(await amm.getSettlementPrice()).to.eq("101975466566288591698")
 
-                // position value = 100(open notional) / 0.98(migrated position size) = 102.01
-                // 0.98 * (101.5 - 102.01) + 100 = 99.5
+                // position value = 100(open notional) / 1.014(migrated position size) = 98.62
+                // 1.014 * (101.98 - 98.62) + 100 = 99.5
                 const aliceReceipt = await clearingHouse.settlePosition(amm.address, { from: alice })
                 await expectEvent.inTransaction(aliceReceipt.tx, quoteToken, "Transfer", {
                     from: clearingHouse.address,

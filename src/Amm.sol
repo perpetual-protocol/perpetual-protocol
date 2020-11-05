@@ -902,27 +902,25 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         LiquidityChangedSnapshot memory latestLiquiditySnapshot = getLatestLiquidityChangedSnapshots();
 
         // get last liquidity changed history to calc new quote/base reserve
-        // Decimal.decimal memory newK = latestLiquiditySnapshot.baseAssetReserve.mulD(
-        //     latestLiquiditySnapshot.quoteAssetReserve
-        // );
-        // SignedDecimal.signedDecimal memory lastInitBaseReserve = latestLiquiditySnapshot.totalPositionSize.addD(
-        //     latestLiquiditySnapshot.baseAssetReserve
-        // );
-        // Decimal.decimal memory lastInitQuoteReserve = newK.divD(lastInitBaseReserve.abs());
+        Decimal.decimal memory newK = latestLiquiditySnapshot.baseAssetReserve.mulD(
+            latestLiquiditySnapshot.quoteAssetReserve
+        );
+        SignedDecimal.signedDecimal memory lastInitBaseReserve = latestLiquiditySnapshot.totalPositionSize.addD(
+            latestLiquiditySnapshot.baseAssetReserve
+        );
+        SignedDecimal.signedDecimal memory lastInitQuoteReserve = MixedDecimal.fromDecimal(newK).divD(
+            lastInitBaseReserve
+        );
 
         // settlementPrice = SUM(Open Position Notional Value) / SUM(Position Size)
         // `Open Position Notional Value` = init quote reserve - current quote reserve
         // `Position Size` = init base reserve - current base reserve
-        SignedDecimal.signedDecimal memory totalPositionSize2 = MixedDecimal
-            .fromDecimal(latestLiquiditySnapshot.baseAssetReserve)
-            .subD(baseAssetReserve);
-        SignedDecimal.signedDecimal memory positionNotionalValue = MixedDecimal
-            .fromDecimal(latestLiquiditySnapshot.quoteAssetReserve)
-            .subD(quoteAssetReserve);
+        SignedDecimal.signedDecimal memory totalSize = lastInitBaseReserve.subD(baseAssetReserve);
+        SignedDecimal.signedDecimal memory positionNotionalValue = lastInitQuoteReserve.subD(quoteAssetReserve);
 
         // if total position size less than IGNORABLE_DIGIT_FOR_SHUTDOWN, treat it as 0 positions due to rounding error
         if (totalPositionSize.toUint() > IGNORABLE_DIGIT_FOR_SHUTDOWN) {
-            settlementPrice = positionNotionalValue.abs().divD(totalPositionSize2.abs());
+            settlementPrice = positionNotionalValue.abs().divD(totalSize.abs());
         }
 
         open = false;
