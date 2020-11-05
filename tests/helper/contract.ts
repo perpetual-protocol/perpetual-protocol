@@ -43,8 +43,6 @@ import {
     RewardsDistributionFakeInstance,
     RootBridgeContract,
     RootBridgeInstance,
-    RootBridgeMockContract,
-    RootBridgeMockInstance,
     StakingReserveFakeContract,
     StakingReserveFakeInstance,
     SupplyScheduleFakeContract,
@@ -70,7 +68,6 @@ const InflationMonitor = artifacts.require("InflationMonitorFake") as InflationM
 const Minter = artifacts.require("Minter") as MinterContract
 const CUsdtMock = artifacts.require("CUsdtMock") as CUsdtMockContract
 const BalancerMock = artifacts.require("BalancerMock") as BalancerMockContract
-const RootBridgeMock = artifacts.require("RootBridgeMock") as RootBridgeMockContract
 const RootBridge = artifacts.require("RootBridge") as RootBridgeContract
 const MultiTokenMediatorMock = artifacts.require("MultiTokenMediatorMock") as MultiTokenMediatorMockContract
 const AMBBridgeMock = artifacts.require("AMBBridgeMock") as AMBBridgeMockContract
@@ -210,12 +207,8 @@ export async function deployPerpToken(initSupply: BN): Promise<PerpTokenInstance
     return await PerpToken.new(initSupply)
 }
 
-export async function deployL2MockPriceFeed(
-    defaultPrice: BN,
-    clientBridge: string,
-    keeper: string,
-): Promise<L2PriceFeedMockInstance> {
-    return L2PriceFeedMock.new(defaultPrice, clientBridge, keeper)
+export async function deployL2MockPriceFeed(defaultPrice: BN): Promise<L2PriceFeedMockInstance> {
+    return L2PriceFeedMock.new(defaultPrice)
 }
 
 export async function deployInsuranceFund(exchange: string, minter: string): Promise<InsuranceFundFakeInstance> {
@@ -323,11 +316,6 @@ export async function deployMockMultiToken(): Promise<MultiTokenMediatorMockInst
 
 export async function deployMockAMBBridge(): Promise<AMBBridgeMockInstance> {
     const instance = await AMBBridgeMock.new()
-    return instance
-}
-
-export async function deployMockRootBridge(): Promise<RootBridgeMockInstance> {
-    const instance = await RootBridgeMock.new()
     return instance
 }
 

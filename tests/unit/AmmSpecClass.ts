@@ -1,16 +1,14 @@
-import { artifacts, web3 } from "@nomiclabs/buidler"
+import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { suite, test } from "@testdeck/mocha"
 import { default as BigNumber } from "bn.js"
 import { expect, use } from "chai"
-import { AmmFakeInstance, L2PriceFeedMockContract, L2PriceFeedMockInstance } from "../../types"
+import { AmmFakeInstance, L2PriceFeedMockInstance } from "../../types"
 import { assertionHelper } from "../helper/assertion-plugin"
-import { deployAmm } from "../helper/contract"
+import { deployAmm, deployL2MockPriceFeed } from "../helper/contract"
 import { toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
-
-const L2PriceFeedMock = artifacts.require("L2PriceFeedMock") as L2PriceFeedMockContract
 
 enum Side {
     ADD_TO_AMM = 0,
@@ -34,7 +32,7 @@ class AmmSpec {
         this.admin = accounts[0]
         this.otherA = accounts[1]
 
-        this.priceFeed = await L2PriceFeedMock.new(DEFAULT_PRICE, this.admin, this.admin, { from: this.admin })
+        this.priceFeed = await deployL2MockPriceFeed(DEFAULT_PRICE)
         await this.deployAMM()
         this.fundingPeriod = (await this.amm.fundingPeriod()).toNumber()
         this.fundingBufferPeriod = (await this.amm.fundingBufferPeriod()).toNumber()

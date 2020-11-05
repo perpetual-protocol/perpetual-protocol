@@ -36,7 +36,7 @@ describe("RootBridge Spec", () => {
         const timestamp = "123456789"
         const roundId = "999"
 
-        const priceFeed = await deployL2MockPriceFeed(toFullDigit(400), ambBridgeMock.address, admin)
+        const priceFeed = await deployL2MockPriceFeed(toFullDigit(400))
         await rootBridge.setPriceFeed(admin)
         const receipt = await rootBridge.updatePriceFeed(
             priceFeed.address,
