@@ -282,17 +282,20 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         baseAssetReserve = newBaseReserve;
 
         // MUST be called after liquidity migrated
+        // baseAssetDeltaThisFundingPeriod is total position size(of a funding period) owned by Amm
+        // That's why need to mulScalar(-1) when calculating the migrated size.
         baseAssetDeltaThisFundingPeriod = calcBaseAssetAfterLiquidityMigration(
-            baseAssetDeltaThisFundingPeriod,
-            quoteAssetBeforeAddingLiquidity,
-            baseAssetBeforeAddingLiquidity
-        );
-        totalPositionSize = calcBaseAssetAfterLiquidityMigration(
-            totalPositionSize.mulScalar(-1),
+            baseAssetDeltaThisFundingPeriod.mulScalar(-1),
             quoteAssetBeforeAddingLiquidity,
             baseAssetBeforeAddingLiquidity
         )
             .mulScalar(-1);
+
+        totalPositionSize = calcBaseAssetAfterLiquidityMigration(
+            totalPositionSize,
+            quoteAssetBeforeAddingLiquidity,
+            baseAssetBeforeAddingLiquidity
+        );
 
         // update snapshot
         liquidityChangedSnapshots.push(
@@ -320,7 +323,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         // measure the trader position's notional value on the old curve
         // (by simulating closing the position)
         Decimal.decimal memory posNotional = getOutputPriceWithReserves(
-            isPositiveValue ? IAmm.Dir.REMOVE_FROM_AMM : IAmm.Dir.ADD_TO_AMM,
+            isPositiveValue ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
             _baseAssetAmount.abs(),
             _fromQuoteReserve,
             _fromBaseReserve
@@ -328,7 +331,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
         // calculate and apply the required size on the new curve
         SignedDecimal.signedDecimal memory newBaseAsset = MixedDecimal.fromDecimal(
-            getInputPrice(isPositiveValue ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM, posNotional)
+            getInputPrice(isPositiveValue ? IAmm.Dir.REMOVE_FROM_AMM : IAmm.Dir.ADD_TO_AMM, posNotional)
         );
         return newBaseAsset.mulScalar(isPositiveValue ? 1 : int256(-1));
     }

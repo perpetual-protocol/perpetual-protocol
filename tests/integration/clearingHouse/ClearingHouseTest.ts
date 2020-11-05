@@ -1804,7 +1804,6 @@ describe("ClearingHouse Test", () => {
             await amm.migrateLiquidity(toDecimal(2))
             // new baseReserve = 181.818
             // new quoteReserve = 2200
-            console.log((await amm.getLiquidityHistoryLength()).toString())
 
             // position size: -13.3,
             // new position size will be 8.658 - 13.3 ~= -4.64
@@ -1818,7 +1817,6 @@ describe("ClearingHouse Test", () => {
             // TOOO check the number
             const allPos = new BigNumber(pos.size.d)
             const deltaBaseAsset = await amm.getBaseAssetDeltaThisFundingPeriod()
-            console.log(deltaBaseAsset.toString())
             expect(new BigNumber(deltaBaseAsset.d).abs()).to.eq(allPos.abs())
         })
 

@@ -369,7 +369,7 @@ describe("Protocol shutdown test", () => {
             await expectRevert(clearingHouse.settlePosition(amm.address, { from: alice }), "amm is open")
         })
 
-        describe.only("how much refund trader can get", () => {
+        describe("how much refund trader can get", () => {
             beforeEach(async () => {
                 await transfer(admin, bob, 100)
                 await approve(bob, clearingHouse.address, 100)
@@ -512,7 +512,7 @@ describe("Protocol shutdown test", () => {
                 expect(await quoteToken.balanceOf(clearingHouse.address)).eq(0)
             })
 
-            it.only("get trader's collateral back after migrate liquidity ", async () => {
+            it("get trader's collateral back after migrate liquidity ", async () => {
                 await transfer(admin, chad, 100)
                 await approve(chad, clearingHouse.address, 100)
 

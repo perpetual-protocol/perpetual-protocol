@@ -1118,24 +1118,30 @@ contract ClearingHouse is
             updatedOldBaseReserve = lastSnapshot.baseAssetReserve.addD(baseAssetWorth);
         }
 
-        bool isLong = _position.size.toInt() > 0;
-        // measure the trader position's notional value on the old curve
-        // (by simulating closing the position)
-        Decimal.decimal memory posNotional = _amm.getOutputPriceWithReserves(
-            isLong ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
-            _position.size.abs(),
+        // calculate the new position size
+        _position.size = _amm.calcBaseAssetAfterLiquidityMigration(
+            _position.size,
             updatedOldQuoteReserve,
             updatedOldBaseReserve
         );
+        // bool isLong = _position.size.toInt() > 0;
+        // // measure the trader position's notional value on the old curve
+        // // (by simulating closing the position)
+        // Decimal.decimal memory posNotional = _amm.getOutputPriceWithReserves(
+        //     isLong ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
+        //     _position.size.abs(),
+        //     updatedOldQuoteReserve,
+        //     updatedOldBaseReserve
+        // );
 
-        // calculate and apply the required size on the new curve
-        Decimal.decimal memory newPositionSize = _amm.getInputPrice(
-            isLong ? IAmm.Dir.REMOVE_FROM_AMM : IAmm.Dir.ADD_TO_AMM,
-            posNotional
-        );
+        // // calculate and apply the required size on the new curve
+        // Decimal.decimal memory newPositionSize = _amm.getInputPrice(
+        //     isLong ? IAmm.Dir.REMOVE_FROM_AMM : IAmm.Dir.ADD_TO_AMM,
+        //     posNotional
+        // );
 
         /// update new position
-        _position.size = MixedDecimal.fromDecimal(newPositionSize).mulScalar(isLong ? int256(1) : -1);
+        // _position.size = MixedDecimal.fromDecimal(newPositionSize).mulScalar(isLong ? int256(1) : -1);
         _position.liquidityHistoryIndex = _latestLiquidityIndex;
 
         return _position;

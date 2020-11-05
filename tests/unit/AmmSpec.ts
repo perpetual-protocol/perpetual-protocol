@@ -917,7 +917,7 @@ describe("Amm Unit Test", () => {
                         toDecimal(900),
                         toDecimal(900),
                     ),
-                    "value of quote asset is 0",
+                    "quote asset after is 0",
                 )
             })
         })
@@ -977,7 +977,7 @@ describe("Amm Unit Test", () => {
                         toDecimal(900),
                         toDecimal(900),
                     ),
-                    "value of base asset is 0",
+                    "base asset after is 0",
                 )
             })
         })
