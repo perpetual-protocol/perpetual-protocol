@@ -13,14 +13,12 @@ import {
     ClearingHouseFakeInstance,
     ClearingHouseViewerContract,
     ClearingHouseViewerInstance,
-    ClientBridgeMockContract,
-    ClientBridgeMockInstance,
     CUsdtMockContract,
     CUsdtMockInstance,
     ERC20FakeContract,
     ERC20FakeInstance,
-    ERC20SimpleContract,
-    ERC20SimpleInstance,
+    ERC20TokenContract,
+    ERC20TokenInstance,
     ExchangeWrapperContract,
     ExchangeWrapperInstance,
     ExchangeWrapperMockContract,
@@ -55,7 +53,6 @@ import {
 import { Decimal, toFullDigit } from "./number"
 
 const L2PriceFeedMock = artifacts.require("L2PriceFeedMock") as L2PriceFeedMockContract
-const ERC20Simple = artifacts.require("ERC20Simple") as ERC20SimpleContract
 const ERC20Fake = artifacts.require("ERC20Fake") as ERC20FakeContract
 const AmmFake = artifacts.require("AmmFake") as AmmFakeContract
 const ClearingHouseViewer = artifacts.require("ClearingHouseViewer") as ClearingHouseViewerContract
@@ -74,11 +71,11 @@ const Minter = artifacts.require("Minter") as MinterContract
 const CUsdtMock = artifacts.require("CUsdtMock") as CUsdtMockContract
 const BalancerMock = artifacts.require("BalancerMock") as BalancerMockContract
 const RootBridgeMock = artifacts.require("RootBridgeMock") as RootBridgeMockContract
-const ClientBridgeMock = artifacts.require("ClientBridgeMock") as ClientBridgeMockContract
 const RootBridge = artifacts.require("RootBridge") as RootBridgeContract
 const MultiTokenMediatorMock = artifacts.require("MultiTokenMediatorMock") as MultiTokenMediatorMockContract
 const AMBBridgeMock = artifacts.require("AMBBridgeMock") as AMBBridgeMockContract
 const MetaTxGateway = artifacts.require("MetaTxGateway") as MetaTxGatewayContract
+const ERC20Token = artifacts.require("ERC20Token") as ERC20TokenContract
 
 export enum Side {
     BUY = 0,
@@ -126,11 +123,6 @@ export interface AmmPrice {
     amount: { d: number | BN | string }
     fee: { d: number | BN | string }
     spread: { d: number | BN | string }
-}
-
-interface RoleItem {
-    role: string
-    address: string
 }
 
 export async function deployAmm(params: {
@@ -195,17 +187,6 @@ export async function deployClearingHouseViewer(clearingHouse: string): Promise<
     return instance
 }
 
-export async function deployErc20(
-    initSupply: BN,
-    name: string,
-    symbol: string,
-    decimals?: BN,
-): Promise<ERC20SimpleInstance> {
-    const instance = await ERC20Simple.new()
-    await instance.initializeERC20Simple(initSupply, name, symbol)
-    return instance
-}
-
 export async function deployErc20Fake(
     initSupply: BN = new BN(0),
     name = "name",
@@ -215,6 +196,14 @@ export async function deployErc20Fake(
     const instance = await ERC20Fake.new()
     await instance.initializeERC20Fake(initSupply, name, symbol, decimal)
     return instance
+}
+
+export async function deployErc20Token(
+    initSupply: BN = new BN(0),
+    name = "name",
+    symbol = "symbol",
+): Promise<ERC20TokenInstance> {
+    return await ERC20Token.new(name, symbol, initSupply)
 }
 
 export async function deployPerpToken(initSupply: BN): Promise<PerpTokenInstance> {
@@ -339,11 +328,6 @@ export async function deployMockAMBBridge(): Promise<AMBBridgeMockInstance> {
 
 export async function deployMockRootBridge(): Promise<RootBridgeMockInstance> {
     const instance = await RootBridgeMock.new()
-    return instance
-}
-
-export async function deployMockClientBridge(): Promise<ClientBridgeMockInstance> {
-    const instance = await ClientBridgeMock.new()
     return instance
 }
 

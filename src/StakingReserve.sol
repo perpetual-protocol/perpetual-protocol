@@ -210,12 +210,10 @@ contract StakingReserve is
     /**
      * @dev add epoch reward, update totalEffectiveStakeMap
      */
-    // prettier-ignore
     function notifyRewardAmount(Decimal.decimal calldata _amount) external override onlyRewardsDistribution {
         // record reward to epochRewardHistory
         Decimal.decimal memory totalBalanceBeforeEndEpoch = getTotalBalance();
         epochRewardHistory.push(EpochReward(_amount));
-
 
         // Note this is initialized AFTER a new entry is pushed to epochRewardHistory, hence the minus 1
         uint256 currentEpochIndex = nextEpochIndex().sub(1);
@@ -235,13 +233,12 @@ contract StakingReserve is
         totalPendingStakeBalance = SignedDecimal.zero();
     }
 
-    // prettier-ignore
     function notifyTokenAmount(IERC20 _token, Decimal.decimal calldata _amount) external override {
         require(feeNotifier == _msgSender(), "!feeNotifier");
         require(_amount.toUint() > 0, "amount can't be 0");
 
         feeMap[_token] = feeMap[_token].addD(_amount);
-        if(!isExistedFeeToken(_token)){
+        if (!isExistedFeeToken(_token)) {
             feeTokens.push(_token);
         }
     }

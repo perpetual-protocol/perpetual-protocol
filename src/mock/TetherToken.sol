@@ -5,7 +5,6 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-
 /* solhint-disable */
 
 /**
@@ -40,7 +39,6 @@ library SafeMath {
         return c;
     }
 }
-
 
 /**
  * @title Ownable
@@ -77,7 +75,6 @@ contract Ownable {
     }
 }
 
-
 /**
  * @title ERC20Basic
  * @dev Simpler version of ERC20 interface
@@ -86,30 +83,32 @@ contract Ownable {
 abstract contract ERC20Basic {
     uint256 public _totalSupply;
 
-    function totalSupply() public virtual view returns (uint256);
+    function totalSupply() public view virtual returns (uint256);
 
-    function balanceOf(address who) public virtual view returns (uint256);
+    function balanceOf(address who) public view virtual returns (uint256);
 
     function transfer(address to, uint256 value) public virtual;
 
     event Transfer(address indexed from, address indexed to, uint256 value);
 }
 
-
 /**
  * @title ERC20 interface
  * @dev see https://github.com/ethereum/EIPs/issues/20
  */
 abstract contract ERC20 is ERC20Basic {
-    function allowance(address owner, address spender) public virtual view returns (uint256);
+    function allowance(address owner, address spender) public view virtual returns (uint256);
 
-    function transferFrom(address from, address to, uint256 value) public virtual;
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) public virtual;
 
     function approve(address spender, uint256 value) public virtual;
 
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
-
 
 /**
  * @title Basic token
@@ -137,8 +136,7 @@ abstract contract BasicToken is Ownable, ERC20Basic {
      * @param _to The address to transfer to.
      * @param _value The amount to be transferred.
      */
-    // prettier-ignore
-    function transfer(address _to, uint256 _value) public override virtual onlyPayloadSize(2 * 32) {
+    function transfer(address _to, uint256 _value) public virtual override onlyPayloadSize(2 * 32) {
         uint256 fee = (_value.mul(basisPointsRate)).div(10000);
         if (fee > maximumFee) {
             fee = maximumFee;
@@ -153,12 +151,10 @@ abstract contract BasicToken is Ownable, ERC20Basic {
         emit Transfer(msg.sender, _to, sendAmount);
     }
 
-    // prettier-ignore
-    function balanceOf(address _owner) public override virtual view returns (uint256 balance) {
+    function balanceOf(address _owner) public view virtual override returns (uint256 balance) {
         return balances[_owner];
     }
 }
-
 
 /**
  * @title Standard ERC20 token
@@ -179,8 +175,11 @@ abstract contract StandardToken is BasicToken, ERC20 {
      * @param _value uint the amount of tokens to be transferred
      */
 
-    // prettier-ignore
-    function transferFrom(address _from, address _to, uint256 _value) public override virtual onlyPayloadSize(3 * 32) {
+    function transferFrom(
+        address _from,
+        address _to,
+        uint256 _value
+    ) public virtual override onlyPayloadSize(3 * 32) {
         uint256 _allowance = allowed[_from][msg.sender];
 
         // Check is not needed because sub(_allowance, _value) will already throw if this condition is not met
@@ -208,8 +207,7 @@ abstract contract StandardToken is BasicToken, ERC20 {
      * @param _spender The address which will spend the funds.
      * @param _value The amount of tokens to be spent.
      */
-    // prettier-ignore
-    function approve(address _spender, uint256 _value) public override virtual onlyPayloadSize(2 * 32) {
+    function approve(address _spender, uint256 _value) public virtual override onlyPayloadSize(2 * 32) {
         // To change the approve amount you first have to reduce the addresses`
         //  allowance to zero by calling `approve(_spender, 0)` if it is not
         //  already 0 to mitigate the race condition described here:
@@ -220,12 +218,10 @@ abstract contract StandardToken is BasicToken, ERC20 {
         Approval(msg.sender, _spender, _value);
     }
 
-    // prettier-ignore
-    function allowance(address _owner, address _spender) public override virtual view returns (uint256 remaining) {
+    function allowance(address _owner, address _spender) public view virtual override returns (uint256 remaining) {
         return allowed[_owner][_spender];
     }
 }
-
 
 /**
  * @title Pausable
@@ -270,7 +266,6 @@ contract Pausable is Ownable {
     }
 }
 
-
 abstract contract BlackList is Ownable, BasicToken {
     /////// Getters to allow the same blacklist to be used also by other contracts (including upgraded Tether) ///////
     function getBlackListStatus(address _maker) external view returns (bool) {
@@ -308,17 +303,28 @@ abstract contract BlackList is Ownable, BasicToken {
     event RemovedBlackList(address _user);
 }
 
-
 abstract contract UpgradedStandardToken is StandardToken {
     // those methods are called by the legacy contract
     // and they must ensure msg.sender to be the contract address
-    function transferByLegacy(address from, address to, uint256 value) public virtual;
+    function transferByLegacy(
+        address from,
+        address to,
+        uint256 value
+    ) public virtual;
 
-    function transferFromByLegacy(address sender, address from, address spender, uint256 value) public virtual;
+    function transferFromByLegacy(
+        address sender,
+        address from,
+        address spender,
+        uint256 value
+    ) public virtual;
 
-    function approveByLegacy(address from, address spender, uint256 value) public virtual;
+    function approveByLegacy(
+        address from,
+        address spender,
+        uint256 value
+    ) public virtual;
 }
-
 
 contract TetherToken is Pausable, StandardToken, BlackList {
     string public name;
@@ -334,7 +340,12 @@ contract TetherToken is Pausable, StandardToken, BlackList {
     // @param _name Token Name
     // @param _symbol Token symbol
     // @param _decimals Token decimals
-    constructor(uint256 _initialSupply, string memory _name, string memory _symbol, uint256 _decimals) public {
+    constructor(
+        uint256 _initialSupply,
+        string memory _name,
+        string memory _symbol,
+        uint256 _decimals
+    ) public {
         _totalSupply = _initialSupply;
         name = _name;
         symbol = _symbol;
@@ -344,7 +355,7 @@ contract TetherToken is Pausable, StandardToken, BlackList {
     }
 
     // Forward ERC20 methods to upgraded contract if this one is deprecated
-    // prettier-ignore
+
     function transfer(address _to, uint256 _value) public override whenNotPaused {
         require(!isBlackListed[msg.sender]);
         if (deprecated) {
@@ -355,8 +366,12 @@ contract TetherToken is Pausable, StandardToken, BlackList {
     }
 
     // Forward ERC20 methods to upgraded contract if this one is deprecated
-    // prettier-ignore
-    function transferFrom(address _from, address _to, uint256 _value) public override whenNotPaused {
+
+    function transferFrom(
+        address _from,
+        address _to,
+        uint256 _value
+    ) public override whenNotPaused {
         require(!isBlackListed[_from]);
         if (deprecated) {
             return UpgradedStandardToken(upgradedAddress).transferFromByLegacy(msg.sender, _from, _to, _value);
@@ -366,7 +381,7 @@ contract TetherToken is Pausable, StandardToken, BlackList {
     }
 
     // Forward ERC20 methods to upgraded contract if this one is deprecated
-    // prettier-ignore
+
     function balanceOf(address who) public view override returns (uint256) {
         if (deprecated) {
             return UpgradedStandardToken(upgradedAddress).balanceOf(who);
@@ -376,7 +391,7 @@ contract TetherToken is Pausable, StandardToken, BlackList {
     }
 
     // Forward ERC20 methods to upgraded contract if this one is deprecated
-    // prettier-ignore
+
     function approve(address _spender, uint256 _value) public override onlyPayloadSize(2 * 32) {
         if (deprecated) {
             return UpgradedStandardToken(upgradedAddress).approveByLegacy(msg.sender, _spender, _value);
@@ -386,8 +401,8 @@ contract TetherToken is Pausable, StandardToken, BlackList {
     }
 
     // Forward ERC20 methods to upgraded contract if this one is deprecated
-    // prettier-ignore
-    function allowance(address _owner, address _spender) public override view returns (uint256 remaining) {
+
+    function allowance(address _owner, address _spender) public view override returns (uint256 remaining) {
         if (deprecated) {
             return StandardToken(upgradedAddress).allowance(_owner, _spender);
         } else {
@@ -403,7 +418,7 @@ contract TetherToken is Pausable, StandardToken, BlackList {
     }
 
     // deprecate current contract if favour of a new one
-    // prettier-ignore
+
     function totalSupply() public view override returns (uint256) {
         if (deprecated) {
             return StandardToken(upgradedAddress).totalSupply();

@@ -13,7 +13,6 @@ contract ClientBridge is BaseBridge, BaseRelayRecipient {
     //   The order of below state variables can not be changed  //
     //**********************************************************//
 
-    //prettier-ignore
     string public override versionRecipient;
 
     //**********************************************************//
@@ -37,8 +36,7 @@ contract ClientBridge is BaseBridge, BaseRelayRecipient {
     //
     // INTERNAL VIEW FUNCTIONS
     //
-    // prettier-ignore
-    function _msgSender() internal override(BaseRelayRecipient, ContextUpgradeSafe) view returns (address payable) {
+    function _msgSender() internal view override(BaseRelayRecipient, ContextUpgradeSafe) returns (address payable) {
         return super._msgSender();
     }
 }

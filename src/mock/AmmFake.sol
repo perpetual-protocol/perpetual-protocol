@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 
 import "../Amm.sol";
 
-
 contract AmmFake is Amm {
     constructor(
         uint256 _dcQuoteAssetReserve,
@@ -52,13 +51,11 @@ contract AmmFake is Amm {
     }
 
     // Override BlockContext here
-    //prettier-ignore
-    function _blockTimestamp() internal override view returns (uint256) {
+    function _blockTimestamp() internal view override returns (uint256) {
         return timestamp;
     }
 
-    //prettier-ignore
-    function _blockNumber() internal override view returns (uint256) {
+    function _blockNumber() internal view override returns (uint256) {
         return number;
     }
 

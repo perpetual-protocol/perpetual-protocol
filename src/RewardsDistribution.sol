@@ -63,14 +63,10 @@ contract RewardsDistribution is PerpFiOwnableUpgrade, BlockContext, DecimalERC20
         defaultRecipient = _defaultRecipient;
     }
 
-    // prettier-ignore
     function distributeRewards(IERC20 _perpToken, Decimal.decimal memory _amount) public {
-        require (_msgSender() == rewardsController, "!_rewardsController");
+        require(_msgSender() == rewardsController, "!_rewardsController");
 
-        require(
-            _balanceOf(_perpToken, address(this)).toUint() >= _amount.toUint(),
-            "not enough PERP"
-        );
+        require(_balanceOf(_perpToken, address(this)).toUint() >= _amount.toUint(), "not enough PERP");
 
         // Iterate the array of distributions sending the configured amounts
         // the size of the distributions array will be controlled by owner (dao)
@@ -100,7 +96,7 @@ contract RewardsDistribution is PerpFiOwnableUpgrade, BlockContext, DecimalERC20
         _transfer(_perpToken, address(defaultRecipient), remainder);
         defaultRecipient.notifyRewardAmount(remainder);
 
-        emit RewardDistributed(_amount.toUint(),  _blockTimestamp());
+        emit RewardDistributed(_amount.toUint(), _blockTimestamp());
     }
 
     function addRewardsDistribution(address _destination, Decimal.decimal memory _amount) public onlyOwner {

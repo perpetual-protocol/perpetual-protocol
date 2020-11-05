@@ -20,7 +20,6 @@ const TetherToken = artifacts.require("TetherToken") as TetherTokenContract
 describe("DecimalERC20", () => {
     let decimalErc20: DecimalERC20FakeInstance
     let erc20: ERC20FakeInstance
-    let erc20Minimal: ERC20MinimalFakeInstance
     let tether: TetherTokenInstance
     let admin: string
     let alice: string
@@ -34,7 +33,6 @@ describe("DecimalERC20", () => {
         alice = addresses[1]
         bob = addresses[2]
         decimalErc20 = await DecimalERC20Fake.new()
-        erc20Minimal = await ERC20MinimalFake.new()
     })
 
     describe("decimal = 8", () => {
@@ -120,8 +118,11 @@ describe("DecimalERC20", () => {
     })
 
     describe("IERC20 without decimals", () => {
+        let erc20Minimal: ERC20MinimalFakeInstance
+
         beforeEach(async () => {
-            erc20Minimal.initializeERC20MinimalFake(toFullDigit(1000))
+            erc20Minimal = await ERC20MinimalFake.new()
+            await erc20Minimal.initializeERC20MinimalFake(toFullDigit(1000))
         })
 
         it("approve", async () => {

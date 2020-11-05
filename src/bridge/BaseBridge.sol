@@ -56,13 +56,19 @@ abstract contract BaseBridge is PerpFiOwnableUpgrade, IBaseBridge, DecimalERC20 
         emit MultiTokenMediatorChanged(multiTokenMediator);
     }
 
-    // prettier-ignore
-    function erc20Transfer(IERC20 _token, address _receiver, Decimal.decimal calldata _amount) external override {
+    function erc20Transfer(
+        IERC20 _token,
+        address _receiver,
+        Decimal.decimal calldata _amount
+    ) external override {
         multiTokenTransfer(_token, _receiver, _amount);
     }
 
-    // prettier-ignore
-    function callOtherSideFunction(address _contractOnOtherSide, bytes calldata _data, uint256 _gasLimit) external override returns (bytes32 messageId) {
+    function callOtherSideFunction(
+        address _contractOnOtherSide,
+        bytes calldata _data,
+        uint256 _gasLimit
+    ) external override returns (bytes32 messageId) {
         return callBridge(_contractOnOtherSide, _data, _gasLimit);
     }
 
