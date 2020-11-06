@@ -303,4 +303,14 @@ describe("DecimalERC20", () => {
             expectEvent.inTransaction(r.tx, erc20, "Approval")
         })
     })
+
+    describe("transfer", () => {
+        beforeEach(async () => {
+            erc20 = await deployErc20Fake(toFullDigit(1000))
+        })
+
+        it("should fail when transfer more than allowance", async () => {
+            await expectRevert.unspecified(decimalErc20.transfer(erc20.address, alice, toDecimal(1)))
+        })
+    })
 })

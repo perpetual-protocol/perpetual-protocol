@@ -23,14 +23,13 @@ abstract contract DecimalERC20 {
     ) internal {
         _updateDecimal(address(_token));
         Decimal.decimal memory balanceBefore = _balanceOf(_token, _to);
-
-        // bytes4(keccak256(bytes('transfer(address,uint256)')));
-        // solhint-disable avoid-low-level-calls
         uint256 roundedDownValue = _toUint(_token, _value);
+
+        // solhint-disable avoid-low-level-calls
         (bool success, bytes memory data) = address(_token).call(
-            abi.encodeWithSelector(0xa9059cbb, _to, roundedDownValue)
+            abi.encodeWithSelector(_token.transfer.selector, _to, roundedDownValue)
         );
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "DecimalERC20: transfer failed");
+        require(success && (data.length == 0 || abi.decode(data, (bool))), string(data));
         _validateBalance(_token, _to, roundedDownValue, balanceBefore);
     }
 
@@ -42,14 +41,13 @@ abstract contract DecimalERC20 {
     ) internal {
         _updateDecimal(address(_token));
         Decimal.decimal memory balanceBefore = _balanceOf(_token, _to);
-
-        // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
-        // solhint-disable avoid-low-level-calls
         uint256 roundedDownValue = _toUint(_token, _value);
+
+        // solhint-disable avoid-low-level-calls
         (bool success, bytes memory data) = address(_token).call(
-            abi.encodeWithSelector(0x23b872dd, _from, _to, roundedDownValue)
+            abi.encodeWithSelector(_token.transferFrom.selector, _from, _to, roundedDownValue)
         );
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "DecimalERC20: transferFrom failed");
+        require(success && (data.length == 0 || abi.decode(data, (bool))), string(data));
         _validateBalance(_token, _to, roundedDownValue, balanceBefore);
     }
 
@@ -125,12 +123,11 @@ abstract contract DecimalERC20 {
         address _spender,
         Decimal.decimal memory _value
     ) private {
-        // bytes4(keccak256(bytes('approve(address,uint256)')));
         // solhint-disable avoid-low-level-calls
         (bool success, bytes memory data) = address(_token).call(
-            abi.encodeWithSelector(0x095ea7b3, _spender, _toUint(_token, _value))
+            abi.encodeWithSelector(_token.approve.selector, _spender, _toUint(_token, _value))
         );
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "DecimalERC20: approve failed");
+        require(success && (data.length == 0 || abi.decode(data, (bool))), string(data));
     }
 
     // To prevent from deflationary token, check receiver's balance is as expectation.
