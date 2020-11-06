@@ -516,19 +516,22 @@ describe("Protocol shutdown test", () => {
                 await transfer(admin, chad, 100)
                 await approve(chad, clearingHouse.address, 100)
 
+                // position size: 0.99
                 await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(100), toDecimal(1), toDecimal(0), {
                     from: alice,
                 })
+                // position size: 1.92
                 await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(100), toDecimal(2), toDecimal(0), {
                     from: bob,
                 })
+                // position size: -0.95
                 await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(100), toDecimal(1), toDecimal(0), {
                     from: carol,
                 })
+                // total position size 1.96
 
                 // Amm reserve 10200 : 98.04 --> 20400 : 196.08
-                // new K = 4_000_000, total base asset = 196.08 + 1.94(after liquidity migrated),
-                // new quote reserve = 4M / 198.02 = 20199.98
+                // migrated position size = 1.94
                 await amm.migrateLiquidity(toDecimal(2))
 
                 // get -2.93 positions
@@ -536,38 +539,38 @@ describe("Protocol shutdown test", () => {
                 await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(100), toDecimal(3), toDecimal(0), {
                     from: chad,
                 })
+                // total position size = 1.94 + (-2.93) = -0.985
 
-                // position notional value (20100 - 20199.98) = -100
-                // total position size = 1.94(after liquidity migrated) + (-2.93) = -0.986
-                // settle price should be -100 / -0.986 = 101.9
+                // notional value (10000(init value of original curve) * 2(migration multiplier) - 20100) = -100
+                // settle price should be -100 / -0.985 = 101.505
                 const receipt = await amm.shutdown()
-                expect(await amm.getSettlementPrice()).to.eq("101975466566288591698")
+                expect(await amm.getSettlementPrice()).to.eq("101504999999999999751")
 
-                // position value = 100(open notional) / 1.014(migrated position size) = 98.62
-                // 1.014 * (101.98 - 98.62) + 100 = 99.5
+                // position value = 100(open notional) / 0.956(migrated position size) = 104.6
+                // 0.956 * (101.51 - 104.6) + 100 = 97.04
                 const aliceReceipt = await clearingHouse.settlePosition(amm.address, { from: alice })
                 await expectEvent.inTransaction(aliceReceipt.tx, quoteToken, "Transfer", {
                     from: clearingHouse.address,
                     to: alice,
-                    value: "99504950",
+                    value: "97039699",
                 })
 
-                // position value = 200(open notional) / 1.9(migrated position size) = 105.07
-                // 1.9 * (101.5 - 105.07) + 100 = 93.2
+                // position value = 200(open notional) / 1.85(migrated position size) = 108.12
+                // 1.85 * (101.5 - 108.12) + 100 = 87.5
                 const bobReceipt = await clearingHouse.settlePosition(amm.address, { from: bob })
                 await expectEvent.inTransaction(bobReceipt.tx, quoteToken, "Transfer", {
                     from: clearingHouse.address,
                     to: bob,
-                    value: "93213496",
+                    value: "87552381",
                 })
 
-                // position value = 100(open notional) / 0.94(migrated position size) = 106.1
-                // -0.94 * (101.5 - 106.1) + 100 = 104.3
+                // position value = 100(open notional) / 0.93(migrated position size) = 107.76
+                // -0.93 * (101.5 - 107.76) + 100 = 105.80
                 const carolReceipt = await clearingHouse.settlePosition(amm.address, { from: carol })
                 await expectEvent.inTransaction(carolReceipt.tx, quoteToken, "Transfer", {
                     from: clearingHouse.address,
                     to: carol,
-                    value: "104340376",
+                    value: "105795847",
                 })
 
                 // position value = 300(open notional) / 2.93(migrated position size) = 102.39
