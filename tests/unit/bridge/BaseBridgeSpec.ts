@@ -62,6 +62,15 @@ describe("BaseBridgeSpec Spec", () => {
         expect(await quoteToken.balanceOf(multiTokenMediatorMock.address)).eq(aHundred.mul(digit))
     })
 
+    it("should fail when multiTokenMediator is not implementing relayTokens()", async () => {
+        await rootBridge.setMultiTokenMediator(quoteToken.address)
+        await quoteToken.approve(rootBridge.address, toFullDigit(100))
+        await expectRevert(
+            rootBridge.erc20Transfer(quoteToken.address, alice, toDecimal(100)),
+            "Transaction reverted: function selector was not recognized and there's no fallback function",
+        )
+    })
+
     it("callOtherSideFunction - approve", async () => {
         const encodedFunctionCall = web3.eth.abi.encodeFunctionCall(
             {
