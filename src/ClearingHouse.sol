@@ -1105,17 +1105,23 @@ contract ClearingHouse is
         // by applying notionalDelta to the old curve
         Decimal.decimal memory updatedOldBaseReserve;
         Decimal.decimal memory updatedOldQuoteReserve;
-        Decimal.decimal memory baseAssetWorth = _amm.getInputPriceWithReserves(
-            notionalDelta.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
-            notionalDelta.abs(),
-            lastSnapshot.quoteAssetReserve,
-            lastSnapshot.baseAssetReserve
-        );
-        updatedOldQuoteReserve = notionalDelta.addD(lastSnapshot.quoteAssetReserve).abs();
-        if (notionalDelta.toInt() > 0) {
-            updatedOldBaseReserve = lastSnapshot.baseAssetReserve.subD(baseAssetWorth);
+        Decimal.decimal memory baseAssetWorth;
+        if (notionalDelta.toInt() != 0) {
+            baseAssetWorth = _amm.getInputPriceWithReserves(
+                notionalDelta.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
+                notionalDelta.abs(),
+                lastSnapshot.quoteAssetReserve,
+                lastSnapshot.baseAssetReserve
+            );
+            updatedOldQuoteReserve = notionalDelta.addD(lastSnapshot.quoteAssetReserve).abs();
+            if (notionalDelta.toInt() > 0) {
+                updatedOldBaseReserve = lastSnapshot.baseAssetReserve.subD(baseAssetWorth);
+            } else {
+                updatedOldBaseReserve = lastSnapshot.baseAssetReserve.addD(baseAssetWorth);
+            }
         } else {
-            updatedOldBaseReserve = lastSnapshot.baseAssetReserve.addD(baseAssetWorth);
+            updatedOldQuoteReserve = lastSnapshot.quoteAssetReserve;
+            updatedOldBaseReserve = lastSnapshot.baseAssetReserve;
         }
 
         // calculate the new position size
@@ -1159,7 +1165,7 @@ contract ClearingHouse is
         }
     }
 
-    function getUnadjustedPosition(IAmm _amm, address _trader) internal view returns (Position memory position) {
+    function getUnadjustedPosition(IAmm _amm, address _trader) public view returns (Position memory position) {
         position = ammMap[address(_amm)].positionMap[_trader];
     }
 

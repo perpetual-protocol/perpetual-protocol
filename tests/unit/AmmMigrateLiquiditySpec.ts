@@ -49,12 +49,12 @@ describe("Amm migrate liquidity spec", () => {
 
         // 20 * 88.89% = 17.778
         const getBaseAssetDeltaThisFundingPeriod = await amm.getBaseAssetDeltaThisFundingPeriod()
-        expect(getBaseAssetDeltaThisFundingPeriod).eq("-17777777777777777760")
+        expect(getBaseAssetDeltaThisFundingPeriod).eq("-17777777777777777778")
 
         const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
         expect(liquidityChangedSnapshot.quoteAssetReserve).eq(toFullDigit(2500))
         expect(liquidityChangedSnapshot.baseAssetReserve).eq(toFullDigit(160))
-        expect(liquidityChangedSnapshot.cumulativeNotional).eq("17777777777777777777")
+        expect(liquidityChangedSnapshot.cumulativeNotional).eq(toFullDigit(250))
     })
 
     it("decrease liquidity", async () => {
@@ -67,12 +67,12 @@ describe("Amm migrate liquidity spec", () => {
 
         // 20 * 133.33% = 26.66
         const getBaseAssetDeltaThisFundingPeriod = await amm.getBaseAssetDeltaThisFundingPeriod()
-        expect(getBaseAssetDeltaThisFundingPeriod).eq("-26666666666666666660")
+        expect(getBaseAssetDeltaThisFundingPeriod).eq("-26666666666666666667")
 
         const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
         expect(liquidityChangedSnapshot.quoteAssetReserve).eq(toFullDigit(625))
         expect(liquidityChangedSnapshot.baseAssetReserve).eq(toFullDigit(40))
-        expect(liquidityChangedSnapshot.cumulativeNotional).eq("26666666666666666666")
+        expect(liquidityChangedSnapshot.cumulativeNotional).eq(toFullDigit(250))
     })
 
     it("will fail if the liquidity is the same", async () => {

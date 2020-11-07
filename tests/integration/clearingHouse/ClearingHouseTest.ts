@@ -1483,6 +1483,40 @@ describe("ClearingHouse Test", () => {
             expect(posBob.size).to.eq("-35714285714285714286")
         })
 
+        it("add liquidity with position size is zero", async () => {
+            // alice position: 9.09
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+            // bob position: -9.09
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: bob,
+            })
+
+            // total position = 0
+            // baseReserve = 100
+            // quoteReserve = 1000
+            // new baseReserve = 200
+            // new quoteReserve = 2000
+            const receipt = await amm.migrateLiquidity(toDecimal(2))
+            const newBaseReserve = await amm.baseAssetReserve()
+            const newQuoteReserve = await amm.quoteAssetReserve()
+            expect(newBaseReserve).eq("200000000000000000002")
+            expect(newQuoteReserve).eq(toFullDigit(2000))
+
+            expectEvent(receipt, "LiquidityChanged", {
+                cumulativeNotional: "0",
+            })
+
+            const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
+            expect(liquidityChangedSnapshot.totalPositionSize).eq("-1")
+
+            const posAlice = await clearingHouse.getPosition(amm.address, alice)
+            expect(posAlice.size).to.eq("8695652173913043479")
+            const posBob = await clearingHouse.getPosition(amm.address, bob)
+            expect(posBob.size).to.eq("-9523809523809523810")
+        })
+
         it("add liquidity and open a new position to update existing ones", async () => {
             // alice position: 9.090
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
@@ -1644,7 +1678,7 @@ describe("ClearingHouse Test", () => {
             expect(alicePostBalance.sub(alicePreBalance)).eq("24999999")
         })
 
-        it.skip("should return equal quote amount after migrate liquidity", async () => {
+        it("should return equal quote amount after migrate liquidity", async () => {
             // given bob open a position at first
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(0), {
                 from: bob,

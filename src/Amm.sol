@@ -165,7 +165,6 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
                 cumulativeNotional: SignedDecimal.zero(),
                 baseAssetReserve: baseAssetReserve,
                 quoteAssetReserve: quoteAssetReserve,
-                multiplier: Decimal.one(),
                 totalPositionSize: SignedDecimal.zero()
             })
         );
@@ -302,11 +301,10 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         // update snapshot
         liquidityChangedSnapshots.push(
             LiquidityChangedSnapshot({
-                multiplier: _liquidityMultiplier,
                 cumulativeNotional: cumulativeNotional,
-                quoteAssetReserve: quoteAssetBeforeAddingLiquidity,
-                baseAssetReserve: baseAssetBeforeAddingLiquidity,
-                totalPositionSize: totalPositionSizeBefore
+                quoteAssetReserve: quoteAssetReserve,
+                baseAssetReserve: baseAssetReserve,
+                totalPositionSize: totalPositionSize
             })
         );
 
@@ -915,10 +913,9 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         SignedDecimal.signedDecimal memory lastInitBaseReserveInNewCurve = latestLiquiditySnapshot
             .totalPositionSize
             .addD(latestLiquiditySnapshot.baseAssetReserve);
-        SignedDecimal.signedDecimal memory lastInitQuoteReserveInNewCurve = MixedDecimal
-            .fromDecimal(previousK)
-            .divD(lastInitBaseReserveInNewCurve)
-            .mulD(latestLiquiditySnapshot.multiplier);
+        SignedDecimal.signedDecimal memory lastInitQuoteReserveInNewCurve = MixedDecimal.fromDecimal(previousK).divD(
+            lastInitBaseReserveInNewCurve
+        );
 
         // settlementPrice = SUM(Open Position Notional Value) / SUM(Position Size)
         // `Open Position Notional Value` = init quote reserve - current quote reserve

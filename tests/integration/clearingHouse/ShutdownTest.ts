@@ -544,7 +544,7 @@ describe("Protocol shutdown test", () => {
                 // notional value (10000(init value of original curve) * 2(migration multiplier) - 20100) = -100
                 // settle price should be -100 / -0.985 = 101.505
                 const receipt = await amm.shutdown()
-                expect(await amm.getSettlementPrice()).to.eq("101504999999999999751")
+                expect(await amm.getSettlementPrice()).to.eq("101504999999999999991")
 
                 // position value = 100(open notional) / 0.956(migrated position size) = 104.6
                 // 0.956 * (101.51 - 104.6) + 100 = 97.04

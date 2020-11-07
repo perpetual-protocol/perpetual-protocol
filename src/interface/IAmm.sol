@@ -26,8 +26,6 @@ interface IAmm {
         // the base/quote reserve of amm right before liquidity changed
         Decimal.decimal quoteAssetReserve;
         Decimal.decimal baseAssetReserve;
-        // the multiplier of this liquidity period
-        Decimal.decimal multiplier;
         // total position size owned by amm after last snapshot taken
         // `totalPositionSize` = currentBaseAssetReserve - lastLiquidityChangedHistoryItem.baseAssetReserve + prevTotalPositionSize
         SignedDecimal.signedDecimal totalPositionSize;
