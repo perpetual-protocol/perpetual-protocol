@@ -310,7 +310,10 @@ describe("DecimalERC20", () => {
         })
 
         it("should fail when transfer more than allowance", async () => {
-            await expectRevert.unspecified(decimalErc20.transfer(erc20.address, alice, toDecimal(1)))
+            await expectRevert(
+                decimalErc20.transfer(erc20.address, alice, toDecimal(1)),
+                "DecimalERC20: transfer failed",
+            )
         })
     })
 })
