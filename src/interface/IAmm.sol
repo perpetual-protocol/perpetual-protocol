@@ -14,13 +14,6 @@ interface IAmm {
      */
     enum Dir { ADD_TO_AMM, REMOVE_FROM_AMM }
 
-    struct ReserveSnapshot {
-        Decimal.decimal quoteAssetReserve;
-        Decimal.decimal baseAssetReserve;
-        uint256 timestamp;
-        uint256 blockNumber;
-    }
-
     struct LiquidityChangedSnapshot {
         SignedDecimal.signedDecimal cumulativeNotional;
         // the base/quote reserve of amm right before liquidity changed

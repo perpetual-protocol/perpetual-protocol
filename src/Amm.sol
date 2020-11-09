@@ -49,6 +49,12 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     //
     // enum and struct
     //
+    struct ReserveSnapshot {
+        Decimal.decimal quoteAssetReserve;
+        Decimal.decimal baseAssetReserve;
+        uint256 timestamp;
+        uint256 blockNumber;
+    }
 
     // internal usage
     enum QuoteAssetDir { QUOTE_IN, QUOTE_OUT }
@@ -75,6 +81,8 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
     // update during every swap and calculate total amm pnl per funding period
     SignedDecimal.signedDecimal private baseAssetDeltaThisFundingPeriod;
+
+    // update during every swap and used when shutting amm down
     SignedDecimal.signedDecimal public totalPositionSize;
 
     // latest funding rate = ((twap market price - twap oracle price) / twap oracle price) / 24
@@ -274,13 +282,9 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         Decimal.decimal memory baseAssetBeforeAddingLiquidity = baseAssetReserve;
         SignedDecimal.signedDecimal memory totalPositionSizeBefore = totalPositionSize;
 
-        // calculate migrated reserve values
-        Decimal.decimal memory newQuoteReserve = quoteAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
-        Decimal.decimal memory newBaseReserve = baseAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
-
         // migrate liquidity
-        quoteAssetReserve = newQuoteReserve;
-        baseAssetReserve = newBaseReserve;
+        quoteAssetReserve = quoteAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
+        baseAssetReserve = baseAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
 
         // MUST be called after liquidity migrated
         // baseAssetDeltaThisFundingPeriod is total position size(of a funding period) owned by Amm
@@ -325,7 +329,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         // measure the trader position's notional value on the old curve
         // (by simulating closing the position)
         Decimal.decimal memory posNotional = getOutputPriceWithReserves(
-            isPositiveValue ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
+            isPositiveValue ? Dir.ADD_TO_AMM : Dir.REMOVE_FROM_AMM,
             _baseAssetAmount.abs(),
             _fromQuoteReserve,
             _fromBaseReserve
@@ -333,7 +337,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
         // calculate and apply the required size on the new curve
         SignedDecimal.signedDecimal memory newBaseAsset = MixedDecimal.fromDecimal(
-            getInputPrice(isPositiveValue ? IAmm.Dir.REMOVE_FROM_AMM : IAmm.Dir.ADD_TO_AMM, posNotional)
+            getInputPrice(isPositiveValue ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM, posNotional)
         );
         return newBaseAsset.mulScalar(isPositiveValue ? 1 : int256(-1));
     }

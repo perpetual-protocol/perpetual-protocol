@@ -1105,9 +1105,8 @@ contract ClearingHouse is
         // by applying notionalDelta to the old curve
         Decimal.decimal memory updatedOldBaseReserve;
         Decimal.decimal memory updatedOldQuoteReserve;
-        Decimal.decimal memory baseAssetWorth;
         if (notionalDelta.toInt() != 0) {
-            baseAssetWorth = _amm.getInputPriceWithReserves(
+            Decimal.decimal memory baseAssetWorth = _amm.getInputPriceWithReserves(
                 notionalDelta.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
                 notionalDelta.abs(),
                 lastSnapshot.quoteAssetReserve,
