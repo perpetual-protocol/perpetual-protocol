@@ -583,6 +583,100 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         return (_quoteAssetAmount.mulD(tollRatio), _quoteAssetAmount.mulD(spreadRatio));
     }
 
+    /*       plus/minus 1 while the amount is not dividable
+     *
+     *        getInputPrice                         getOutputPrice
+     *
+     *     ＡＤＤ      (amount - 1)              (amount + 1)   ＲＥＭＯＶＥ
+     *      ◥◤            ▲                         |             ◢◣
+     *      ◥◤  ------->  |                         ▼  <--------  ◢◣
+     *    -------      -------                   -------        -------
+     *    |  Q  |      |  B  |                   |  Q  |        |  B  |
+     *    -------      -------                   -------        -------
+     *      ◥◤  ------->  ▲                         |  <--------  ◢◣
+     *      ◥◤            |                         ▼             ◢◣
+     *   ＲＥＭＯＶＥ  (amount + 1)              (amount + 1)      ＡＤＤ
+     **/
+
+    function getInputPriceWithReserves(
+        Dir _dir,
+        Decimal.decimal memory _quoteAssetAmount,
+        Decimal.decimal memory _quoteAssetPoolAmount,
+        Decimal.decimal memory _baseAssetPoolAmount
+    ) public pure override returns (Decimal.decimal memory) {
+        if (_quoteAssetAmount.toUint() == 0) {
+            return Decimal.zero();
+        }
+
+        bool isAddToAmm = _dir == Dir.ADD_TO_AMM;
+        SignedDecimal.signedDecimal memory invariant = MixedDecimal.fromDecimal(
+            _quoteAssetPoolAmount.mulD(_baseAssetPoolAmount)
+        );
+        SignedDecimal.signedDecimal memory baseAssetAfter;
+        Decimal.decimal memory quoteAssetAfter;
+        Decimal.decimal memory baseAssetBought;
+        if (isAddToAmm) {
+            quoteAssetAfter = _quoteAssetPoolAmount.addD(_quoteAssetAmount);
+        } else {
+            quoteAssetAfter = _quoteAssetPoolAmount.subD(_quoteAssetAmount);
+        }
+        require(quoteAssetAfter.toUint() != 0, "quote asset after is 0");
+
+        baseAssetAfter = invariant.divD(quoteAssetAfter);
+        baseAssetBought = baseAssetAfter.subD(_baseAssetPoolAmount).abs();
+
+        // if the amount is not dividable, return 1 wei less for trader
+        if (invariant.abs().modD(quoteAssetAfter).toUint() != 0) {
+            if (isAddToAmm) {
+                baseAssetBought = baseAssetBought.subD(Decimal.decimal(1));
+            } else {
+                baseAssetBought = baseAssetBought.addD(Decimal.decimal(1));
+            }
+        }
+
+        return baseAssetBought;
+    }
+
+    function getOutputPriceWithReserves(
+        Dir _dir,
+        Decimal.decimal memory _baseAssetAmount,
+        Decimal.decimal memory _quoteAssetPoolAmount,
+        Decimal.decimal memory _baseAssetPoolAmount
+    ) public pure override returns (Decimal.decimal memory) {
+        if (_baseAssetAmount.toUint() == 0) {
+            return Decimal.zero();
+        }
+
+        bool isAddToAmm = _dir == Dir.ADD_TO_AMM;
+        SignedDecimal.signedDecimal memory invariant = MixedDecimal.fromDecimal(
+            _quoteAssetPoolAmount.mulD(_baseAssetPoolAmount)
+        );
+        SignedDecimal.signedDecimal memory quoteAssetAfter;
+        Decimal.decimal memory baseAssetAfter;
+        Decimal.decimal memory quoteAssetSold;
+
+        if (isAddToAmm) {
+            baseAssetAfter = _baseAssetPoolAmount.addD(_baseAssetAmount);
+        } else {
+            baseAssetAfter = _baseAssetPoolAmount.subD(_baseAssetAmount);
+        }
+        require(baseAssetAfter.toUint() != 0, "base asset after is 0");
+
+        quoteAssetAfter = invariant.divD(baseAssetAfter);
+        quoteAssetSold = quoteAssetAfter.subD(_quoteAssetPoolAmount).abs();
+
+        // if the amount is not dividable, return 1 wei less for trader
+        if (invariant.abs().modD(baseAssetAfter).toUint() != 0) {
+            if (isAddToAmm) {
+                quoteAssetSold = quoteAssetSold.subD(Decimal.decimal(1));
+            } else {
+                quoteAssetSold = quoteAssetSold.addD(Decimal.decimal(1));
+            }
+        }
+
+        return quoteAssetSold;
+    }
+
     //
     // INTERNAL FUNCTIONS
     //
@@ -807,100 +901,6 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             return false;
         }
         return true;
-    }
-
-    /*       plus/minus 1 while the amount is not dividable
-     *
-     *        getInputPrice                         getOutputPrice
-     *
-     *     ＡＤＤ      (amount - 1)              (amount + 1)   ＲＥＭＯＶＥ
-     *      ◥◤            ▲                         |             ◢◣
-     *      ◥◤  ------->  |                         ▼  <--------  ◢◣
-     *    -------      -------                   -------        -------
-     *    |  Q  |      |  B  |                   |  Q  |        |  B  |
-     *    -------      -------                   -------        -------
-     *      ◥◤  ------->  ▲                         |  <--------  ◢◣
-     *      ◥◤            |                         ▼             ◢◣
-     *   ＲＥＭＯＶＥ  (amount + 1)              (amount + 1)      ＡＤＤ
-     **/
-
-    function getInputPriceWithReserves(
-        Dir _dir,
-        Decimal.decimal memory _quoteAssetAmount,
-        Decimal.decimal memory _quoteAssetPoolAmount,
-        Decimal.decimal memory _baseAssetPoolAmount
-    ) internal pure override returns (Decimal.decimal memory) {
-        if (_quoteAssetAmount.toUint() == 0) {
-            return Decimal.zero();
-        }
-
-        bool isAddToAmm = _dir == Dir.ADD_TO_AMM;
-        SignedDecimal.signedDecimal memory invariant = MixedDecimal.fromDecimal(
-            _quoteAssetPoolAmount.mulD(_baseAssetPoolAmount)
-        );
-        SignedDecimal.signedDecimal memory baseAssetAfter;
-        Decimal.decimal memory quoteAssetAfter;
-        Decimal.decimal memory baseAssetBought;
-        if (isAddToAmm) {
-            quoteAssetAfter = _quoteAssetPoolAmount.addD(_quoteAssetAmount);
-        } else {
-            quoteAssetAfter = _quoteAssetPoolAmount.subD(_quoteAssetAmount);
-        }
-        require(quoteAssetAfter.toUint() != 0, "quote asset after is 0");
-
-        baseAssetAfter = invariant.divD(quoteAssetAfter);
-        baseAssetBought = baseAssetAfter.subD(_baseAssetPoolAmount).abs();
-
-        // if the amount is not dividable, return 1 wei less for trader
-        if (invariant.abs().modD(quoteAssetAfter).toUint() != 0) {
-            if (isAddToAmm) {
-                baseAssetBought = baseAssetBought.subD(Decimal.decimal(1));
-            } else {
-                baseAssetBought = baseAssetBought.addD(Decimal.decimal(1));
-            }
-        }
-
-        return baseAssetBought;
-    }
-
-    function getOutputPriceWithReserves(
-        Dir _dir,
-        Decimal.decimal memory _baseAssetAmount,
-        Decimal.decimal memory _quoteAssetPoolAmount,
-        Decimal.decimal memory _baseAssetPoolAmount
-    ) internal pure override returns (Decimal.decimal memory) {
-        if (_baseAssetAmount.toUint() == 0) {
-            return Decimal.zero();
-        }
-
-        bool isAddToAmm = _dir == Dir.ADD_TO_AMM;
-        SignedDecimal.signedDecimal memory invariant = MixedDecimal.fromDecimal(
-            _quoteAssetPoolAmount.mulD(_baseAssetPoolAmount)
-        );
-        SignedDecimal.signedDecimal memory quoteAssetAfter;
-        Decimal.decimal memory baseAssetAfter;
-        Decimal.decimal memory quoteAssetSold;
-
-        if (isAddToAmm) {
-            baseAssetAfter = _baseAssetPoolAmount.addD(_baseAssetAmount);
-        } else {
-            baseAssetAfter = _baseAssetPoolAmount.subD(_baseAssetAmount);
-        }
-        require(baseAssetAfter.toUint() != 0, "base asset after is 0");
-
-        quoteAssetAfter = invariant.divD(baseAssetAfter);
-        quoteAssetSold = quoteAssetAfter.subD(_quoteAssetPoolAmount).abs();
-
-        // if the amount is not dividable, return 1 wei less for trader
-        if (invariant.abs().modD(baseAssetAfter).toUint() != 0) {
-            if (isAddToAmm) {
-                quoteAssetSold = quoteAssetSold.subD(Decimal.decimal(1));
-            } else {
-                quoteAssetSold = quoteAssetSold.addD(Decimal.decimal(1));
-            }
-        }
-
-        return quoteAssetSold;
     }
 
     function implShutdown() internal {
