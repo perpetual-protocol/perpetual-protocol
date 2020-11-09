@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Decimal, SafeMath } from "./Decimal.sol";
 
-// solhint-disable
 abstract contract DecimalERC20 {
     using SafeMath for uint256;
     using Decimal for Decimal.decimal;
