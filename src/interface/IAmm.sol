@@ -111,6 +111,4 @@ interface IAmm {
     function getMaxHoldingBaseAsset() external view returns (Decimal.decimal memory);
 
     function getLiquidityChangedSnapshots(uint256 i) external view returns (LiquidityChangedSnapshot memory);
-
-    function getLatestLiquidityChangedSnapshots() external view returns (LiquidityChangedSnapshot memory);
 }

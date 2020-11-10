@@ -550,11 +550,12 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         return cumulativeNotional;
     }
 
-    function getLatestLiquidityChangedSnapshots() public view override returns (LiquidityChangedSnapshot memory) {
+    function getLatestLiquidityChangedSnapshots() public view returns (LiquidityChangedSnapshot memory) {
         return liquidityChangedSnapshots[liquidityChangedSnapshots.length.sub(1)];
     }
 
     function getLiquidityChangedSnapshots(uint256 i) external view override returns (LiquidityChangedSnapshot memory) {
+        require(i < liquidityChangedSnapshots.length, "incorrect index");
         return liquidityChangedSnapshots[i];
     }
 

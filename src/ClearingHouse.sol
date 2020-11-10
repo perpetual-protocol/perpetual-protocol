@@ -720,8 +720,11 @@ contract ClearingHouse is
         emit RestrictionModeEntered(address(_amm), blockNumber);
     }
 
-    function adjustPositionForLiquidityChanged(IAmm _amm, address _trader) public returns (Position memory) {
+    function adjustPositionForLiquidityChanged(IAmm _amm, address _trader) internal returns (Position memory) {
         Position memory unadjustedPosition = getUnadjustedPosition(_amm, _trader);
+        if (unadjustedPosition.size.toInt() == 0) {
+            return unadjustedPosition;
+        }
         uint256 latestLiquidityIndex = _amm.getLiquidityHistoryLength().sub(1);
         if (unadjustedPosition.liquidityHistoryIndex == latestLiquidityIndex) {
             return unadjustedPosition;
@@ -782,7 +785,7 @@ contract ClearingHouse is
         SignedDecimal.signedDecimal memory newSize = oldPosition.size.addD(positionResp.exchangedPositionSize);
         // if size is 0 (means a new position), set the latest liquidity index
         uint256 liquidityHistoryIndex = oldPosition.liquidityHistoryIndex;
-        if (oldPosition.size.toUint() == 0) {
+        if (oldPosition.size.toInt() == 0) {
             liquidityHistoryIndex = _amm.getLiquidityHistoryLength().sub(1);
         }
 
@@ -840,7 +843,7 @@ contract ClearingHouse is
 
             // realizedPnl = unrealizedPnl * closedRatio
             // closedRatio = positionResp.exchangedPositionSiz / oldPosition.size
-            positionResp.realizedPnl = (oldPosition.size.toUint() == 0)
+            positionResp.realizedPnl = (oldPosition.size.toInt() == 0)
                 ? SignedDecimal.zero()
                 : unrealizedPnl.mulD(positionResp.exchangedPositionSize.abs()).divD(oldPosition.size.abs());
             (
