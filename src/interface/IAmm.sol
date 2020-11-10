@@ -14,6 +14,16 @@ interface IAmm {
      */
     enum Dir { ADD_TO_AMM, REMOVE_FROM_AMM }
 
+    struct LiquidityChangedSnapshot {
+        SignedDecimal.signedDecimal cumulativeNotional;
+        // the base/quote reserve of amm right before liquidity changed
+        Decimal.decimal quoteAssetReserve;
+        Decimal.decimal baseAssetReserve;
+        // total position size owned by amm after last snapshot taken
+        // `totalPositionSize` = currentBaseAssetReserve - lastLiquidityChangedHistoryItem.baseAssetReserve + prevTotalPositionSize
+        SignedDecimal.signedDecimal totalPositionSize;
+    }
+
     function swapInput(
         Dir _dir,
         Decimal.decimal calldata _quoteAssetAmount,
@@ -42,6 +52,12 @@ interface IAmm {
     // VIEW
     //
 
+    function calcBaseAssetAfterLiquidityMigration(
+        SignedDecimal.signedDecimal memory _baseAssetAmount,
+        Decimal.decimal memory _fromQuoteReserve,
+        Decimal.decimal memory _fromBaseReserve
+    ) external view returns (SignedDecimal.signedDecimal memory);
+
     function getInputTwap(Dir _dir, Decimal.decimal calldata _quoteAssetAmount)
         external
         view
@@ -62,17 +78,37 @@ interface IAmm {
         view
         returns (Decimal.decimal memory);
 
+    function getInputPriceWithReserves(
+        Dir _dir,
+        Decimal.decimal memory _quoteAssetAmount,
+        Decimal.decimal memory _quoteAssetPoolAmount,
+        Decimal.decimal memory _baseAssetPoolAmount
+    ) external pure returns (Decimal.decimal memory);
+
+    function getOutputPriceWithReserves(
+        Dir _dir,
+        Decimal.decimal memory _baseAssetAmount,
+        Decimal.decimal memory _quoteAssetPoolAmount,
+        Decimal.decimal memory _baseAssetPoolAmount
+    ) external pure returns (Decimal.decimal memory);
+
     function getReserve() external view returns (Decimal.decimal memory, Decimal.decimal memory);
 
+    function getLiquidityHistoryLength() external view returns (uint256);
+
+    // overridden by state variable
     function quoteAsset() external view returns (IERC20);
 
+    function open() external view returns (bool);
+
+    // can not be overridden by state variable due to type `Deciaml.decimal`
     function getSettlementPrice() external view returns (Decimal.decimal memory);
 
     function getBaseAssetDeltaThisFundingPeriod() external view returns (SignedDecimal.signedDecimal memory);
 
-    function getCumulativePositionMultiplier() external view returns (Decimal.decimal memory);
+    function getCumulativeNotional() external view returns (SignedDecimal.signedDecimal memory);
 
     function getMaxHoldingBaseAsset() external view returns (Decimal.decimal memory);
 
-    function open() external view returns (bool);
+    function getLiquidityChangedSnapshots(uint256 i) external view returns (LiquidityChangedSnapshot memory);
 }

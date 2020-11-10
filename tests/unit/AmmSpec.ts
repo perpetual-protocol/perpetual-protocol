@@ -56,10 +56,10 @@ describe("Amm Unit Test", () => {
 
     describe("default value", () => {
         it("updated after amm added", async () => {
-            const liquidityChangedSnapshot = await amm.liquidityChangedSnapshot()
-            expect(liquidityChangedSnapshot[0]).eq(toFullDigit(1000))
-            expect(liquidityChangedSnapshot[1]).eq(toFullDigit(100))
-            expect(liquidityChangedSnapshot[2]).eq(0)
+            const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(0)
+            expect(liquidityChangedSnapshot.quoteAssetReserve).eq(toFullDigit(1000))
+            expect(liquidityChangedSnapshot.baseAssetReserve).eq(toFullDigit(100))
+            expect(liquidityChangedSnapshot.cumulativeNotional).eq(0)
         })
     })
 
@@ -917,7 +917,7 @@ describe("Amm Unit Test", () => {
                         toDecimal(900),
                         toDecimal(900),
                     ),
-                    "value of quote asset is 0",
+                    "quote asset after is 0",
                 )
             })
         })
@@ -977,7 +977,7 @@ describe("Amm Unit Test", () => {
                         toDecimal(900),
                         toDecimal(900),
                     ),
-                    "value of base asset is 0",
+                    "base asset after is 0",
                 )
             })
         })
