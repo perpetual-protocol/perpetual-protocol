@@ -15,4 +15,9 @@ contract MetaTxRecipientMock is BaseRelayRecipient {
     function poke() external {
         pokedBy = _msgSender();
     }
+
+    // solhint-disable
+    function error() external {
+        revert("MetaTxRecipientMock: Error");
+    }
 }

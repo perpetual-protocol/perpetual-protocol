@@ -3,11 +3,11 @@ import { expectRevert } from "@openzeppelin/test-helpers"
 import { suite, test } from "@testdeck/mocha"
 import { default as BigNumber } from "bn.js"
 import { expect, use } from "chai"
+import MetaTxRecipientMockArtifact from "../../build/contracts/MetaTxRecipientMock.json"
 import { MetaTxGatewayInstance } from "../../types"
+import { MetaTxRecipientMock } from "../../types/web3/MetaTxRecipientMock"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { deployMetaTxGateway } from "../helper/contract"
-import MetaTxRecipientMockArtifact from "../../build/contracts/MetaTxRecipientMock.json"
-import { MetaTxRecipientMock } from "../../types/web3/MetaTxRecipientMock"
 import { EIP712Domain, signEIP712MetaTx } from "../helper/web3"
 
 use(assertionHelper)
@@ -323,6 +323,41 @@ class MetaTxGatewaySpec {
                 },
             ),
             "invalid signature",
+        )
+    }
+
+    @test
+    async rejectMetaTxWithSpecificErrorMessage(): Promise<void> {
+        await expectRevert(this.metaTxRecipientMock.methods.error().call(), "MetaTxRecipientMock: Error")
+
+        const metaTx = {
+            from: this.alice,
+            to: this.metaTxRecipientMock.options.address,
+            functionSignature: this.metaTxRecipientMock.methods.error().encodeABI(),
+            nonce: +(await this.metaTxGateway.getNonce(this.alice)),
+        }
+        const signedResponse = await signEIP712MetaTx(
+            this.alice,
+            {
+                ...this.domain,
+                chainId: 31337, // default buidler evm chain ID
+            },
+            metaTx,
+        )
+
+        await expectRevert(
+            this.metaTxGateway.executeMetaTransaction(
+                metaTx.from,
+                metaTx.to,
+                metaTx.functionSignature,
+                signedResponse.r,
+                signedResponse.s,
+                signedResponse.v,
+                {
+                    from: this.relayer,
+                },
+            ),
+            "MetaTxRecipientMock: Error",
         )
     }
 

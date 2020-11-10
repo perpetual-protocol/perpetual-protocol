@@ -523,6 +523,9 @@ export class ContractPublisher {
         const taskBatches = this.taskBatchesMap[this.layerType]
         const completeTasksLength = taskBatches.flat().length
         const tasks = taskBatches[this.batch]
+        if (!tasks) {
+            return
+        }
 
         const batchStartVer = taskBatches.slice(0, this.batch).flat().length
         const batchEndVer = batchStartVer + tasks.length

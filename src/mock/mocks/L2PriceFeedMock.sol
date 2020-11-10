@@ -8,11 +8,11 @@ contract L2PriceFeedMock {
         price = _price;
     }
 
-    function getPrice(bytes32) public view returns (uint256) {
+    function getTwapPrice(bytes32, uint256) public view returns (uint256) {
         return price;
     }
 
-    function setPrice(uint256 _price) public {
+    function setTwapPrice(uint256 _price) public {
         price = _price;
     }
 

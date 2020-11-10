@@ -37,18 +37,12 @@ export class OzScript {
         return instance.address
     }
 
-    // TODO migrate to openzeppelin upgrade
-    // async upgrade(contractAlias: string, contractFileName: string): Promise<void> {
-    //     const { network, txParams } = this.networkConfig
-    //     scripts.add({ contractsData: [{ name: contractFileName, alias: contractAlias }] })
-    //     await scripts.push({ network, txParams, force: true })
-    //     await scripts.update({
-    //         contractAlias: contractAlias,
-    //         network,
-    //         txParams,
-    //         all: false,
-    //     })
-    // }
+    async upgrade(proxy: string, contractFileName: string): Promise<void> {
+        const contract = await ethers.getContractFactory(contractFileName)
+        await upgrades.upgradeProxy(proxy, contract, {
+            unsafeAllowCustomTypes: true,
+        })
+    }
 
     getTruffleContractInstance<T>(contractName: string, address?: string): T {
         return this.contractLoader.truffle.fromArtifact(contractName, address) as T

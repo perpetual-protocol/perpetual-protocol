@@ -605,12 +605,11 @@ contract ClearingHouse is
             baseAssetDeltaThisFundingPeriod
         );
 
-        Decimal.decimal memory ammFundingPaymentLossAbs = ammFundingPaymentLoss.abs();
         IERC20 quoteAsset = _amm.quoteAsset();
         if (ammFundingPaymentLoss.toInt() > 0) {
-            insuranceFund.withdraw(quoteAsset, ammFundingPaymentLossAbs);
+            insuranceFund.withdraw(quoteAsset, ammFundingPaymentLoss.abs());
         } else {
-            transferToInsuranceFund(quoteAsset, ammFundingPaymentLossAbs);
+            transferToInsuranceFund(quoteAsset, ammFundingPaymentLoss.abs());
         }
     }
 

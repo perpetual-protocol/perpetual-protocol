@@ -2,10 +2,8 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { BaseBridge, IAMB, IMultiTokenMediator, Decimal, IERC20 } from "../BaseBridge.sol";
 import { IPriceFeed } from "../../interface/IPriceFeed.sol";
-import { BaseBridge } from "../BaseBridge.sol";
-import { Decimal } from "../../utils/Decimal.sol";
 
 contract RootBridge is BaseBridge {
     using Decimal for Decimal.decimal;
@@ -25,7 +23,7 @@ contract RootBridge is BaseBridge {
     //
     // PUBLIC
     //
-    function initialize(address _ambBridge, address _multiTokenMediator) public initializer {
+    function initialize(IAMB _ambBridge, IMultiTokenMediator _multiTokenMediator) public initializer {
         __BaseBridge_init(_ambBridge, _multiTokenMediator);
     }
 

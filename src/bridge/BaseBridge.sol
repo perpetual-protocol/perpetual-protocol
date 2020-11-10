@@ -5,15 +5,14 @@ pragma experimental ABIEncoderV2;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IAMB } from "./external/IAMB.sol";
 import { IBaseBridge } from "./IBaseBridge.sol";
+import { IMultiTokenMediator } from "./external/IMultiTokenMediator.sol";
+import { DecimalERC20, Decimal } from "../utils/DecimalERC20.sol";
 import { PerpFiOwnableUpgrade } from "../utils/PerpFiOwnableUpgrade.sol";
-import { Decimal } from "../utils/Decimal.sol";
-import { DecimalERC20 } from "../utils/DecimalERC20.sol";
 
 // solhint-disable-next-line
 abstract contract BaseBridge is PerpFiOwnableUpgrade, IBaseBridge, DecimalERC20 {
     using Decimal for Decimal.decimal;
 
-    bytes4 private constant RELAY_TOKENS = 0xad58bdd1; // relayTokens(address,address,uint256)
     //
     // EVENTS
     //
@@ -26,10 +25,10 @@ abstract contract BaseBridge is PerpFiOwnableUpgrade, IBaseBridge, DecimalERC20 
     //**********************************************************//
 
     // xDai AMB bridge contract
-    address public ambBridge;
+    IAMB public ambBridge;
 
     // xDai multi-tokens mediator
-    address public multiTokenMediator;
+    IMultiTokenMediator public multiTokenMediator;
 
     //**********************************************************//
     //  The order of above state variables can not be changed   //
@@ -38,22 +37,22 @@ abstract contract BaseBridge is PerpFiOwnableUpgrade, IBaseBridge, DecimalERC20 
     //
     // PUBLIC
     //
-    function __BaseBridge_init(address _ambBridge, address _multiTokenMediator) internal initializer {
+    function __BaseBridge_init(IAMB _ambBridge, IMultiTokenMediator _multiTokenMediator) internal initializer {
         __Ownable_init();
         setAMBBridge(_ambBridge);
         setMultiTokenMediator(_multiTokenMediator);
     }
 
-    function setAMBBridge(address _addr) public onlyOwner {
-        require(_addr != address(0), "address is empty");
-        ambBridge = _addr;
-        emit BridgeChanged(_addr);
+    function setAMBBridge(IAMB _ambBridge) public onlyOwner {
+        require(address(_ambBridge) != address(0), "address is empty");
+        ambBridge = _ambBridge;
+        emit BridgeChanged(address(_ambBridge));
     }
 
-    function setMultiTokenMediator(address _addr) public onlyOwner {
-        require(_addr != address(0), "address is empty");
-        multiTokenMediator = _addr;
-        emit MultiTokenMediatorChanged(multiTokenMediator);
+    function setMultiTokenMediator(IMultiTokenMediator _multiTokenMediator) public onlyOwner {
+        require(address(_multiTokenMediator) != address(0), "address is empty");
+        multiTokenMediator = _multiTokenMediator;
+        emit MultiTokenMediatorChanged(address(_multiTokenMediator));
     }
 
     function erc20Transfer(
@@ -86,11 +85,8 @@ abstract contract BaseBridge is PerpFiOwnableUpgrade, IBaseBridge, DecimalERC20 
 
         // approve to multi token mediator and call 'relayTokens'
         approveToMediator(_token);
-        // solhint-disable avoid-low-level-calls
-        (bool ret, ) = multiTokenMediator.call(
-            abi.encodeWithSelector(RELAY_TOKENS, address(_token), _receiver, _toUint(_token, _amount))
-        );
-        require(ret, "BaseBridge: call relayTokens error");
+
+        multiTokenMediator.relayTokens(address(_token), _receiver, _toUint(_token, _amount));
         emit Relayed(address(_token), _receiver, _amount.toUint());
     }
 
@@ -101,12 +97,12 @@ abstract contract BaseBridge is PerpFiOwnableUpgrade, IBaseBridge, DecimalERC20 
     ) internal virtual returns (bytes32 messageId) {
         // server can check event, `UserRequestForAffirmation(bytes32 indexed messageId, bytes encodedData)`,
         // emitted by amb bridge contract
-        messageId = IAMB(ambBridge).requireToPassMessage(_contractOnOtherSide, _data, _gasLimit);
+        messageId = ambBridge.requireToPassMessage(_contractOnOtherSide, _data, _gasLimit);
     }
 
     function approveToMediator(IERC20 _token) private {
-        if (_allowance(_token, address(this), multiTokenMediator).toUint() != uint256(-1)) {
-            _approve(_token, multiTokenMediator, Decimal.decimal(uint256(-1)));
+        if (_allowance(_token, address(this), address(multiTokenMediator)).toUint() != uint256(-1)) {
+            _approve(_token, address(multiTokenMediator), Decimal.decimal(uint256(-1)));
         }
     }
 }

@@ -3,10 +3,11 @@ pragma solidity 0.6.9;
 
 import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
+import { LowLevelErrorMessage } from "./utils/LowLevelErrorMessage.sol";
 
 // this is functionally identical to https://github.com/bcnmy/metatx-standard/blob/master/src/contracts/EIP712MetaTransaction.sol
 // except it implements openzeppelin Initializable
-contract MetaTxGateway is PerpFiOwnableUpgrade {
+contract MetaTxGateway is PerpFiOwnableUpgrade, LowLevelErrorMessage {
     using SafeMath for uint256;
 
     //
@@ -137,9 +138,9 @@ contract MetaTxGateway is PerpFiOwnableUpgrade {
 
         nonces[from] = nonces[from].add(1);
         // Append userAddress at the end to extract it from calling context
+        // solhint-disable avoid-low-level-calls
         (bool success, bytes memory returnData) = address(to).call(abi.encodePacked(functionSignature, from));
-
-        require(success, "executeMetaTx function call failed");
+        require(success, _getRevertMessage(returnData));
         emit MetaTransactionExecuted(from, to, msg.sender, functionSignature);
         return returnData;
     }
@@ -173,7 +174,7 @@ contract MetaTxGateway is PerpFiOwnableUpgrade {
      * "\\x19" makes the encoding deterministic
      * "\\x01" is the version byte to make it compatible to EIP-191
      */
-    function toTypedMessageHash(bytes32 domainSeperator, bytes32 messageHash) internal view returns (bytes32) {
+    function toTypedMessageHash(bytes32 domainSeperator, bytes32 messageHash) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked("\x19\x01", domainSeperator, messageHash));
     }
 
