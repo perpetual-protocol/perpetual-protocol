@@ -3,6 +3,8 @@
     "rules": {
         "max-line-length": "warn",
         "compiler-version": "off",
-        "func-order": "off"
+        "func-order": "off",
+        "reason-string": ["warn", { "maxLength": 48 }],
+        "func-name-mixedcase": "off"
     }
 }

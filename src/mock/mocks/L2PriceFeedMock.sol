@@ -4,11 +4,7 @@ pragma solidity 0.6.9;
 contract L2PriceFeedMock {
     uint256 price;
 
-    constructor(
-        uint256 _price,
-        address _bridge,
-        address _keeper
-    ) public {
+    constructor(uint256 _price) public {
         price = _price;
     }
 

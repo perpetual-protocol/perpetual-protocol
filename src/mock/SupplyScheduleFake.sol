@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 
 import "../SupplySchedule.sol";
 
-
 contract SupplyScheduleFake is SupplySchedule {
     uint256 private timestamp = 1444004400;
     uint256 private number = 10001;
@@ -22,13 +21,11 @@ contract SupplyScheduleFake is SupplySchedule {
     }
 
     // Override BlockContext here
-    //prettier-ignore
-    function _blockTimestamp() internal override view returns (uint256) {
+    function _blockTimestamp() internal view override returns (uint256) {
         return timestamp;
     }
 
-    //prettier-ignore
-    function _blockNumber() internal override view returns (uint256) {
+    function _blockNumber() internal view override returns (uint256) {
         return number;
     }
 }

@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 
 import { ChainlinkL1 } from "../ChainlinkL1.sol";
 
-
 contract ChainlinkL1Fake is ChainlinkL1 {
     uint256 private timestamp = 1444004400;
     uint256 private number = 10001;
@@ -22,13 +21,11 @@ contract ChainlinkL1Fake is ChainlinkL1 {
     }
 
     // Override BlockContext here
-    //prettier-ignore
-    function _blockTimestamp() internal override view returns (uint256) {
+    function _blockTimestamp() internal view override returns (uint256) {
         return timestamp;
     }
 
-    //prettier-ignore
-    function _blockNumber() internal override view returns (uint256) {
+    function _blockNumber() internal view override returns (uint256) {
         return number;
     }
 }

@@ -8,7 +8,6 @@ import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 import { RootBridge } from "./bridge/ethereum/RootBridge.sol";
 import { Decimal, SafeMath } from "./utils/Decimal.sol";
 
-
 contract ChainlinkL1 is PerpFiOwnableUpgrade, BlockContext {
     using SafeMath for uint256;
     using Decimal for Decimal.decimal;
@@ -89,26 +88,20 @@ contract ChainlinkL1 is PerpFiOwnableUpgrade, BlockContext {
     // INTERFACE IMPLEMENTATION
     //
 
-    // prettier-ignore
     function updateLatestRoundData(bytes32 _priceFeedKey) external {
         AggregatorV3Interface aggregator = getAggregator(_priceFeedKey);
         requireAggregatorExisted(aggregator);
 
-        (
-            uint80 roundId,
-            int256 price,
-            ,
-            uint256 timestamp,
-        ) = aggregator.latestRoundData();
+        (uint80 roundId, int256 price, , uint256 timestamp, ) = aggregator.latestRoundData();
         require(timestamp > prevTimestampMap[_priceFeedKey], "incorrect timestamp");
 
         uint8 decimals = aggregator.decimals();
 
         bytes32 messageId = rootBridge.updatePriceFeed(
-            priceFeedL2Address, 
-            _priceFeedKey, 
+            priceFeedL2Address,
+            _priceFeedKey,
             Decimal.decimal(formatDecimals(uint256(price), decimals)),
-            timestamp, 
+            timestamp,
             roundId
         );
         emit PriceUpdateMessageIdSent(messageId);

@@ -1,10 +1,7 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { ethers, upgrades } from "@nomiclabs/buidler"
 import { setupLoader, TruffleLoader, Web3Loader } from "@openzeppelin/contract-loader"
 import { TxParams } from "@openzeppelin/upgrades"
 import { GAS, GAS_PRICE } from "../constants"
-
-// eslint-disable-next-line
-const { ethers, upgrades } = require("@nomiclabs/buidler")
 
 export interface OzNetworkConfig {
     network: string
@@ -20,7 +17,6 @@ export class OzScript {
     private readonly contractLoader: OzContractLoader
     private readonly ozInitMethodName = "initialize"
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(private readonly provider: any, readonly networkConfig: OzNetworkConfig) {
         this.contractLoader = setupLoader({
             provider, // either a web3 provider or a web3 instance
@@ -30,7 +26,6 @@ export class OzScript {
         })
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async deploy(contractAlias: string, contractFileName: string, args: any[]): Promise<string> {
         // deploy contract by open zeppelin cli
         // ozScript won't replace the existing one, we have to manually remove it before deploy new contract first time

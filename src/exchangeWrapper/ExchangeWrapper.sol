@@ -60,57 +60,49 @@ contract ExchangeWrapper is PerpFiOwnableUpgrade, IExchangeWrapper, DecimalERC20
         setCompoundCUsdt(_compoundCUsdt);
     }
 
-    // prettier-ignore
     function swapInput(
         IERC20 _inputToken,
         IERC20 _outputToken,
         Decimal.decimal calldata _inputTokenSold,
-        Decimal.decimal calldata _minOutputTokenBought, 
+        Decimal.decimal calldata _minOutputTokenBought,
         Decimal.decimal calldata _maxPrice
-    ) override external returns (Decimal.decimal memory) {
+    ) external override returns (Decimal.decimal memory) {
         return implSwapInput(_inputToken, _outputToken, _inputTokenSold, _minOutputTokenBought, _maxPrice);
-       
     }
 
-    // prettier-ignore
     function swapOutput(
         IERC20 _inputToken,
         IERC20 _outputToken,
         Decimal.decimal calldata _outputTokenBought,
-        Decimal.decimal calldata _maxInputTokeSold, 
+        Decimal.decimal calldata _maxInputTokeSold,
         Decimal.decimal calldata _maxPrice
-    ) override external returns (Decimal.decimal memory) {
+    ) external override returns (Decimal.decimal memory) {
         return implSwapOutput(_inputToken, _outputToken, _outputTokenBought, _maxInputTokeSold, _maxPrice);
     }
 
-    // prettier-ignore
-    function getInputPrice(IERC20 _inputToken, IERC20 _outputToken, Decimal.decimal calldata _inputTokenSold)
-        override
-        external
-        view
-        returns (Decimal.decimal memory)
-    {
+    function getInputPrice(
+        IERC20 _inputToken,
+        IERC20 _outputToken,
+        Decimal.decimal calldata _inputTokenSold
+    ) external view override returns (Decimal.decimal memory) {
         Decimal.decimal memory spotPrice = implGetSpotPrice(_inputToken, _outputToken);
-        return _inputTokenSold.mulD(spotPrice);   
+        return _inputTokenSold.mulD(spotPrice);
     }
 
-    // prettier-ignore
-    function getOutputPrice(IERC20 _inputToken, IERC20 _outputToken, Decimal.decimal calldata _outputTokenBought)
-        override
-        external
-        view
-        returns (Decimal.decimal memory)
-    {
+    function getOutputPrice(
+        IERC20 _inputToken,
+        IERC20 _outputToken,
+        Decimal.decimal calldata _outputTokenBought
+    ) external view override returns (Decimal.decimal memory) {
         Decimal.decimal memory spotPrice = implGetSpotPrice(_inputToken, _outputToken);
-        return _outputTokenBought.divD(spotPrice);   
+        return _outputTokenBought.divD(spotPrice);
     }
 
-    // prettier-ignore
-    function getSpotPrice(IERC20 _inputToken, IERC20 _outputToken) 
-        override 
-        external 
-        view 
-        returns (Decimal.decimal memory) 
+    function getSpotPrice(IERC20 _inputToken, IERC20 _outputToken)
+        external
+        view
+        override
+        returns (Decimal.decimal memory)
     {
         return implGetSpotPrice(_inputToken, _outputToken);
     }

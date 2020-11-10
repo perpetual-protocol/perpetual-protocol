@@ -39,7 +39,7 @@ describe("Amm Unit Test", () => {
         admin = addresses[0]
         alice = addresses[1]
 
-        priceFeed = await deployL2MockPriceFeed(toFullDigit(ETH_PRICE), admin, admin)
+        priceFeed = await deployL2MockPriceFeed(toFullDigit(ETH_PRICE))
         quoteToken = await deployErc20Fake(toFullDigit(20000000))
         amm = await deployAmm({
             deployer: admin,
