@@ -5,11 +5,10 @@ import chaiAsPromised from "chai-as-promised"
 import {
     BalancerMockInstance,
     CErc20Contract,
-    CErc20Instance,
     CUsdtMockInstance,
+    ERC20Contract,
     ERC20FakeInstance,
-    ERC20SimpleContract,
-    ERC20SimpleInstance,
+    ERC20Instance,
     ExchangeWrapperContract,
     ExchangeWrapperInstance,
     PerpTokenContract,
@@ -24,7 +23,7 @@ use(chaiAsPromised)
 const ExchangeWrapper = artifacts.require("ExchangeWrapper") as ExchangeWrapperContract
 const PerpToken = artifacts.require("PerpToken") as PerpTokenContract
 const CErc20 = artifacts.require("CErc20") as CErc20Contract
-const ERC20 = artifacts.require("ERC20Simple") as ERC20SimpleContract
+const ERC20 = artifacts.require("ERC20") as ERC20Contract
 const TetherToken = artifacts.require("TetherToken") as TetherTokenContract
 
 describe("ExchangeWrapper UT", () => {
@@ -144,11 +143,11 @@ describe.skip("ExchangeWrapper testing code on Kovan", () => {
     let admin: string
     let exchangeWrapper: ExchangeWrapperInstance
     let perpToken: PerpTokenInstance
-    let cToken: CErc20Instance
+    let cToken: ERC20Instance
     let cUSDT: string
     let balancerPool: string
     let usdt: string
-    let erc20: ERC20SimpleInstance
+    let erc20: ERC20Instance
 
     before(async () => {
         addresses = await web3.eth.getAccounts()
@@ -159,7 +158,7 @@ describe.skip("ExchangeWrapper testing code on Kovan", () => {
         // Compound
         usdt = "0x07de306ff27a2b630b1141956844eb1552b956b5"
         cUSDT = "0x3f0a0ea2f86bae6362cf9799b523ba06647da018"
-        cToken = await CErc20.at(cUSDT)
+        cToken = await ERC20.at(cUSDT)
         erc20 = await ERC20.at(usdt)
         // balancer
         balancerPool = "0x081D79E1c970DF4efF76aF11352121B06C779945" // Perp/cUSDT

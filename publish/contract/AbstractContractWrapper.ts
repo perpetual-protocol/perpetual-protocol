@@ -2,16 +2,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import BN from "bn.js"
-import { ContractAlias } from "../ContractName"
-import { SystemMetadataDao } from "../SystemMetadataDao"
-import { OzScript } from "../OzScript"
 import { Layer } from "../../scripts/common"
-import { SettingsDao } from "../SettingsDao"
 import { sleep } from "../../scripts/utils"
+import { ContractAlias } from "../ContractName"
+import { OzScript } from "../OzScript"
+import { SettingsDao } from "../SettingsDao"
+import { SystemMetadataDao } from "../SystemMetadataDao"
 
 // T: Contract
 // K: ContractInstance
-export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K> {
+export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K extends Truffle.ContractInstance> {
     static DEFAULT_DIGITS = new BN("1000000000000000000")
     protected static DEFAULT_LOCAL_NETWORK = "dev-31337"
     readonly contractAlias!: ContractAlias
@@ -52,10 +52,10 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K> 
         return (await this.instance())!
     }
 
-    // TODO migrate to oz upgrade
-    // async upgradeContract(): Promise<void> {
-    //     await this.ozScript.upgrade(this.contractAlias, this.contractFileName)
-    // }
+    async upgradeContract(): Promise<void> {
+        const instance = await this.instance()!
+        const tx = await this.ozScript.upgrade(instance!.address, this.contractFileName)
+    }
 
     get truffleContract(): T {
         return artifacts.require<T>(this.contractFileName)

@@ -29,6 +29,9 @@ usePlugin("@nomiclabs/buidler-ethers")
 usePlugin("@nomiclabs/buidler-waffle")
 usePlugin("@openzeppelin/buidler-upgrades")
 usePlugin("solidity-coverage")
+
+// need to write a open zeppelin's proxyResolver if using any deployProxy in test case
+// https://github.com/cgewecke/eth-gas-reporter/blob/master/docs/advanced.md
 usePlugin("buidler-gas-reporter")
 
 task(TASK_COMPILE_GET_COMPILER_INPUT).setAction(async (_, env, runSuper) => {

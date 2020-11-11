@@ -24,15 +24,14 @@ contract ExchangeWrapperMock is IExchangeWrapper, DecimalERC20 {
         bException = true;
     }
 
-    //prettier-ignore
     function swapInput(
         IERC20 inputToken,
         IERC20 outputToken,
         Decimal.decimal calldata inputTokenSold,
-        Decimal.decimal calldata, 
+        Decimal.decimal calldata,
         Decimal.decimal calldata
     ) external override returns (Decimal.decimal memory) {
-        if(bException){
+        if (bException) {
             revert();
         }
         _transferFrom(inputToken, msg.sender, address(this), inputTokenSold);
@@ -40,15 +39,14 @@ contract ExchangeWrapperMock is IExchangeWrapper, DecimalERC20 {
         return inputTokenSold.divD(exchangeRatio);
     }
 
-    //prettier-ignore
     function swapOutput(
         IERC20 inputToken,
         IERC20 outputToken,
         Decimal.decimal calldata outputTokenBought,
-        Decimal.decimal calldata, 
+        Decimal.decimal calldata,
         Decimal.decimal calldata
     ) external override returns (Decimal.decimal memory) {
-        if(bException){
+        if (bException) {
             revert();
         }
         _transferFrom(inputToken, msg.sender, address(this), outputTokenBought.mulD(exchangeRatio));
@@ -56,27 +54,22 @@ contract ExchangeWrapperMock is IExchangeWrapper, DecimalERC20 {
         return outputTokenBought.mulD(exchangeRatio);
     }
 
-    //prettier-ignore
-    function getInputPrice(IERC20, IERC20, Decimal.decimal calldata inputTokenSold)
-        external
-        view
-        override 
-        returns (Decimal.decimal memory)
-    {
+    function getInputPrice(
+        IERC20,
+        IERC20,
+        Decimal.decimal calldata inputTokenSold
+    ) external view override returns (Decimal.decimal memory) {
         return inputTokenSold.divD(exchangeRatio);
     }
 
-    //prettier-ignore
-    function getOutputPrice(IERC20, IERC20, Decimal.decimal calldata outputTokenBought)
-        external
-        view
-        override 
-        returns (Decimal.decimal memory)
-    {
+    function getOutputPrice(
+        IERC20,
+        IERC20,
+        Decimal.decimal calldata outputTokenBought
+    ) external view override returns (Decimal.decimal memory) {
         return outputTokenBought.mulD(exchangeRatio);
     }
 
-    //prettier-ignore
     function getSpotPrice(IERC20, IERC20) external view override returns (Decimal.decimal memory) {
         return spotPrice;
     }

@@ -1,5 +1,5 @@
 import { web3 } from "@nomiclabs/buidler"
-import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
+import { expectRevert } from "@openzeppelin/test-helpers"
 import { use } from "chai"
 import { AmmFakeInstance, ERC20FakeInstance, L2PriceFeedMockInstance } from "../../types"
 import { assertionHelper } from "../helper/assertion-plugin"
@@ -22,7 +22,7 @@ describe("Amm migrate liquidity spec", () => {
         admin = addresses[0]
         alice = addresses[1]
 
-        priceFeed = await deployL2MockPriceFeed(toFullDigit(ETH_PRICE), admin, admin)
+        priceFeed = await deployL2MockPriceFeed(toFullDigit(ETH_PRICE))
         quoteToken = await deployErc20Fake(toFullDigit(20000000))
         amm = await deployAmm({
             deployer: admin,
@@ -41,10 +41,7 @@ describe("Amm migrate liquidity spec", () => {
 
     it("increase liquidity", async () => {
         // when amm.migrateLiquidity(2) from 80:1250 to 160:2500
-        // 88.89%
-        expectEvent(await amm.migrateLiquidity(toDecimal(2)), "LiquidityChanged", {
-            positionMultiplier: "888888888888888888",
-        })
+        await amm.migrateLiquidity(toDecimal(2))
 
         const reserve = await amm.getReserve()
         expect(reserve[0]).eq(toFullDigit(2500))
@@ -52,23 +49,17 @@ describe("Amm migrate liquidity spec", () => {
 
         // 20 * 88.89% = 17.778
         const getBaseAssetDeltaThisFundingPeriod = await amm.getBaseAssetDeltaThisFundingPeriod()
-        expect(getBaseAssetDeltaThisFundingPeriod).eq("-17777777777777777760")
+        expect(getBaseAssetDeltaThisFundingPeriod).eq("-17777777777777777778")
 
-        const getCumulativePositionMultiplier = await amm.getCumulativePositionMultiplier()
-        expect(getCumulativePositionMultiplier).eq("888888888888888888")
-
-        const liquidityChangedSnapshot = await amm.liquidityChangedSnapshot()
-        expect(liquidityChangedSnapshot[0]).eq(toFullDigit(2500))
-        expect(liquidityChangedSnapshot[1]).eq(toFullDigit(160))
-        expect(liquidityChangedSnapshot[2]).eq("17777777777777777777")
+        const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
+        expect(liquidityChangedSnapshot.quoteAssetReserve).eq(toFullDigit(2500))
+        expect(liquidityChangedSnapshot.baseAssetReserve).eq(toFullDigit(160))
+        expect(liquidityChangedSnapshot.cumulativeNotional).eq(toFullDigit(250))
     })
 
     it("decrease liquidity", async () => {
         // when amm.migrateLiquidity(0.5) from 80:1250 to 40:625
-        // 133.33%
-        expectEvent(await amm.migrateLiquidity(toDecimal(0.5)), "LiquidityChanged", {
-            positionMultiplier: "1333333333333333333",
-        })
+        await amm.migrateLiquidity(toDecimal(0.5))
 
         const reserve = await amm.getReserve()
         expect(reserve[0]).eq(toFullDigit(625))
@@ -76,15 +67,12 @@ describe("Amm migrate liquidity spec", () => {
 
         // 20 * 133.33% = 26.66
         const getBaseAssetDeltaThisFundingPeriod = await amm.getBaseAssetDeltaThisFundingPeriod()
-        expect(getBaseAssetDeltaThisFundingPeriod).eq("-26666666666666666660")
+        expect(getBaseAssetDeltaThisFundingPeriod).eq("-26666666666666666667")
 
-        const getCumulativePositionMultiplier = await amm.getCumulativePositionMultiplier()
-        expect(getCumulativePositionMultiplier).eq("1333333333333333333")
-
-        const liquidityChangedSnapshot = await amm.liquidityChangedSnapshot()
-        expect(liquidityChangedSnapshot[0]).eq(toFullDigit(625))
-        expect(liquidityChangedSnapshot[1]).eq(toFullDigit(40))
-        expect(liquidityChangedSnapshot[2]).eq("26666666666666666666")
+        const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
+        expect(liquidityChangedSnapshot.quoteAssetReserve).eq(toFullDigit(625))
+        expect(liquidityChangedSnapshot.baseAssetReserve).eq(toFullDigit(40))
+        expect(liquidityChangedSnapshot.cumulativeNotional).eq(toFullDigit(250))
     })
 
     it("will fail if the liquidity is the same", async () => {

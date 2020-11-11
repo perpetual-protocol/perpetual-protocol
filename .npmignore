@@ -10,6 +10,7 @@ tests
 types
 .eslintignore
 .eslintrc.json
+.gitattributes
 .prettierrc.yaml
 .solcover.js
 .solhint.json
@@ -21,5 +22,7 @@ contract.hbs
 index.d.ts
 networks.js
 openzeppelin-cli-export.json
+package-lock.json
+package.json
 system.json
 tsconfig.json

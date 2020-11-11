@@ -93,13 +93,13 @@ describe("ClearingHouse - open/close position Test", () => {
             await approve(alice, clearingHouse.address, 2000)
             // position 1
             // AMM after: 1600:62.5
-            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(60), toDecimal(10), toDecimal(37.5), {
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(60), toDecimal(10), toDecimal(0), {
                 from: alice,
             })
 
             // position 2
             // AMM after: 2200:45.454545...
-            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(60), toDecimal(10), toDecimal(17.04), {
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(60), toDecimal(10), toDecimal(0), {
                 from: alice,
             })
 

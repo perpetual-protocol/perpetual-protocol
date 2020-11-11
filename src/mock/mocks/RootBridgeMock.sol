@@ -9,14 +9,6 @@ contract RootBridgeMock is DecimalERC20 {
     uint256 public messageId;
     uint256 public price;
 
-    function erc20Transfer(
-        IERC20 _token,
-        address _receiver,
-        Decimal.decimal calldata _amount
-    ) external {
-        _transferFrom(_token, msg.sender, address(this), _amount);
-    }
-
     function updatePriceFeed(
         address _priceFeedAddrOnL2,
         bytes32 _priceFeedKey,

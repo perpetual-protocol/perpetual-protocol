@@ -1,3 +1,4 @@
+import { default as BN } from "bn.js"
 import {
     AmmFakeInstance,
     ClearingHouseFakeInstance,
@@ -14,7 +15,6 @@ import {
     StakingReserveFakeInstance,
     SupplyScheduleFakeInstance,
 } from "../../types"
-import { default as BN } from "bn.js"
 import {
     deployAmm,
     deployClearingHouse,
@@ -25,7 +25,6 @@ import {
     deployL2MockPriceFeed,
     deployMetaTxGateway,
     deployMinter,
-    deployMockClientBridge,
     deployMockExchangeWrapper,
     deployPerpToken,
     deployRewardsDistribution,
@@ -100,8 +99,8 @@ export async function fullDeploy(args: ContractDeployArgs): Promise<PerpContract
     } = args
     const metaTxGateway = await deployMetaTxGateway("Perp", "1", 1234) // default buidler evm chain ID
     const quoteToken = await deployErc20Fake(quoteTokenAmount, "Tether", "USDT", new BN(quoteTokenDecimals))
-    const clientBridge = await deployMockClientBridge()
-    const priceFeed = await deployL2MockPriceFeed(toFullDigit(100), clientBridge.address, sender)
+    const priceFeed = await deployL2MockPriceFeed(toFullDigit(100))
+
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const perpToken = await deployPerpToken(perpInitSupply!)
     const minter = await deployMinter(perpToken.address)

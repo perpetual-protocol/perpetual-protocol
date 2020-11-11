@@ -7,8 +7,6 @@ import {
     ERC20FakeInstance,
     ERC20MinimalFakeContract,
     ERC20MinimalFakeInstance,
-    ERC20TokenExchangeContract,
-    ERC20TokenExchangeInstance,
     TetherTokenContract,
     TetherTokenInstance,
 } from "../../types"
@@ -18,13 +16,10 @@ import { toDecimal, toFullDigit } from "../helper/number"
 const ERC20MinimalFake = artifacts.require("ERC20MinimalFake") as ERC20MinimalFakeContract
 const DecimalERC20Fake = artifacts.require("DecimalERC20Fake") as DecimalERC20FakeContract
 const TetherToken = artifacts.require("TetherToken") as TetherTokenContract
-const ERC20TokenExchange = artifacts.require("ERC20TokenExchange") as ERC20TokenExchangeContract
 
 describe("DecimalERC20", () => {
     let decimalErc20: DecimalERC20FakeInstance
     let erc20: ERC20FakeInstance
-    let erc20Minimal: ERC20MinimalFakeInstance
-    let erc20Exchange: ERC20TokenExchangeInstance
     let tether: TetherTokenInstance
     let admin: string
     let alice: string
@@ -38,7 +33,6 @@ describe("DecimalERC20", () => {
         alice = addresses[1]
         bob = addresses[2]
         decimalErc20 = await DecimalERC20Fake.new()
-        erc20Minimal = await ERC20MinimalFake.new()
     })
 
     describe("decimal = 8", () => {
@@ -124,8 +118,11 @@ describe("DecimalERC20", () => {
     })
 
     describe("IERC20 without decimals", () => {
+        let erc20Minimal: ERC20MinimalFakeInstance
+
         beforeEach(async () => {
-            erc20Minimal.initializeERC20MinimalFake(toFullDigit(1000))
+            erc20Minimal = await ERC20MinimalFake.new()
+            await erc20Minimal.initializeERC20MinimalFake(toFullDigit(1000))
         })
 
         it("approve", async () => {
@@ -263,33 +260,33 @@ describe("DecimalERC20", () => {
         })
 
         beforeEach(async () => {
-            erc20Exchange = await ERC20TokenExchange.new("NAME", "SYMBOL", toFullDigit(1000))
+            tether = await TetherToken.new(toFullDigit(100), "Tether", "USDT", 6)
 
             await erc20.approve(alice, toFullDigit(5))
-            await erc20Exchange.approve(alice, toFullDigit(5))
+            await tether.approve(alice, toFullDigit(5))
             await decimalErc20.approve(erc20.address, alice, toDecimal(5))
-            await decimalErc20.approve(erc20Exchange.address, alice, toDecimal(5))
+            await decimalErc20.approve(tether.address, alice, toDecimal(5))
         })
 
         it("re-approve ERC20: approve to 0 and then approve again", async () => {
-            await erc20Exchange.approve(alice, toFullDigit(0))
-            const r = await erc20Exchange.approve(alice, toFullDigit(50))
-            expectEvent.inTransaction(r.tx, erc20Exchange, "Approval")
+            await tether.approve(alice, toFullDigit(0))
+            const r = await tether.approve(alice, toFullDigit(50))
+            expectEvent.inTransaction(r.tx, tether, "Approval")
         })
 
         it("re-approve ERC20: force error, approve again without resetting to 0", async () => {
-            await expectRevert(erc20Exchange.approve(alice, toFullDigit(50)), "ERC20: approve non zero amount")
+            await expectRevert(tether.approve(alice, toFullDigit(50)), "Transaction reverted without a reason")
         })
 
         it("DecimalERC20: approve", async () => {
-            const r = await decimalErc20.approve(erc20Exchange.address, alice, toDecimal(50))
-            expectEvent.inTransaction(r.tx, erc20Exchange, "Approval")
+            const r = await decimalErc20.approve(tether.address, alice, toDecimal(50))
+            expectEvent.inTransaction(r.tx, tether, "Approval")
         })
 
         it("DecimalERC20: approve many times without resetting to 0", async () => {
-            await decimalErc20.approve(erc20Exchange.address, alice, toDecimal(50))
-            const r = await decimalErc20.approve(erc20Exchange.address, alice, toDecimal(500))
-            expectEvent.inTransaction(r.tx, erc20Exchange, "Approval")
+            await decimalErc20.approve(tether.address, alice, toDecimal(50))
+            const r = await decimalErc20.approve(tether.address, alice, toDecimal(500))
+            expectEvent.inTransaction(r.tx, tether, "Approval")
         })
 
         it("DecimalERC20/general ERC20: approve", async () => {
@@ -301,6 +298,19 @@ describe("DecimalERC20", () => {
             await decimalErc20.approve(erc20.address, alice, toDecimal(50))
             const r = await decimalErc20.approve(erc20.address, alice, toDecimal(500))
             expectEvent.inTransaction(r.tx, erc20, "Approval")
+        })
+    })
+
+    describe("transfer", () => {
+        beforeEach(async () => {
+            erc20 = await deployErc20Fake(toFullDigit(1000))
+        })
+
+        it("should fail when transfer more than allowance", async () => {
+            await expectRevert(
+                decimalErc20.transfer(erc20.address, alice, toDecimal(1)),
+                "DecimalERC20: transfer failed",
+            )
         })
     })
 })

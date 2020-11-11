@@ -6,7 +6,6 @@ import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 import { IRewardRecipient } from "./interface/IRewardRecipient.sol";
 import { Decimal } from "./utils/Decimal.sol";
 
-
 abstract contract RewardsDistributionRecipient is PerpFiOwnableUpgrade, IRewardRecipient {
     //**********************************************************//
     //    The below state variables can not change the order    //
@@ -25,8 +24,7 @@ abstract contract RewardsDistributionRecipient is PerpFiOwnableUpgrade, IRewardR
     // FUNCTIONS
     //
 
-    // prettier-ignore
-    function notifyRewardAmount(Decimal.decimal calldata _amount) external override virtual;
+    function notifyRewardAmount(Decimal.decimal calldata _amount) external virtual override;
 
     function setRewardsDistribution(address _rewardsDistribution) external onlyOwner {
         rewardsDistribution = _rewardsDistribution;

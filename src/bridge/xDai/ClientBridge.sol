@@ -2,7 +2,7 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { BaseBridge } from "../BaseBridge.sol";
+import { BaseBridge, IAMB, IMultiTokenMediator } from "../BaseBridge.sol";
 import { BaseRelayRecipient } from "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 import { ContextUpgradeSafe } from "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
 
@@ -13,7 +13,6 @@ contract ClientBridge is BaseBridge, BaseRelayRecipient {
     //   The order of below state variables can not be changed  //
     //**********************************************************//
 
-    //prettier-ignore
     string public override versionRecipient;
 
     //**********************************************************//
@@ -24,8 +23,8 @@ contract ClientBridge is BaseBridge, BaseRelayRecipient {
     // PUBLIC
     //
     function initialize(
-        address _ambBridge,
-        address _multiTokenMediator,
+        IAMB _ambBridge,
+        IMultiTokenMediator _multiTokenMediator,
         address _trustedForwarder
     ) public initializer {
         __BaseBridge_init(_ambBridge, _multiTokenMediator);
@@ -37,8 +36,7 @@ contract ClientBridge is BaseBridge, BaseRelayRecipient {
     //
     // INTERNAL VIEW FUNCTIONS
     //
-    // prettier-ignore
-    function _msgSender() internal override(BaseRelayRecipient, ContextUpgradeSafe) view returns (address payable) {
+    function _msgSender() internal view override(BaseRelayRecipient, ContextUpgradeSafe) returns (address payable) {
         return super._msgSender();
     }
 }

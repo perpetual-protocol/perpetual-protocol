@@ -7,7 +7,6 @@ import { IPriceFeed } from "./interface/IPriceFeed.sol";
 import { BlockContext } from "./utils/BlockContext.sol";
 import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 
-
 contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
     using SafeMath for uint256;
 
@@ -86,44 +85,41 @@ contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
     // INTERFACE IMPLEMENTATION
     //
 
-    // prettier-ignore
-    function setLatestData(bytes32 _priceFeedKey, uint256 _price, uint256 _timestamp, uint256 _roundId) external override onlyBridge {
+    function setLatestData(
+        bytes32 _priceFeedKey,
+        uint256 _price,
+        uint256 _timestamp,
+        uint256 _roundId
+    ) external override onlyBridge {
         require(IAMB(ambBridge).messageSender() == l1PriceFeed, "sender not l1PriceFeed");
         requireKeyExisted(_priceFeedKey, true);
         require(_timestamp > getLatestTimestamp(_priceFeedKey), "incorrect timestamp");
 
-        PriceData memory data = PriceData({
-            price: _price,
-            timestamp: _timestamp,
-            roundId: _roundId
-        });
+        PriceData memory data = PriceData({ price: _price, timestamp: _timestamp, roundId: _roundId });
         priceFeedMap[_priceFeedKey].priceData.push(data);
 
         emit PriceFeedDataSet(_priceFeedKey, _price, _timestamp, _roundId);
     }
 
-    // prettier-ignore
-    function getPrice(bytes32 _priceFeedKey) external override view returns (uint256) {
+    function getPrice(bytes32 _priceFeedKey) external view override returns (uint256) {
         require(isExistedKey(_priceFeedKey), "key not existed");
-        uint len = getPriceFeedLength(_priceFeedKey);
+        uint256 len = getPriceFeedLength(_priceFeedKey);
         require(len > 0, "no price data");
         return priceFeedMap[_priceFeedKey].priceData[len - 1].price;
     }
 
-    // prettier-ignore
-    function getLatestTimestamp(bytes32 _priceFeedKey) public override view returns (uint256) {
+    function getLatestTimestamp(bytes32 _priceFeedKey) public view override returns (uint256) {
         require(isExistedKey(_priceFeedKey), "key not existed");
-        uint len = getPriceFeedLength(_priceFeedKey);
-        if(len == 0) {
+        uint256 len = getPriceFeedLength(_priceFeedKey);
+        if (len == 0) {
             return 0;
         }
         return priceFeedMap[_priceFeedKey].priceData[len - 1].timestamp;
     }
 
-    // prettier-ignore
-    function getTwapPrice(bytes32 _priceFeedKey, uint256 _interval) external override view returns (uint256) {
+    function getTwapPrice(bytes32 _priceFeedKey, uint256 _interval) external view override returns (uint256) {
         require(isExistedKey(_priceFeedKey), "key not existed");
-        require(_interval!=0, "interval can't be 0");
+        require(_interval != 0, "interval can't be 0");
 
         // ** We assume L1 and L2 timestamp will be very similar here **
         // 3 different timestamps, `previous`, `current`, `target`
@@ -185,17 +181,20 @@ contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
         return weightedPrice.div(_interval);
     }
 
-    // prettier-ignore
-    function getPreviousPrice(bytes32 _priceFeedKey, uint256 _numOfRoundBack) public override view returns (uint256) {
+    function getPreviousPrice(bytes32 _priceFeedKey, uint256 _numOfRoundBack) public view override returns (uint256) {
         require(isExistedKey(_priceFeedKey), "key not existed");
 
-        uint len = getPriceFeedLength(_priceFeedKey);
+        uint256 len = getPriceFeedLength(_priceFeedKey);
         require(len > 0 && _numOfRoundBack <= len, "Not enough history");
         return priceFeedMap[_priceFeedKey].priceData[len - _numOfRoundBack - 1].price;
     }
 
-    // prettier-ignore
-    function getPreviousTimestamp(bytes32 _priceFeedKey, uint256 _numOfRoundBack) public override view returns (uint256) {
+    function getPreviousTimestamp(bytes32 _priceFeedKey, uint256 _numOfRoundBack)
+        public
+        view
+        override
+        returns (uint256)
+    {
         require(isExistedKey(_priceFeedKey), "key not existed");
 
         uint256 len = getPriceFeedLength(_priceFeedKey);

@@ -22,7 +22,7 @@ describe("Amm Unit Test", () => {
     let fundingPeriod: BN
     let fundingBufferPeriod: BN
 
-    async function moveToNextBlocks(number: number): Promise<void> {
+    async function moveToNextBlocks(number: number = 1): Promise<void> {
         const blockNumber = new BigNumber(await amm.mock_getCurrentBlockNumber())
         await amm.mock_setBlockNumber(blockNumber.addn(number))
     }
@@ -39,7 +39,7 @@ describe("Amm Unit Test", () => {
         admin = addresses[0]
         alice = addresses[1]
 
-        priceFeed = await deployL2MockPriceFeed(toFullDigit(ETH_PRICE), admin, admin)
+        priceFeed = await deployL2MockPriceFeed(toFullDigit(ETH_PRICE))
         quoteToken = await deployErc20Fake(toFullDigit(20000000))
         amm = await deployAmm({
             deployer: admin,
@@ -56,10 +56,10 @@ describe("Amm Unit Test", () => {
 
     describe("default value", () => {
         it("updated after amm added", async () => {
-            const liquidityChangedSnapshot = await amm.liquidityChangedSnapshot()
-            expect(liquidityChangedSnapshot[0]).eq(toFullDigit(1000))
-            expect(liquidityChangedSnapshot[1]).eq(toFullDigit(100))
-            expect(liquidityChangedSnapshot[2]).eq(0)
+            const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(0)
+            expect(liquidityChangedSnapshot.quoteAssetReserve).eq(toFullDigit(1000))
+            expect(liquidityChangedSnapshot.baseAssetReserve).eq(toFullDigit(100))
+            expect(liquidityChangedSnapshot.cumulativeNotional).eq(0)
         })
     })
 
@@ -472,6 +472,7 @@ describe("Amm Unit Test", () => {
         beforeEach(async () => {
             await amm.setFluctuationLimit(toDecimal(0.05))
             await amm.setOpen(true)
+            await moveToNextBlocks()
         })
 
         it("swapInput, price up and under fluctuation", async () => {
@@ -520,20 +521,22 @@ describe("Amm Unit Test", () => {
             )
         })
 
-        it("force error, swapOutput, price up and under fluctuation", async () => {
+        it("can swapOutput(close long) even exceeds fluctuation limit if the price impact is larger than the limit, but the rest will fail during that block", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // BUY 2.5 base, reserve will be 1025.6 : 97.5, price is 1025.6 / 97.5 = 10.52
+            expectEvent(await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(2.5), toDecimal(0), false), "SwapOutput")
             await expectRevert(
-                amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(2.5), toDecimal(0), false),
+                amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(0.1), toDecimal(0), false),
                 "price is over fluctuation limit",
             )
         })
 
-        it("force error, swapOutput, price down and under fluctuation", async () => {
+        it("can swapOutput(close short) even exceeds fluctuation limit if the price impact is larger than the limit, but the rest will fail during that block", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // SELL 2.7 base, reserve will be 973.7 : 102.7, price is 973.7 / 102.7 = 9.48
+            expectEvent(await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(2.7), toDecimal(0), false), "SwapOutput")
             await expectRevert(
-                amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(2.7), toDecimal(0), false),
+                amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(0.1), toDecimal(0), false),
                 "price is over fluctuation limit",
             )
         })
@@ -917,7 +920,7 @@ describe("Amm Unit Test", () => {
                         toDecimal(900),
                         toDecimal(900),
                     ),
-                    "value of quote asset is 0",
+                    "quote asset after is 0",
                 )
             })
         })
@@ -977,7 +980,7 @@ describe("Amm Unit Test", () => {
                         toDecimal(900),
                         toDecimal(900),
                     ),
-                    "value of base asset is 0",
+                    "base asset after is 0",
                 )
             })
         })

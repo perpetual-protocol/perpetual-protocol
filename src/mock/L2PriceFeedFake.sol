@@ -2,7 +2,6 @@
 pragma solidity 0.6.9;
 import { L2PriceFeed } from "../L2PriceFeed.sol";
 
-
 contract L2PriceFeedFake is L2PriceFeed {
     uint256 private timestamp = 1444004400;
     uint256 private number = 10001;
@@ -20,27 +19,24 @@ contract L2PriceFeedFake is L2PriceFeed {
     }
 
     // Override BlockContext here
-    //prettier-ignore
-    function _blockTimestamp() internal override view returns (uint256) {
+    function _blockTimestamp() internal view override returns (uint256) {
         return timestamp;
     }
 
-    //prettier-ignore
-    function _blockNumber() internal override view returns (uint256) {
+    function _blockNumber() internal view override returns (uint256) {
         return number;
     }
 
     // override Context here
 
-    address payable msgSender;
+    address payable public msgSender;
 
     function mockSetMsgSender(address payable _addr) external {
         msgSender = _addr;
     }
 
-    //prettier-ignore
     function _msgSender() internal view override returns (address payable) {
-        if(msgSender == address(0)){
+        if (msgSender == address(0)) {
             return msg.sender;
         }
         return msgSender;

@@ -3,7 +3,6 @@ pragma solidity 0.6.9;
 
 import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 
-
 contract ChainlinkL1Mock is AggregatorV3Interface {
     uint80[] roundIdArray;
     int256[] answerArray;
@@ -11,48 +10,51 @@ contract ChainlinkL1Mock is AggregatorV3Interface {
     uint256[] timestampArray;
     uint80[] versionArray;
 
-    // prettier-ignore
-    function decimals() external override view returns (uint8) {
+    function decimals() external view override returns (uint8) {
         return 8;
     }
 
-    // prettier-ignore
-    function description() external override view returns (string memory) {
+    function description() external view override returns (string memory) {
         return "";
     }
 
-    // prettier-ignore
-    function version() external override view returns (uint256) {
+    function version() external view override returns (uint256) {
         return 0;
     }
 
-    // prettier-ignore
     function getRoundData(uint80 _roundId)
-    external
-    override
-    view
-    returns (
-      uint80 roundId,
-      int256 answer,
-      uint256 startedAt,
-      uint256 updatedAt,
-      uint80 answeredInRound
-    ) {}
+        external
+        view
+        override
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
+    {}
 
-    // prettier-ignore
     function latestRoundData()
-    external
-    override
-    view
-    returns (
-      uint80 roundId,
-      int256 answer,
-      uint256 startedAt,
-      uint256 updatedAt,
-      uint80 answeredInRound
-    ) {
-        uint index = roundIdArray.length - 1;
-        return (roundIdArray[index], answerArray[index], decimalsArray[index], timestampArray[index], versionArray[index]);
+        external
+        view
+        override
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
+    {
+        uint256 index = roundIdArray.length - 1;
+        return (
+            roundIdArray[index],
+            answerArray[index],
+            decimalsArray[index],
+            timestampArray[index],
+            versionArray[index]
+        );
     }
 
     function mockAddAnswer(
