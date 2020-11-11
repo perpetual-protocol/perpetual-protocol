@@ -735,6 +735,17 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             }
         }
 
+        // if the price impact by single tx is already over the priceFluctuation, skip check
+        Decimal.decimal memory priceAfterReserveUpdated = (_dir == Dir.ADD_TO_AMM)
+            ? quoteAssetReserve.subD(quoteAssetAmount).divD(baseAssetReserve.addD(_baseAssetAmount))
+            : quoteAssetReserve.addD(quoteAssetAmount).divD(baseAssetReserve.subD(_baseAssetAmount));
+        if (
+            !_skipFluctuationCheck &&
+            isOverPriceFluctuation(priceAfterReserveUpdated, reserveSnapshots[reserveSnapshots.length.sub(1)])
+        ) {
+            _skipFluctuationCheck = true;
+        }
+
         updateReserve(
             _dir == Dir.ADD_TO_AMM ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM,
             quoteAssetAmount,
@@ -766,13 +777,26 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             cumulativeNotional = cumulativeNotional.subD(_quoteAssetAmount);
         }
 
-        if (!_skipFluctuationCheck) {
+        // check if it's over fluctuationLimit, if the limit is 0 = skip the checking
+        if (!_skipFluctuationCheck && fluctuationLimit.toUint() > 0) {
+            uint256 len = reserveSnapshots.length;
+            ReserveSnapshot memory latestSnapshot = reserveSnapshots[len - 1];
+
+            // if the latest snapshot is the same as current block, get the previous one
+            if (latestSnapshot.blockNumber == _blockNumber()) {
+                if (len > 1) {
+                    latestSnapshot = reserveSnapshots[len - 2];
+                }
+            }
+
+            // restrict the up/down limit of fluctuation in one single block.
             require(
-                !isOverPriceFluctuation(quoteAssetReserve.divD(baseAssetReserve)),
+                !isOverPriceFluctuation(quoteAssetReserve.divD(baseAssetReserve), latestSnapshot),
                 "price is over fluctuation limit"
             );
         }
 
+        // addReserveSnapshot must be after checking price fluctuation
         addReserveSnapshot();
     }
 
@@ -884,24 +908,15 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         revert("not supported option");
     }
 
-    function isOverPriceFluctuation(Decimal.decimal memory _price) internal view returns (bool) {
-        // zero means skip the checking
-        if (fluctuationLimit.toUint() == 0) {
-            return false;
-        }
-
-        uint256 len = reserveSnapshots.length;
-        ReserveSnapshot memory latestSnapshot = reserveSnapshots[len - 1];
-        // if the latest snapshot is the same as current block, get the previous one
-        if (latestSnapshot.blockNumber == _blockNumber()) {
-            if (len > 1) {
-                latestSnapshot = reserveSnapshots[len - 2];
-            }
-        }
-        // restrict the up/down limit of fluctuation in one single block.
-        Decimal.decimal memory lastPrice = latestSnapshot.quoteAssetReserve.divD(latestSnapshot.baseAssetReserve);
+    function isOverPriceFluctuation(Decimal.decimal memory _price, ReserveSnapshot memory _latestSnapshot)
+        internal
+        view
+        returns (bool)
+    {
+        Decimal.decimal memory lastPrice = _latestSnapshot.quoteAssetReserve.divD(_latestSnapshot.baseAssetReserve);
         Decimal.decimal memory upperLimit = lastPrice.mulD(Decimal.one().addD(fluctuationLimit));
         Decimal.decimal memory lowerLimit = lastPrice.mulD(Decimal.one().subD(fluctuationLimit));
+
         if (_price.cmp(upperLimit) <= 0 && _price.cmp(lowerLimit) >= 0) {
             return false;
         }
