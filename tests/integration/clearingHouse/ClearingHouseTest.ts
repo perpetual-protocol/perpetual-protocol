@@ -891,7 +891,7 @@ describe("ClearingHouse Test", () => {
             expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 100).to.eq(1021.8)
         })
 
-        it("force error, liquidating one position while exceeding the fluctuation limit", async () => {
+        it("liquidates one position if the price impact of single tx exceeds the fluctuation limit ", async () => {
             await amm.setFluctuationLimit(toDecimal(0.147))
 
             await approve(alice, clearingHouse.address, 100)
@@ -911,10 +911,7 @@ describe("ClearingHouse Test", () => {
 
             // AMM after: 1015.384615384615384672 : 98.484848484848484854, price: 10.31
             // fluctuation: (12.1 - 10.31) / 10.31 = 0.1479
-            await expectRevert(
-                clearingHouse.liquidate(amm.address, alice, { from: carol }),
-                "price is over fluctuation limit",
-            )
+            expectEvent(await clearingHouse.liquidate(amm.address, alice, { from: carol }), "PositionLiquidated")
         })
 
         it("force error, liquidate two positions while exceeding the fluctuation limit", async () => {
