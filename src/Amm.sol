@@ -783,10 +783,8 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             ReserveSnapshot memory latestSnapshot = reserveSnapshots[len - 1];
 
             // if the latest snapshot is the same as current block, get the previous one
-            if (latestSnapshot.blockNumber == _blockNumber()) {
-                if (len > 1) {
-                    latestSnapshot = reserveSnapshots[len - 2];
-                }
+            if (latestSnapshot.blockNumber == _blockNumber() && len > 1) {
+                latestSnapshot = reserveSnapshots[len - 2];
             }
 
             // restrict the up/down limit of fluctuation in one single block.
