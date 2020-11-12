@@ -9,7 +9,7 @@ import {
     MixedDecimalFakeInstance,
     SignedDecimalFakeContract,
     SignedDecimalFakeInstance,
-} from "types/truffle"
+} from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { DEFAULT_TOKEN_DECIMALS, toDecimal, toFullDigit } from "../helper/number"
 

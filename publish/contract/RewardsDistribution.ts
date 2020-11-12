@@ -1,4 +1,4 @@
-import { RewardsDistributionContract, RewardsDistributionInstance } from "types/truffle"
+import { RewardsDistributionContract, RewardsDistributionInstance } from "../../types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { RootBridgeContract, RootBridgeInstance } from "types/truffle"
+import { RootBridgeContract, RootBridgeInstance } from "../../types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

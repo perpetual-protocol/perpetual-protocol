@@ -82,7 +82,7 @@ async function build(): Promise<void> {
     await asyncExec("buidler compile")
     await asyncExec(`typechain --target truffle-v5 ${artifactDir}/**/*.json --outDir ./types/truffle`)
     await asyncExec(`typechain --target web3-v1 ${artifactDir}/**/*.json --outDir ./types/web3`)
-    await asyncExec(`typechain --target ethers-v4 ${artifactDir}/**/*.json --outDir ./types/ethers`)
+    await asyncExec(`typechain --target ethers-v5 ${artifactDir}/**/*.json --outDir ./types/ethers`)
     generateContractMetadata()
 }
 

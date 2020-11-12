@@ -1,9 +1,7 @@
 import { web3 } from "@nomiclabs/buidler"
 import { expectEvent } from "@openzeppelin/test-helpers"
-import { use } from "chai"
 import { utils } from "ethers"
-import { AMBBridgeMockInstance, MultiTokenMediatorMockInstance, RootBridgeInstance } from "types/truffle"
-import { assertionHelper } from "../../helper/assertion-plugin"
+import { AMBBridgeMockInstance, MultiTokenMediatorMockInstance, RootBridgeInstance } from "../../../types/truffle"
 import {
     deployL2MockPriceFeed,
     deployMockAMBBridge,
@@ -11,8 +9,6 @@ import {
     deployRootBridge,
 } from "../../helper/contract"
 import { toDecimal, toFullDigit } from "../../helper/number"
-
-use(assertionHelper)
 
 describe("RootBridge Spec", () => {
     let admin: string

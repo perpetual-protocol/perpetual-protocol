@@ -1,10 +1,11 @@
 import BN from "bn.js"
-import { StakingReserveContract, StakingReserveInstance } from "types/truffle"
 import { Layer } from "../../scripts/common"
+import { StakingReserveContract, StakingReserveInstance } from "../../types/truffle"
 import { ContractName } from "../ContractName"
+import { OzScript } from "../OzScript"
 import { SettingsDao } from "../SettingsDao"
 import { SystemMetadataDao } from "../SystemMetadataDao"
-import { AbstractContractWrapper, OzNetworkConfig } from "./AbstractContractWrapper"
+import { AbstractContractWrapper } from "./AbstractContractWrapper"
 
 export class StakingReserve extends AbstractContractWrapper<StakingReserveContract, StakingReserveInstance> {
     readonly contractAlias = ContractName.StakingReserve
@@ -14,11 +15,11 @@ export class StakingReserve extends AbstractContractWrapper<StakingReserveContra
 
     constructor(
         protected readonly layerType: Layer,
-        protected readonly settingsDao: SettingsDao,
+        settingsDao: SettingsDao,
         protected readonly systemMetadataDao: SystemMetadataDao,
-        protected readonly networkConfig: OzNetworkConfig,
+        protected readonly ozScript: OzScript,
     ) {
-        super(layerType, settingsDao, systemMetadataDao, networkConfig)
+        super(layerType, systemMetadataDao, ozScript)
         if (!settingsDao.isMainnet()) {
             this.vestingPeriod = new BN(24) // in ropsten the epoch is 1 hour
         }

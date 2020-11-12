@@ -9,7 +9,7 @@ import {
     ERC20FakeInstance,
     InsuranceFundFakeInstance,
     StakingReserveInstance,
-} from "types/truffle"
+} from "../../../types/truffle"
 import { assertionHelper } from "../../helper/assertion-plugin"
 import { PnlCalcOption, Side } from "../../helper/contract"
 import { fullDeploy } from "../../helper/deploy"

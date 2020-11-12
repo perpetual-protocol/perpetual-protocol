@@ -1,5 +1,5 @@
 import { ethers } from "@nomiclabs/buidler"
-import { ContractName } from "publish/ContractName"
+import { ContractName } from "./ContractName"
 
 export class ContractDeployer {
     constructor(readonly contractName: ContractName) {}

@@ -1,5 +1,5 @@
 import BN from "bn.js"
-import { ClearingHouseContract, ClearingHouseInstance } from "types/truffle"
+import { ClearingHouseContract, ClearingHouseInstance } from "../../types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

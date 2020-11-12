@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { MetaTxGatewayContract, MetaTxGatewayInstance } from "types/truffle"
+import { MetaTxGatewayContract, MetaTxGatewayInstance } from "../../types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

@@ -1,4 +1,4 @@
-import { ClearingHouseViewerContract, ClearingHouseViewerInstance } from "types/truffle"
+import { ClearingHouseViewerContract, ClearingHouseViewerInstance } from "../../types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

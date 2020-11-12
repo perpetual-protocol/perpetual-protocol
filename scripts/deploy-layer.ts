@@ -10,11 +10,7 @@ import {
     SOKOL_MNEMONIC,
     XDAI_MNEMONIC,
 } from "../constants"
-import { ContractPublisher } from "../publish/ContractPublisher"
-import { OzScript } from "../publish/OzScript"
-import { SettingsDao } from "../publish/SettingsDao"
-import { AccountMetadata, SystemMetadataDao } from "../publish/SystemMetadataDao"
-import { Layer, Network, Stage } from "./common"
+import { AccountMetadata, Layer, Network, Stage } from "./common"
 
 async function getFromAccount(bre: BuidlerRuntimeEnvironment): Promise<string> {
     const network = bre.buidlerArguments.network! as Network

@@ -8,7 +8,7 @@ import {
     PerpTokenMockInstance,
     RootBridgeMockContract,
     RootBridgeMockInstance,
-} from "types/truffle"
+} from "../../types/truffle"
 
 const AmmMock = artifacts.require("AmmMock") as AmmMockContract
 const ChainlinkL1Mock = artifacts.require("ChainlinkL1Mock") as ChainlinkL1MockContract

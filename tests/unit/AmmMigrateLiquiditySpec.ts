@@ -1,7 +1,7 @@
 import { web3 } from "@nomiclabs/buidler"
 import { expectRevert } from "@openzeppelin/test-helpers"
 import { use } from "chai"
-import { AmmFakeInstance, ERC20FakeInstance, L2PriceFeedMockInstance } from "types/truffle"
+import { AmmFakeInstance, ERC20FakeInstance, L2PriceFeedMockInstance } from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { deployAmm, deployErc20Fake, deployL2MockPriceFeed, Dir } from "../helper/contract"
 import { toDecimal, toFullDigit } from "../helper/number"

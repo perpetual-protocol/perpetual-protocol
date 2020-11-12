@@ -1,7 +1,7 @@
 import { web3 } from "@nomiclabs/buidler"
 import { expectRevert } from "@openzeppelin/test-helpers"
 import { expect } from "chai"
-import { RewardsDistributionInstance } from "types/truffle"
+import { RewardsDistributionInstance } from "../../types/truffle"
 import { deployRewardsDistribution } from "../helper/contract"
 import { toDecimal, toFullDigit } from "../helper/number"
 

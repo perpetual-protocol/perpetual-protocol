@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { asyncExec } from "./helper"
-import { Stage, TASK_DEPLOY_LAYER } from "./common"
 import { ExecOptions } from "child_process"
-import { SettingsDao } from "../publish/SettingsDao"
+import { Stage, TASK_DEPLOY_LAYER } from "./common"
+import { asyncExec } from "./helper"
 
 export async function deploy(stage: Stage, options?: ExecOptions): Promise<void> {
     const settings = new SettingsDao(stage)

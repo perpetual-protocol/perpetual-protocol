@@ -2,7 +2,7 @@ import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { expect, use } from "chai"
 import chaiAsPromised from "chai-as-promised"
-import { PerpTokenInstance } from "types/truffle"
+import { PerpTokenInstance } from "../../types/truffle"
 import { deployPerpToken } from "../helper/contract"
 import { toFullDigit } from "../helper/number"
 

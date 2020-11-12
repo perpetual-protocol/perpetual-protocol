@@ -1,6 +1,11 @@
 import { expectRevert } from "@openzeppelin/test-helpers"
 import { expect, use } from "chai"
-import { AmmMockInstance, ERC20FakeInstance, InsuranceFundFakeContract, InsuranceFundFakeInstance } from "types/truffle"
+import {
+    AmmMockInstance,
+    ERC20FakeInstance,
+    InsuranceFundFakeContract,
+    InsuranceFundFakeInstance,
+} from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { deployErc20Fake } from "../helper/contract"
 import { deployAmmMock } from "../helper/mockContract"

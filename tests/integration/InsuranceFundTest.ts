@@ -8,7 +8,7 @@ import {
     ExchangeWrapperMockInstance,
     InsuranceFundFakeInstance,
     PerpTokenInstance,
-} from "types/truffle"
+} from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { deployErc20Fake, deployMockExchangeWrapper } from "../helper/contract"
 import { fullDeploy } from "../helper/deploy"

@@ -5,7 +5,7 @@ import {
     PerpFiOwnableFakeInstance,
     PerpFiOwnableUpgradeFakeContract,
     PerpFiOwnableUpgradeFakeInstance,
-} from "types/truffle"
+} from "../../types/truffle"
 
 const PerpFiOwnableUpgradeFake = artifacts.require("PerpFiOwnableUpgradeFake") as PerpFiOwnableUpgradeFakeContract
 const PerpFiOwnableFake = artifacts.require("PerpFiOwnableFake") as PerpFiOwnableFakeContract

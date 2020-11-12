@@ -7,7 +7,7 @@ import {
     ERC20FakeInstance,
     MultiTokenMediatorMockInstance,
     RootBridgeInstance,
-} from "types/truffle"
+} from "../../../types/truffle"
 import { assertionHelper } from "../../helper/assertion-plugin"
 import { deployErc20Fake, deployMockAMBBridge, deployMockMultiToken, deployRootBridge } from "../../helper/contract"
 import { toDecimal, toFullDigit } from "../../helper/number"

@@ -2,6 +2,7 @@ import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { default as BigNumber, default as BN } from "bn.js"
 import { expect, use } from "chai"
+import ClearingHouseArtifact from "../../../build/contracts/ClearingHouse.json"
 import {
     AmmFakeInstance,
     ClearingHouseFakeInstance,
@@ -17,8 +18,7 @@ import {
     SupplyScheduleFakeInstance,
     TraderWalletContract,
     TraderWalletInstance,
-} from "types/truffle"
-import ClearingHouseArtifact from "../../../build/contracts/ClearingHouse.json"
+} from "../../../types/truffle"
 import { ClearingHouse } from "../../../types/web3/ClearingHouse"
 import { assertionHelper } from "../../helper/assertion-plugin"
 import { Dir, PnlCalcOption, Side } from "../../helper/contract"
@@ -1166,9 +1166,9 @@ describe("ClearingHouse Test", () => {
                     .openPosition(
                         amm.address,
                         Side.SELL,
-                        { d: toFullDigitStr(20) },
-                        { d: toFullDigitStr(5) },
-                        { d: toFullDigitStr(11.12) },
+                        [toFullDigitStr(20)],
+                        [toFullDigitStr(5)],
+                        [toFullDigitStr(11.12)],
                     )
                     .encodeABI(),
                 nonce: 0,

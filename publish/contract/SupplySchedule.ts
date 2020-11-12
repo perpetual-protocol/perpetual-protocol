@@ -1,6 +1,6 @@
 import BN from "bn.js"
-import { SupplyScheduleContract, SupplyScheduleInstance } from "types/truffle"
 import { Layer } from "../../scripts/common"
+import { SupplyScheduleContract, SupplyScheduleInstance } from "../../types/truffle"
 import { ContractName } from "../ContractName"
 import { OzScript } from "../OzScript"
 import { SettingsDao } from "../SettingsDao"

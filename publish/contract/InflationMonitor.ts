@@ -1,4 +1,4 @@
-import { InflationMonitorContract, InflationMonitorInstance } from "types/truffle"
+import { InflationMonitorContract, InflationMonitorInstance } from "../../types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

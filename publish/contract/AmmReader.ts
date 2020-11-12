@@ -1,4 +1,4 @@
-import { AmmReaderContract, AmmReaderInstance } from "types/truffle"
+import { AmmReaderContract, AmmReaderInstance } from "../../types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

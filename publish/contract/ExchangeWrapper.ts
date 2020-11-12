@@ -1,4 +1,4 @@
-import { ExchangeWrapperContract, ExchangeWrapperInstance } from "types/truffle"
+import { ExchangeWrapperContract, ExchangeWrapperInstance } from "../../types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

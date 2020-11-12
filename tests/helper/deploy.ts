@@ -14,7 +14,7 @@ import {
     RewardsDistributionFakeInstance,
     StakingReserveFakeInstance,
     SupplyScheduleFakeInstance,
-} from "types/truffle"
+} from "../../types/truffle"
 import {
     deployAmm,
     deployClearingHouse,

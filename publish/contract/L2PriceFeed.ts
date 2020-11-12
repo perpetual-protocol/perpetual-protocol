@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { utils } from "ethers"
-import { L2PriceFeedContract, L2PriceFeedInstance } from "types/truffle"
+import { L2PriceFeedContract, L2PriceFeedInstance } from "../../types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

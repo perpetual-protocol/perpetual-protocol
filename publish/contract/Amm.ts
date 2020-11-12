@@ -1,7 +1,7 @@
 import BN from "bn.js"
 import { utils } from "ethers"
-import { AmmContract, AmmInstance } from "types/truffle"
 import { Layer, Network } from "../../scripts/common"
+import { AmmContract, AmmInstance } from "../../types/truffle"
 import { AmmContractName, ContractAlias, ContractName } from "../ContractName"
 import { OzScript } from "../OzScript"
 import { SystemMetadataDao } from "../SystemMetadataDao"

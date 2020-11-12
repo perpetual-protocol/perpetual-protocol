@@ -1,7 +1,7 @@
 import { web3 } from "@nomiclabs/buidler"
 import { expectRevert } from "@openzeppelin/test-helpers"
 import BN from "bn.js"
-import { PerpTokenMockInstance, StakingReserveInstance } from "types/truffle"
+import { PerpTokenMockInstance, StakingReserveInstance } from "../../types/truffle"
 import { deployStakingReserve } from "../helper/contract"
 import { deployPerpTokenMock } from "../helper/mockContract"
 
