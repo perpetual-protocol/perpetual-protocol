@@ -1,10 +1,10 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { ethers } from "@nomiclabs/buidler"
 import BN from "bn.js"
 import { Layer } from "../../scripts/common"
-import { ContractAlias } from "../ContractName"
+import { ContractDeployer } from "../ContractDeployer"
+import { ContractAlias, ContractName } from "../ContractName"
 import { OzScript } from "../OzScript"
 import { SystemMetadataDao } from "../SystemMetadataDao"
 
@@ -12,9 +12,10 @@ import { SystemMetadataDao } from "../SystemMetadataDao"
 // K: ContractInstance
 export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K extends Truffle.ContractInstance> {
     static DEFAULT_DIGITS = new BN("1000000000000000000")
-    protected static DEFAULT_LOCAL_NETWORK = "dev-31337"
+
+    // after new architecture of openzeppelin upgrade plugin we might not need this anymore
     readonly contractAlias!: ContractAlias
-    readonly contractFileName!: string
+    readonly contractFileName!: ContractName
 
     constructor(
         protected readonly layerType: Layer,
@@ -25,12 +26,11 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
     abstract async deploy(...args: any[]): Promise<K>
 
     protected async deployContract(...args: any[]): Promise<K> {
-        console.log(`deployContract: ${this.contractFileName} - ${this.contractAlias}`)
-        const Contract = await ethers.getContractFactory(this.contractFileName)
-        const deployedInstance = await Contract.deploy(...args)
+        const deployer = new ContractDeployer(this.contractFileName)
+        const address = await deployer.deploy(...args)
 
         // write to metadata
-        this.updateMetadata(deployedInstance.address)
+        this.updateMetadata(address)
 
         // return truffle contract
         const truffleInstance = await this.instance()
@@ -38,14 +38,17 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
     }
 
     protected async deployUpgradableContract(...args: any[]): Promise<K> {
-        console.log(`deployUpgradableContract: ${this.contractFileName} - ${this.contractAlias}`)
-        const address = await this.ozScript.deploy(this.contractAlias, this.contractFileName, args)
+        const address = await this.ozScript.deploy(this.contractFileName, args)
 
         // write to metadata
         this.updateMetadata(address)
 
         // return truffle contract
         return (await this.instance())!
+    }
+
+    async prepareUpgrade(): Promise<string> {
+        return await this.ozScript.prepareUpgrade(this.address!, this.contractFileName)
     }
 
     async upgradeContract(): Promise<void> {

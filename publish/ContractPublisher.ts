@@ -358,7 +358,7 @@ export class ContractPublisher {
                 `starting version (${ver}) is less than the batch's start version (${batchStartVer}), are you sure the previous batches are completed?`,
             )
         }
-        console.log(`publishContracts:${ver}->${completeTasksLength} by ${this.from!}`)
+        console.log(`publishContracts:${ver}->${completeTasksLength}`)
 
         // clear metadata if it's the first version
         if (ver === 0) {
@@ -370,10 +370,6 @@ export class ContractPublisher {
             await this.attemptExec(task)
             this.settingsDao.increaseVersion(this.layerType)
         }
-    }
-
-    get from(): string {
-        return this.ozScript.networkConfig.txParams.from!
     }
 
     private async attemptExec(task: DeployTask, retriesRemaining = 1): Promise<void> {

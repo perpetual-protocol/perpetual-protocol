@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 // import { buidlerArguments, config, web3 } from "@nomiclabs/buidler"
 import { BuidlerRuntimeEnvironment } from "@nomiclabs/buidler/types"
-import { ConfigManager } from "@openzeppelin/cli"
 import { Wallet } from "ethers"
 import {
     HOMESTEAD_MNEMONIC,
@@ -54,7 +53,6 @@ export async function deployLayer(
     const from = await getFromAccount(bre)
     console.log("from:", from)
     const network = bre.buidlerArguments.network! as Network
-    const ozNetworkConfig = await ConfigManager.initNetworkConfiguration({ network, from })
 
     // only expose accounts when deploy on local node, otherwise assign a empty array
     const isLocalhost: boolean = network === "localhost"
@@ -63,7 +61,7 @@ export async function deployLayer(
     const settingsDao = new SettingsDao(stage)
     const systemMetadataDao = new SystemMetadataDao(settingsDao)
     systemMetadataDao.setAccounts(layerType, accounts)
-    const ozScript = new OzScript(bre.web3.currentProvider, ozNetworkConfig)
+    const ozScript = new OzScript(bre.web3.currentProvider, from)
     const publisher = new ContractPublisher(layerType, settingsDao, systemMetadataDao, ozScript)
 
     await publisher.publishContracts(batch)

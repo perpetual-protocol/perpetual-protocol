@@ -17,24 +17,30 @@ export class OzScript {
     private readonly contractLoader: OzContractLoader
     private readonly ozInitMethodName = "initialize"
 
-    constructor(private readonly provider: any, readonly networkConfig: OzNetworkConfig) {
+    constructor(private readonly provider: any, readonly sender: string) {
         this.contractLoader = setupLoader({
             provider, // either a web3 provider or a web3 instance
-            defaultSender: networkConfig.txParams.from!, // optional
+            defaultSender: sender, // optional
             defaultGas: GAS, // optional, defaults to 200 thousand
             defaultGasPrice: GAS_PRICE, // optional, defaults to 1 gigawei
         })
     }
 
-    async deploy(contractAlias: string, contractFileName: string, args: any[]): Promise<string> {
-        // deploy contract by open zeppelin cli
+    async deploy(contractFileName: string, args: any[]): Promise<string> {
+        // deploy contract by open zeppelin upgrade plugin
         // ozScript won't replace the existing one, we have to manually remove it before deploy new contract first time
+        console.log(`deployUpgradableContract: ${contractFileName}:[${args}]`)
         const contract = await ethers.getContractFactory(contractFileName)
         const instance = await upgrades.deployProxy(contract, args, {
             initializer: this.ozInitMethodName,
             unsafeAllowCustomTypes: true,
         })
         return instance.address
+    }
+
+    async prepareUpgrade(proxy: string, contractFileName: string): Promise<string> {
+        const factory = await ethers.getContractFactory(contractFileName)
+        return await upgrades.prepareUpgrade(proxy, factory)
     }
 
     async upgrade(proxy: string, contractFileName: string): Promise<void> {
