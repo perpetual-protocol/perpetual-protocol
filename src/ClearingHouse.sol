@@ -44,8 +44,9 @@ contract ClearingHouse is
         uint256 newLiquidityIndex
     );
     event PositionSettled(address amm, address trader, uint256 valueTransferred);
-    event Deposited(address token, address trader, uint256 amount);
     event RestrictionModeEntered(address amm, uint256 blockNumber);
+    event FeePoolSet(address feePool);
+    event WhitelistChanged(address addr, bool add);
 
     /// @notice This event is emitted when position change
     /// @param trader the address which execute this transaction
@@ -234,12 +235,11 @@ contract ClearingHouse is
         emit MarginRatioChanged(maintenanceMarginRatio.toUint());
     }
 
-    // TODO add event
     function setFeePool(IMultiTokenRewardRecipient _feePool) external onlyOwner {
         feePool = _feePool;
+        emit FeePoolSet(address(_feePool));
     }
 
-    // TODO add event
     /**
      * @notice add an address in the whitelist. People in the whitelist can hold unlimited positions.
      * @dev only owner can call
@@ -247,11 +247,12 @@ contract ClearingHouse is
      */
     function addToWhitelists(address _addr) external onlyOwner {
         whitelistMap[_addr] = true;
+        emit WhitelistChanged(_addr, true);
     }
 
-    // TODO add event
     function removeFromWhitelists(address _addr) external onlyOwner {
         delete whitelistMap[_addr];
+        emit WhitelistChanged(_addr, false);
     }
 
     /**
@@ -372,6 +373,7 @@ contract ClearingHouse is
     //   close()
     //   pay liquidation fee to liquidator
     //   move the remain margin to insuranceFund
+
     /**
      * @notice open a position
      * @param _amm amm address
