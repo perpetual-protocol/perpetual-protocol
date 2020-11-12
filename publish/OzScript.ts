@@ -1,4 +1,3 @@
-import { ethers, upgrades } from "@nomiclabs/buidler"
 import { setupLoader, TruffleLoader, Web3Loader } from "@openzeppelin/contract-loader"
 import { TxParams } from "@openzeppelin/upgrades"
 import { GAS, GAS_PRICE } from "../constants"
@@ -13,40 +12,19 @@ export interface OzContractLoader {
     truffle: TruffleLoader
 }
 
+// @openzeppelin/contractLoader wrapper
+// remove once change to ether instance
+// a workaround to access truffle instance
+// `artificat.require(stringVariable)` works but `artificat.require(stringVariable)` fails
 export class OzScript {
     private readonly contractLoader: OzContractLoader
-    private readonly ozInitMethodName = "initialize"
 
-    constructor(private readonly provider: any, readonly sender: string) {
+    constructor(provider: any, readonly sender: string) {
         this.contractLoader = setupLoader({
             provider, // either a web3 provider or a web3 instance
             defaultSender: sender, // optional
             defaultGas: GAS, // optional, defaults to 200 thousand
             defaultGasPrice: GAS_PRICE, // optional, defaults to 1 gigawei
-        })
-    }
-
-    async deploy(contractFileName: string, args: any[]): Promise<string> {
-        // deploy contract by open zeppelin upgrade plugin
-        // ozScript won't replace the existing one, we have to manually remove it before deploy new contract first time
-        console.log(`deployUpgradableContract: ${contractFileName}:[${args}]`)
-        const contract = await ethers.getContractFactory(contractFileName)
-        const instance = await upgrades.deployProxy(contract, args, {
-            initializer: this.ozInitMethodName,
-            unsafeAllowCustomTypes: true,
-        })
-        return instance.address
-    }
-
-    async prepareUpgrade(proxy: string, contractFileName: string): Promise<string> {
-        const factory = await ethers.getContractFactory(contractFileName)
-        return await upgrades.prepareUpgrade(proxy, factory)
-    }
-
-    async upgrade(proxy: string, contractFileName: string): Promise<void> {
-        const contract = await ethers.getContractFactory(contractFileName)
-        await upgrades.upgradeProxy(proxy, contract, {
-            unsafeAllowCustomTypes: true,
         })
     }
 

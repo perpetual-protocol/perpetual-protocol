@@ -5,6 +5,7 @@ import BN from "bn.js"
 import { Layer } from "../../scripts/common"
 import { ContractDeployer } from "../ContractDeployer"
 import { ContractAlias, ContractName } from "../ContractName"
+import { OzContractDeployer } from "../OzContractDeployer"
 import { OzScript } from "../OzScript"
 import { SystemMetadataDao } from "../SystemMetadataDao"
 
@@ -16,18 +17,22 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
     // after new architecture of openzeppelin upgrade plugin we might not need this anymore
     readonly contractAlias!: ContractAlias
     readonly contractFileName!: ContractName
+    readonly contractDeployer: ContractDeployer
+    readonly ozContractDeployer: OzContractDeployer
 
     constructor(
         protected readonly layerType: Layer,
         protected readonly systemMetadataDao: SystemMetadataDao,
         protected readonly ozScript: OzScript,
-    ) {}
+    ) {
+        this.contractDeployer = new ContractDeployer(this.contractFileName)
+        this.ozContractDeployer = new OzContractDeployer()
+    }
 
     abstract async deploy(...args: any[]): Promise<K>
 
     protected async deployContract(...args: any[]): Promise<K> {
-        const deployer = new ContractDeployer(this.contractFileName)
-        const address = await deployer.deploy(...args)
+        const address = await this.contractDeployer.deploy(...args)
 
         // write to metadata
         this.updateMetadata(address)
@@ -38,7 +43,7 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
     }
 
     protected async deployUpgradableContract(...args: any[]): Promise<K> {
-        const address = await this.ozScript.deploy(this.contractFileName, args)
+        const address = await this.ozContractDeployer.deploy(this.contractFileName, args)
 
         // write to metadata
         this.updateMetadata(address)
@@ -47,12 +52,12 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
         return (await this.instance())!
     }
 
-    async prepareUpgrade(): Promise<string> {
-        return await this.ozScript.prepareUpgrade(this.address!, this.contractFileName)
+    async prepareUpgradeContract(): Promise<string> {
+        return await this.ozContractDeployer.prepareUpgrade(this.address!, this.contractFileName)
     }
 
     async upgradeContract(): Promise<void> {
-        await this.ozScript.upgrade(this.address!, this.contractFileName)
+        await this.ozContractDeployer.upgrade(this.address!, this.contractFileName)
     }
 
     async instance(): Promise<K | undefined> {
