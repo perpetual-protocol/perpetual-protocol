@@ -14,7 +14,7 @@ import {
     PerpTokenInstance,
     StakingReserveFakeInstance,
     SupplyScheduleFakeInstance,
-} from "../../../types"
+} from "types/truffle"
 import { assertionHelper } from "../../helper/assertion-plugin"
 import { deployAmm, deployErc20Fake, Dir, Side } from "../../helper/contract"
 import { fullDeploy } from "../../helper/deploy"

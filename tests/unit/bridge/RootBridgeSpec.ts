@@ -2,7 +2,7 @@ import { web3 } from "@nomiclabs/buidler"
 import { expectEvent } from "@openzeppelin/test-helpers"
 import { use } from "chai"
 import { utils } from "ethers"
-import { AMBBridgeMockInstance, MultiTokenMediatorMockInstance, RootBridgeInstance } from "../../../types"
+import { AMBBridgeMockInstance, MultiTokenMediatorMockInstance, RootBridgeInstance } from "types/truffle"
 import { assertionHelper } from "../../helper/assertion-plugin"
 import {
     deployL2MockPriceFeed,

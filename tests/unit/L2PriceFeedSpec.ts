@@ -1,7 +1,7 @@
 import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
-import { AMBBridgeMockInstance, L2PriceFeedFakeInstance } from "../../types"
 import BN from "bn.js"
+import { AMBBridgeMockInstance, L2PriceFeedFakeInstance } from "types/truffle"
 import { deployL2PriceFeed, deployMockAMBBridge } from "../helper/contract"
 import { toFullDigit } from "../helper/number"
 

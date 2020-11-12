@@ -2,7 +2,6 @@ import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { default as BigNumber, default as BN } from "bn.js"
 import { expect, use } from "chai"
-import ClearingHouseArtifact from "../../../build/contracts/ClearingHouse.json"
 import {
     AmmFakeInstance,
     ClearingHouseFakeInstance,
@@ -18,7 +17,8 @@ import {
     SupplyScheduleFakeInstance,
     TraderWalletContract,
     TraderWalletInstance,
-} from "../../../types"
+} from "types/truffle"
+import ClearingHouseArtifact from "../../../build/contracts/ClearingHouse.json"
 import { ClearingHouse } from "../../../types/web3/ClearingHouse"
 import { assertionHelper } from "../../helper/assertion-plugin"
 import { Dir, PnlCalcOption, Side } from "../../helper/contract"

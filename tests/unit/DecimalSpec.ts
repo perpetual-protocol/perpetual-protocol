@@ -1,9 +1,7 @@
 import { artifacts } from "@nomiclabs/buidler"
 import { expectRevert } from "@openzeppelin/test-helpers"
-import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import { expect, use } from "chai"
-import { assertionHelper } from "../helper/assertion-plugin"
 import {
     DecimalFakeContract,
     DecimalFakeInstance,
@@ -11,8 +9,9 @@ import {
     MixedDecimalFakeInstance,
     SignedDecimalFakeContract,
     SignedDecimalFakeInstance,
-} from "../../types"
-import { toDecimal, toFullDigit, DEFAULT_TOKEN_DECIMALS } from "../helper/number"
+} from "types/truffle"
+import { assertionHelper } from "../helper/assertion-plugin"
+import { DEFAULT_TOKEN_DECIMALS, toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 

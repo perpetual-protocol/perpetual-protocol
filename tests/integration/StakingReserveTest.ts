@@ -13,7 +13,7 @@ import {
     RewardsDistributionFakeInstance,
     StakingReserveFakeInstance,
     SupplyScheduleFakeInstance,
-} from "../../types"
+} from "types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { deployAmm, deployErc20Fake, Side } from "../helper/contract"
 import { fullDeploy } from "../helper/deploy"

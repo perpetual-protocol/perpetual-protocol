@@ -9,7 +9,7 @@ import {
     ERC20MinimalFakeInstance,
     TetherTokenContract,
     TetherTokenInstance,
-} from "../../types"
+} from "types/truffle"
 import { deployErc20Fake } from "../helper/contract"
 import { toDecimal, toFullDigit } from "../helper/number"
 

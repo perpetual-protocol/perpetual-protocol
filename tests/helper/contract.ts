@@ -47,7 +47,7 @@ import {
     StakingReserveFakeInstance,
     SupplyScheduleFakeContract,
     SupplyScheduleFakeInstance,
-} from "../../types"
+} from "types/truffle"
 import { Decimal, toFullDigit } from "./number"
 
 const L2PriceFeedMock = artifacts.require("L2PriceFeedMock") as L2PriceFeedMockContract

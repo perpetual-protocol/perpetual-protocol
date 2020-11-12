@@ -7,7 +7,7 @@ import {
     PerpTokenInstance,
     RewardsDistributionFakeInstance,
     SupplyScheduleFakeInstance,
-} from "../../types"
+} from "types/truffle"
 import { fullDeploy } from "../helper/deploy"
 import { toDecimal, toFullDigit } from "../helper/number"
 
