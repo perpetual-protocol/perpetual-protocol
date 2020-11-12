@@ -8,7 +8,7 @@ import { UpgradableContractV1, UpgradableContractV2 } from "../../types/ethers"
 use(solidity)
 
 // conflict with buidler-gas-reporter without proxyResolver
-describe.only("OzContractDeployer Spec", () => {
+describe.skip("OzContractDeployer Spec", () => {
     const [wallet] = new MockProvider().getWallets()
     const ozContractDeployer: OzContractDeployer = new OzContractDeployer()
     const contractNameV1 = "UpgradableContractV1"

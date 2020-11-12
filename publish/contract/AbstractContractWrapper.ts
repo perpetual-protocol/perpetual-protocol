@@ -17,7 +17,6 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
     // after new architecture of openzeppelin upgrade plugin we might not need this anymore
     readonly contractAlias!: ContractAlias
     readonly contractFileName!: ContractName
-    readonly contractDeployer: ContractDeployer
     readonly ozContractDeployer: OzContractDeployer
 
     constructor(
@@ -25,14 +24,14 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
         protected readonly systemMetadataDao: SystemMetadataDao,
         protected readonly ozScript: OzScript,
     ) {
-        this.contractDeployer = new ContractDeployer(this.contractFileName)
         this.ozContractDeployer = new OzContractDeployer()
     }
 
     abstract async deploy(...args: any[]): Promise<K>
 
     protected async deployContract(...args: any[]): Promise<K> {
-        const address = await this.contractDeployer.deploy(...args)
+        const contractDeployer = new ContractDeployer(this.contractFileName)
+        const address = await contractDeployer.deploy(...args)
 
         // write to metadata
         this.updateMetadata(address)
