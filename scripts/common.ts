@@ -36,10 +36,10 @@ export interface SystemMetadata {
 }
 
 export interface ExternalContracts {
-    // default is gnosis multisig (old version)
-    foundationMultisig?: string
+    // default is gnosis multisig safe which plays the governance role
+    foundationGovernance?: string
 
-    // default is gnosis multisig safe
+    // default is gnosis multisig safe which plays the treasury role
     foundationTreasury?: string
 
     keeper?: string

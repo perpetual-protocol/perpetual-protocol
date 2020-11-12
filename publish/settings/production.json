@@ -1,34 +1,34 @@
 {
-  "layers": {
-    "layer1": {
-      "chainId": 1,
-      "network": "homestead",
-      "externalContracts": {
-        "foundationMultisig": "0x829e396fcA2b8c3c46c9C9ad997ddD85E910B30A",
-        "foundationTreasury": "0x5E4B407eB1253527628bAb875525AaeC0099fFC5",
-        "perp": "0xbc396689893d065f41bc2c6ecbee5e0085233447",
-        "usdc": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-        "tether": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-        "keeper": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
-        "arbitrageur": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
-        "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
-        "ambBridgeOnEth": "0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e",
-        "multiTokenMediatorOnEth": "0x88ad09518695c6c3712AC10a214bE5109a655671"
-      },
-      "version": "0"
-    },
-    "layer2": {
-      "chainId": 100,
-      "network": "xdai",
-      "externalContracts": {
-        "keeper": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
-        "arbitrageur": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
-        "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
-        "ambBridgeOnXDai": "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
-        "multiTokenMediatorOnXDai": "0xf6A78083ca3e2a662D6dd1703c939c8aCE2e268d",
-        "tether": "0x4ECaBa5870353805a9F068101A40E0f32ed605C6"
-      },
-      "version": "25"
+    "layers": {
+        "layer1": {
+            "chainId": 1,
+            "network": "homestead",
+            "externalContracts": {
+                "foundationGovernance": "0x829e396fcA2b8c3c46c9C9ad997ddD85E910B30A",
+                "foundationTreasury": "0x5E4B407eB1253527628bAb875525AaeC0099fFC5",
+                "perp": "0xbc396689893d065f41bc2c6ecbee5e0085233447",
+                "usdc": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "tether": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+                "keeper": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
+                "arbitrageur": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
+                "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
+                "ambBridgeOnEth": "0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e",
+                "multiTokenMediatorOnEth": "0x88ad09518695c6c3712AC10a214bE5109a655671"
+            },
+            "version": "0"
+        },
+        "layer2": {
+            "chainId": 100,
+            "network": "xdai",
+            "externalContracts": {
+                "keeper": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
+                "arbitrageur": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
+                "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
+                "ambBridgeOnXDai": "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
+                "multiTokenMediatorOnXDai": "0xf6A78083ca3e2a662D6dd1703c939c8aCE2e268d",
+                "tether": "0x4ECaBa5870353805a9F068101A40E0f32ed605C6"
+            },
+            "version": "25"
+        }
     }
-  }
 }

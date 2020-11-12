@@ -51,10 +51,10 @@ export class ContractPublisher {
                         const perpTokenInstance = await perpToken.instance()
 
                         if (!this.settingsDao.isLocal()) {
-                            const foundationMultisig = this.externalContract.foundationMultisig!
-                            if ((await perpTokenInstance!.owner()) !== foundationMultisig) {
-                                await perpTokenInstance!.setOwner(foundationMultisig)
-                                console.log(`Set PERP's owner to ${foundationMultisig}`)
+                            const foundationGovernance = this.externalContract.foundationGovernance!
+                            if ((await perpTokenInstance!.owner()) !== foundationGovernance) {
+                                await perpTokenInstance!.setOwner(foundationGovernance)
+                                console.log(`Set PERP's owner to ${foundationGovernance}`)
                             }
                         }
                     }
