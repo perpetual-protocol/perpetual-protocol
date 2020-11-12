@@ -4,7 +4,6 @@ import { AmmContract, AmmInstance } from "types/truffle"
 import { Layer, Network } from "../../scripts/common"
 import { AmmContractName, ContractAlias, ContractName } from "../ContractName"
 import { OzScript } from "../OzScript"
-import { SettingsDao } from "../SettingsDao"
 import { SystemMetadataDao } from "../SystemMetadataDao"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 import { PriceFeedKey } from "./L2PriceFeed"
@@ -95,12 +94,11 @@ export class Amm extends AbstractContractWrapper<AmmContract, AmmInstance> {
 
     constructor(
         protected readonly layerType: Layer,
-        protected readonly settingsDao: SettingsDao,
         protected readonly systemMetadataDao: SystemMetadataDao,
         protected readonly ozScript: OzScript,
         readonly contractAlias: ContractAlias,
     ) {
-        super(layerType, settingsDao, systemMetadataDao, ozScript)
+        super(layerType, systemMetadataDao, ozScript)
         this.contractAlias = contractAlias
     }
 

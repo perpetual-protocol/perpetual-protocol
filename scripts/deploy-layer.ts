@@ -64,7 +64,7 @@ export async function deployLayer(
     const systemMetadataDao = new SystemMetadataDao(settingsDao)
     systemMetadataDao.setAccounts(layerType, accounts)
     const ozScript = new OzScript(bre.web3.currentProvider, ozNetworkConfig)
-    const publisher = new ContractPublisher(layerType, batch, settingsDao, systemMetadataDao, ozScript)
+    const publisher = new ContractPublisher(layerType, settingsDao, systemMetadataDao, ozScript)
 
-    await publisher.publishContracts()
+    await publisher.publishContracts(batch)
 }

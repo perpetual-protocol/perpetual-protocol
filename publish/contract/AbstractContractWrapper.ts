@@ -6,7 +6,6 @@ import BN from "bn.js"
 import { Layer } from "../../scripts/common"
 import { ContractAlias } from "../ContractName"
 import { OzScript } from "../OzScript"
-import { SettingsDao } from "../SettingsDao"
 import { SystemMetadataDao } from "../SystemMetadataDao"
 
 // T: Contract
@@ -19,7 +18,6 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
 
     constructor(
         protected readonly layerType: Layer,
-        protected readonly settingsDao: SettingsDao,
         protected readonly systemMetadataDao: SystemMetadataDao,
         protected readonly ozScript: OzScript,
     ) {}

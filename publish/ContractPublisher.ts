@@ -38,12 +38,7 @@ export class ContractPublisher {
                     // only deploy USDT on local tests
                     if (this.settingsDao.isLocal()) {
                         console.log("deploying USDT...")
-                        const tetherToken = new TetherToken(
-                            this.layerType,
-                            this.settingsDao,
-                            this.systemMetadataDao,
-                            this.ozScript,
-                        )
+                        const tetherToken = new TetherToken(this.layerType, this.systemMetadataDao, this.ozScript)
                         await tetherToken.deploy()
                     }
                 },
@@ -52,12 +47,7 @@ export class ContractPublisher {
                     // only do it on non-mainnet
                     if (!this.settingsDao.isMainnet()) {
                         console.log("deploying PERP token...")
-                        const perpToken = new PerpToken(
-                            this.layerType,
-                            this.settingsDao,
-                            this.systemMetadataDao,
-                            this.ozScript,
-                        )
+                        const perpToken = new PerpToken(this.layerType, this.systemMetadataDao, this.ozScript)
                         await perpToken.deploy()
 
                         // transfer to foundation multisig
@@ -77,12 +67,7 @@ export class ContractPublisher {
                     // should only do it on testnets
                     if (!this.settingsDao.isMainnet() && !this.settingsDao.isLocal()) {
                         console.log("distributing PERP to faucet...")
-                        const perpToken = new PerpToken(
-                            this.layerType,
-                            this.settingsDao,
-                            this.systemMetadataDao,
-                            this.ozScript,
-                        )
+                        const perpToken = new PerpToken(this.layerType, this.systemMetadataDao, this.ozScript)
                         const perpTokenInstance = await perpToken.instance()
                         const totalSupply = await perpTokenInstance!.totalSupply()
                         await perpTokenInstance!.transfer(this.externalContract.testnetFaucet!, totalSupply.toString())
@@ -93,12 +78,7 @@ export class ContractPublisher {
                     console.log("deploying root bridge...")
                     const ambBridgeOnEth = this.externalContract.ambBridgeOnEth!
                     const multiTokenMediatorOnEth = this.externalContract.multiTokenMediatorOnEth!
-                    const rootBridge = new RootBridge(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                    )
+                    const rootBridge = new RootBridge(this.layerType, this.systemMetadataDao, this.ozScript)
                     await rootBridge.deploy(ambBridgeOnEth, multiTokenMediatorOnEth)
                 },
             ],
@@ -143,18 +123,12 @@ export class ContractPublisher {
                     console.log("deploying ChainlinkL1...")
                     const rootBridge = await new RootBridge(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
                     // TODO this is a hack
                     await sleep(10000)
-                    const chainlinkL1 = new ChainlinkL1(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                    )
+                    const chainlinkL1 = new ChainlinkL1(this.layerType, this.systemMetadataDao, this.ozScript)
                     // TODO this is a hack
                     await sleep(10000)
                     const chainlinkL1Instance = await chainlinkL1.deploy(
@@ -168,12 +142,7 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     // add aggregator of chainlink price feed on L1
                     console.log("setting ChainlinkL1 aggregators...")
-                    const chainlinkL1 = new ChainlinkL1(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                    )
+                    const chainlinkL1 = new ChainlinkL1(this.layerType, this.systemMetadataDao, this.ozScript)
                     await chainlinkL1.addAggregators()
                 },
             ],
@@ -184,12 +153,7 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     // deploy meta tx gateway
                     console.log("deploying MetaTxGateway...")
-                    const metaTxGateway = new MetaTxGateway(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                    )
+                    const metaTxGateway = new MetaTxGateway(this.layerType, this.systemMetadataDao, this.ozScript)
                     await metaTxGateway.deploy("Perp", "1", this.settingsDao.getChainId("layer1"))
                 },
                 async (): Promise<void> => {
@@ -199,16 +163,10 @@ export class ContractPublisher {
                     const multiTokenMediatorOnXDai = this.externalContract.multiTokenMediatorOnXDai!
                     const metaTxGatewayInstance = await new MetaTxGateway(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
-                    const clientBridge = new ClientBridge(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                    )
+                    const clientBridge = new ClientBridge(this.layerType, this.systemMetadataDao, this.ozScript)
                     const clientBridgeInstance = await clientBridge.deploy(
                         ambBridgeOnXDai,
                         multiTokenMediatorOnXDai,
@@ -221,23 +179,13 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     // deploy insurance fund
                     console.log("deploying InsuranceFund...")
-                    const insuranceFund = new InsuranceFund(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                    )
+                    const insuranceFund = new InsuranceFund(this.layerType, this.systemMetadataDao, this.ozScript)
                     await insuranceFund.deploy()
                 },
                 async (): Promise<void> => {
                     // deploy L2 price feed
                     console.log("deploying L2PriceFeed...")
-                    const l2PriceFeed = new L2PriceFeed(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                    )
+                    const l2PriceFeed = new L2PriceFeed(this.layerType, this.systemMetadataDao, this.ozScript)
                     await l2PriceFeed.deploy(
                         this.settingsDao.getExternalContracts("layer2").ambBridgeOnXDai!,
                         "0x0000000000000000000000000000000000000000", // root bridge not deployed yet
@@ -246,12 +194,7 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     // add first L2 aggregators
                     console.log("setting L2PriceFeed aggregators...")
-                    const l2PriceFeed = new L2PriceFeed(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                    )
+                    const l2PriceFeed = new L2PriceFeed(this.layerType, this.systemMetadataDao, this.ozScript)
                     await l2PriceFeed!.addAggregators()
                 },
                 async (): Promise<void> => {
@@ -259,24 +202,17 @@ export class ContractPublisher {
                     console.log("deploying ClearingHouse...")
                     const insuranceFundInstance = await new InsuranceFund(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
                     await sleep(10000)
                     const metaTxGatewayInstance = await new MetaTxGateway(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
                     await sleep(10000)
-                    const clearingHouse = new ClearingHouse(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                    )
+                    const clearingHouse = new ClearingHouse(this.layerType, this.systemMetadataDao, this.ozScript)
                     const clearingHouseInstance = await clearingHouse.deploy(
                         insuranceFundInstance!.address,
                         metaTxGatewayInstance!.address,
@@ -293,19 +229,12 @@ export class ContractPublisher {
                     console.log("deploying Amm ETHUSDT...")
                     const l2PriceFeedInstance = await new L2PriceFeed(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
                     // TODO this is a hack
                     await sleep(10000)
-                    const amm = new Amm(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                        AmmContractName.ETHUSDT,
-                    )
+                    const amm = new Amm(this.layerType, this.systemMetadataDao, this.ozScript, AmmContractName.ETHUSDT)
                     // TODO this is a hack
                     await sleep(10000)
                     const tetherAddress = this.settingsDao.isLocal()
@@ -322,7 +251,6 @@ export class ContractPublisher {
                     console.log("setting up Amm ETHUSDT...")
                     const insuranceFundInstance = await new InsuranceFund(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
@@ -330,19 +258,12 @@ export class ContractPublisher {
                     await sleep(10000)
                     const clearingHouseInstance = await new ClearingHouse(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
                     // TODO this is a hack
                     await sleep(10000)
-                    const amm = new Amm(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                        AmmContractName.ETHUSDT,
-                    )
+                    const amm = new Amm(this.layerType, this.systemMetadataDao, this.ozScript, AmmContractName.ETHUSDT)
                     const ammInstance = await amm.instance()
                     // TODO this is a hack
                     await sleep(10000)
@@ -366,19 +287,12 @@ export class ContractPublisher {
                     console.log("deploying Amm BTCUSDT...")
                     const l2PriceFeedInstance = await new L2PriceFeed(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
                     // TODO this is a hack
                     await sleep(10000)
-                    const amm = new Amm(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                        AmmContractName.BTCUSDT,
-                    )
+                    const amm = new Amm(this.layerType, this.systemMetadataDao, this.ozScript, AmmContractName.BTCUSDT)
                     // TODO this is a hack
                     await sleep(10000)
                     const tetherAddress = this.settingsDao.isLocal()
@@ -395,7 +309,6 @@ export class ContractPublisher {
                     console.log("setting up Amm BTCUSDT...")
                     const insuranceFundInstance = await new InsuranceFund(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
@@ -403,19 +316,12 @@ export class ContractPublisher {
                     await sleep(10000)
                     const clearingHouseInstance = await new ClearingHouse(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
                     // TODO this is a hack
                     await sleep(10000)
-                    const amm = new Amm(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                        AmmContractName.BTCUSDT,
-                    )
+                    const amm = new Amm(this.layerType, this.systemMetadataDao, this.ozScript, AmmContractName.BTCUSDT)
                     // TODO this is a hack
                     await sleep(10000)
                     const ammInstance = await amm.instance()
@@ -439,13 +345,11 @@ export class ContractPublisher {
                     console.log("deploying ClearingHouseViewer...")
                     const clearingHouseInstance = await new ClearingHouse(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
                     const clearingHouseViewer = new ClearingHouseViewer(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                     )
@@ -454,12 +358,7 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     //  deploy ammReader
                     console.log("deploying AmmReader...")
-                    const ammReader = new AmmReader(
-                        this.layerType,
-                        this.settingsDao,
-                        this.systemMetadataDao,
-                        this.ozScript,
-                    )
+                    const ammReader = new AmmReader(this.layerType, this.systemMetadataDao, this.ozScript)
                     await ammReader.deploy()
                 },
                 async (): Promise<void> => {
@@ -467,7 +366,6 @@ export class ContractPublisher {
                     console.log("opening Amm ETHUSDT...")
                     const ethUsdtInstance = await new Amm(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                         AmmContractName.ETHUSDT,
@@ -481,7 +379,6 @@ export class ContractPublisher {
                     console.log("opening Amm BTCUSDT...")
                     const btcUsdtInstance = await new Amm(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                         AmmContractName.BTCUSDT,
@@ -493,7 +390,6 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     const l2PriceFeedInstance = await new L2PriceFeed(
                         this.layerType,
-                        this.settingsDao,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
@@ -509,7 +405,6 @@ export class ContractPublisher {
 
     constructor(
         readonly layerType: Layer,
-        readonly batch: number,
         readonly settingsDao: SettingsDao,
         readonly systemMetadataDao: SystemMetadataDao,
         readonly ozScript: OzScript,
@@ -517,15 +412,15 @@ export class ContractPublisher {
         this.externalContract = settingsDao.getExternalContracts(layerType)
     }
 
-    async publishContracts(): Promise<void> {
+    async publishContracts(batch: number): Promise<void> {
         const taskBatches = this.taskBatchesMap[this.layerType]
         const completeTasksLength = taskBatches.flat().length
-        const tasks = taskBatches[this.batch]
+        const tasks = taskBatches[batch]
         if (!tasks) {
             return
         }
 
-        const batchStartVer = taskBatches.slice(0, this.batch).flat().length
+        const batchStartVer = taskBatches.slice(0, batch).flat().length
         const batchEndVer = batchStartVer + tasks.length
         console.log(`batchStartVer: ${batchStartVer}, batchEndVer: ${batchEndVer}`)
 
