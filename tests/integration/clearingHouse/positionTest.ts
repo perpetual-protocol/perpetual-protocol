@@ -570,9 +570,9 @@ describe("ClearingHouse - open/close position Test", () => {
             await expectEvent.inTransaction(receiptOpen.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
-                side: Side.SELL.toString(),
+                margin: toFullDigit(50),
                 positionNotional: toFullDigit(100),
-                exchangedPositionSize: "11111111111111111112",
+                exchangedPositionSize: "-11111111111111111112",
                 fee: toFullDigit(1), // notional size 100 * 1% = 1
                 positionSizeAfter: "-11111111111111111112",
                 realizedPnl: "0",
@@ -582,7 +582,7 @@ describe("ClearingHouse - open/close position Test", () => {
             await expectEvent.inTransaction(receiptClose.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
-                side: Side.BUY.toString(),
+                margin: "0",
                 positionNotional: "100000000000000000008",
                 exchangedPositionSize: "11111111111111111112",
                 fee: "1000000000000000000",
@@ -609,9 +609,8 @@ describe("ClearingHouse - open/close position Test", () => {
             await expectEvent.inTransaction(receiptOpen.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
-                side: Side.SELL.toString(),
                 positionNotional: toFullDigit(100),
-                exchangedPositionSize: "11111111111111111112",
+                exchangedPositionSize: "-11111111111111111112",
                 fee: toFullDigit(0),
                 positionSizeAfter: "-11111111111111111112",
                 realizedPnl: "0",
@@ -635,7 +634,6 @@ describe("ClearingHouse - open/close position Test", () => {
             await expectEvent.inTransaction(receiptOpen2.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
-                side: Side.BUY.toString(),
                 positionNotional: amount.d,
                 exchangedPositionSize: "11111111111111111111",
                 fee: toFullDigit(0),
@@ -664,7 +662,6 @@ describe("ClearingHouse - open/close position Test", () => {
             await expectEvent.inTransaction(receiptOpen2.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
-                side: Side.BUY.toString(),
                 positionNotional: toFullDigit(50),
                 exchangedPositionSize: "5847953216374269005",
                 fee: toFullDigit(0),
@@ -719,7 +716,7 @@ describe("ClearingHouse - open/close position Test", () => {
 
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 positionNotional: toFullDigit(250),
-                exchangedPositionSize: "26737967914438502674",
+                exchangedPositionSize: "-26737967914438502674",
                 positionSizeAfter: "-17647058823529411765",
             })
         })
@@ -754,9 +751,8 @@ describe("ClearingHouse - open/close position Test", () => {
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
-                side: Side.SELL.toString(),
                 positionNotional: toFullDigit(400),
-                exchangedPositionSize: toFullDigit(12.5),
+                exchangedPositionSize: toFullDigit(-12.5),
                 fee: toFullDigit(0),
                 positionSizeAfter: toFullDigit(25),
                 realizedPnl: "0",
@@ -1310,7 +1306,6 @@ describe("ClearingHouse - open/close position Test", () => {
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
-                side: Side.BUY.toString(),
                 positionNotional: toFullDigit(600), // 300x2
                 exchangedPositionSize: toFullDigit(37.5),
                 fee: toFullDigit(60),
@@ -1357,9 +1352,8 @@ describe("ClearingHouse - open/close position Test", () => {
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
-                side: Side.SELL.toString(),
                 positionNotional: toFullDigit(100),
-                exchangedPositionSize: "13888888888888888889",
+                exchangedPositionSize: "-13888888888888888889",
                 fee: toFullDigit(10),
                 positionSizeAfter: "-25000000000000000001",
                 realizedPnl: "0",
@@ -1393,9 +1387,8 @@ describe("ClearingHouse - open/close position Test", () => {
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
-                side: Side.SELL.toString(),
                 positionNotional: toFullDigit(600),
-                exchangedPositionSize: toFullDigit(37.5),
+                exchangedPositionSize: toFullDigit(-37.5),
                 fee: toFullDigit(60),
                 positionSizeAfter: toFullDigit(0),
                 realizedPnl: "0",
@@ -1439,9 +1432,8 @@ describe("ClearingHouse - open/close position Test", () => {
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
-                side: Side.SELL.toString(),
                 positionNotional: toFullDigit(600),
-                exchangedPositionSize: toFullDigit(37.5),
+                exchangedPositionSize: toFullDigit(-37.5),
                 fee: toFullDigit(60),
                 positionSizeAfter: toFullDigit(0),
                 realizedPnl: "0",
@@ -1485,7 +1477,6 @@ describe("ClearingHouse - open/close position Test", () => {
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
-                side: Side.BUY.toString(),
                 positionNotional: toFullDigit(600),
                 exchangedPositionSize: toFullDigit(150),
                 fee: toFullDigit(60),
@@ -1607,7 +1598,6 @@ describe("ClearingHouse - open/close position Test", () => {
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
-                side: Side.BUY.toString(),
                 positionNotional: toFullDigit(600), // 300x2
                 exchangedPositionSize: toFullDigit(37.5),
                 fee: toFullDigit(60),
