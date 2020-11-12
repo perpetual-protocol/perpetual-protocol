@@ -1,10 +1,10 @@
 import BN from "bn.js"
-import { StakingReserveContract, StakingReserveInstance } from "../../types"
+import { StakingReserveContract, StakingReserveInstance } from "types/truffle"
+import { Layer } from "../../scripts/common"
 import { ContractName } from "../ContractName"
+import { SettingsDao } from "../SettingsDao"
 import { SystemMetadataDao } from "../SystemMetadataDao"
 import { AbstractContractWrapper, OzNetworkConfig } from "./AbstractContractWrapper"
-import { Layer } from "../../scripts/common"
-import { SettingsDao } from "../SettingsDao"
 
 export class StakingReserve extends AbstractContractWrapper<StakingReserveContract, StakingReserveInstance> {
     readonly contractAlias = ContractName.StakingReserve

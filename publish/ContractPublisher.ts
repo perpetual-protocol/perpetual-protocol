@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import BN from "bn.js"
 import { ethers } from "ethers"
+import { MultiTokenMediatorMockInstance, TetherTokenInstance } from "types/truffle"
 import { ExternalContracts, Layer } from "../scripts/common"
 import { sleep } from "../scripts/utils"
-import { MultiTokenMediatorMockInstance, TetherTokenInstance } from "../types"
 import { Amm } from "./contract/Amm"
 import { AmmReader } from "./contract/AmmReader"
 import { ChainlinkL1 } from "./contract/ChainlinkL1"

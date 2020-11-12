@@ -1,9 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { MetaTxGatewayContract, MetaTxGatewayInstance } from "../../types"
+import { MetaTxGatewayContract, MetaTxGatewayInstance } from "types/truffle"
 import { ContractName } from "../ContractName"
-
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
-import { sleep } from "../../scripts/utils"
 
 export class MetaTxGateway extends AbstractContractWrapper<MetaTxGatewayContract, MetaTxGatewayInstance> {
     readonly contractAlias = ContractName.MetaTxGateway

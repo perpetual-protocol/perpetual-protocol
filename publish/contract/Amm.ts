@@ -1,13 +1,13 @@
 import BN from "bn.js"
 import { utils } from "ethers"
-import { AmmContract, AmmInstance } from "../../types"
-import { AmmContractName, ContractAlias, ContractName } from "../ContractName"
-import { SystemMetadataDao } from "../SystemMetadataDao"
-import { OzScript } from "../OzScript"
+import { AmmContract, AmmInstance } from "types/truffle"
 import { Layer, Network } from "../../scripts/common"
+import { AmmContractName, ContractAlias, ContractName } from "../ContractName"
+import { OzScript } from "../OzScript"
+import { SettingsDao } from "../SettingsDao"
+import { SystemMetadataDao } from "../SystemMetadataDao"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 import { PriceFeedKey } from "./L2PriceFeed"
-import { SettingsDao } from "../SettingsDao"
 
 interface AmmDeployArgs {
     quoteAssetReserve: BN

@@ -1,4 +1,4 @@
-import { InsuranceFundContract, InsuranceFundInstance } from "../../types"
+import { InsuranceFundContract, InsuranceFundInstance } from "types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

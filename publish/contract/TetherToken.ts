@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import BN from "bn.js"
-import { TetherTokenContract, TetherTokenInstance } from "../../types"
+import { TetherTokenContract, TetherTokenInstance } from "types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { utils } from "ethers"
-import { L2PriceFeedContract, L2PriceFeedInstance } from "../../types"
+import { L2PriceFeedContract, L2PriceFeedInstance } from "types/truffle"
+import { sleep } from "../../scripts/utils"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
-import { sleep } from "../../scripts/utils"
 
 export enum PriceFeedKey {
     BTC = "BTC",

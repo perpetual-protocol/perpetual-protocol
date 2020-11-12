@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { ethers } from "@nomiclabs/buidler"
 import BN from "bn.js"
 import { Layer } from "../../scripts/common"
 import { sleep } from "../../scripts/utils"
@@ -27,16 +28,15 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
     abstract async deploy(...args: any[]): Promise<K>
 
     protected async deployContract(...args: any[]): Promise<K> {
-        const instance = await this.truffleContract.new(...args)
-
-        // TODO this is a hack
-        await sleep(10000)
+        const Contract = await ethers.getContractFactory(this.contractFileName)
+        const deployedInstance = await Contract.deploy(...args)
 
         // write to metadata
-        this.updateMetadata(instance.address)
+        this.updateMetadata(deployedInstance.address)
 
         // return truffle contract
-        return instance
+        const truffleInstance = await this.instance()
+        return truffleInstance!
     }
 
     protected async deployUpgradableContract(...args: any[]): Promise<K> {
@@ -55,10 +55,6 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
     async upgradeContract(): Promise<void> {
         const instance = await this.instance()!
         const tx = await this.ozScript.upgrade(instance!.address, this.contractFileName)
-    }
-
-    get truffleContract(): T {
-        return artifacts.require<T>(this.contractFileName)
     }
 
     async instance(): Promise<K | undefined> {

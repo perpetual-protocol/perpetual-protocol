@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import BN from "bn.js"
-import { PerpTokenContract, PerpTokenInstance } from "../../types"
+import { PerpTokenContract, PerpTokenInstance } from "types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

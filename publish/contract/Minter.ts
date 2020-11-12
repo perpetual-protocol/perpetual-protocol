@@ -1,4 +1,4 @@
-import { MinterContract, MinterInstance } from "../../types"
+import { MinterContract, MinterInstance } from "types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

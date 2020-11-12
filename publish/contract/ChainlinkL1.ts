@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { utils } from "ethers"
-import { ChainlinkL1Contract, ChainlinkL1Instance } from "../../types"
+import { ChainlinkL1Contract, ChainlinkL1Instance } from "types/truffle"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 

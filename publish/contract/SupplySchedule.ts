@@ -1,11 +1,11 @@
 import BN from "bn.js"
-import { SupplyScheduleContract, SupplyScheduleInstance } from "../../types"
-import { ContractName } from "../ContractName"
-import { SystemMetadataDao } from "../SystemMetadataDao"
-import { OzScript } from "../OzScript"
-import { AbstractContractWrapper } from "./AbstractContractWrapper"
+import { SupplyScheduleContract, SupplyScheduleInstance } from "types/truffle"
 import { Layer } from "../../scripts/common"
+import { ContractName } from "../ContractName"
+import { OzScript } from "../OzScript"
 import { SettingsDao } from "../SettingsDao"
+import { SystemMetadataDao } from "../SystemMetadataDao"
+import { AbstractContractWrapper } from "./AbstractContractWrapper"
 
 export class SupplySchedule extends AbstractContractWrapper<SupplyScheduleContract, SupplyScheduleInstance> {
     readonly contractAlias = ContractName.SupplySchedule
