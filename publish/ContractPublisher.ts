@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import BN from "bn.js"
 import { ethers } from "ethers"
-import { MultiTokenMediatorMockInstance, TetherTokenInstance } from "types/truffle"
 import { ExternalContracts, Layer } from "../scripts/common"
 import { sleep } from "../scripts/utils"
 import { Amm } from "./contract/Amm"
@@ -20,6 +19,9 @@ import { AmmContractName, ContractName } from "./ContractName"
 import { OzScript } from "./OzScript"
 import { SettingsDao } from "./SettingsDao"
 import { SystemMetadataDao } from "./SystemMetadataDao"
+
+const TetherTokenArtifacts = artifacts.require("TetherToken")
+const MultiTokenMediatorMockArtifacts = artifacts.require("MultiTokenMediatorMock")
 
 export type DeployTask = () => Promise<void>
 
@@ -107,15 +109,11 @@ export class ContractPublisher {
                     // only distribute USDT in testnets
                     if (!this.settingsDao.isMainnet() && !this.settingsDao.isLocal()) {
                         console.log("distributing USDT to insurance fund and arbitrageur...")
-                        const tetherTokenInstance = this.ozScript.getTruffleContractInstance<TetherTokenInstance>(
-                            ContractName.TetherToken,
+
+                        const tetherTokenInstance = await TetherTokenArtifacts.at(
                             this.settingsDao.getExternalContracts("layer1").tether!,
                         )
-
-                        const multiTokenMediatorInstance = this.ozScript.getTruffleContractInstance<
-                            MultiTokenMediatorMockInstance
-                        >(
-                            ContractName.MultiTokenMediatorMock,
+                        const multiTokenMediatorInstance = await MultiTokenMediatorMockArtifacts.at(
                             this.settingsDao.getExternalContracts("layer1").multiTokenMediatorOnEth!,
                         )
 

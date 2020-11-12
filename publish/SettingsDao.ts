@@ -1,13 +1,20 @@
 /* eslint-disable no-console, @typescript-eslint/no-non-null-assertion */
 import { ShellString } from "shelljs"
+import { ExternalContracts, Layer, Network, Stage, SystemDeploySettings } from "../scripts/common"
 import production from "./settings/production.json"
 import staging from "./settings/staging.json"
 import test from "./settings/test.json"
-import { Stage, Layer, SystemDeploySettings, ExternalContracts, Network } from "../scripts/common"
 
 export class SettingsDao {
     private settingsCached!: SystemDeploySettings
 
+    // must handle edge cases when local metadata file hasn't been created yet
+    // let localSystemMetadata
+    // try {
+    //     localSystemMetadata = require("../system.json")
+    // } catch (e) {
+    //     localSystemMetadata = {}
+    // }
     constructor(private readonly stage: Stage) {
         switch (stage) {
             case "production":

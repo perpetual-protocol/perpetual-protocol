@@ -17,7 +17,7 @@ import { SettingsDao } from "../publish/SettingsDao"
 import { AccountMetadata, SystemMetadataDao } from "../publish/SystemMetadataDao"
 import { Layer, Network, Stage } from "./common"
 
-export async function getFromAccount(bre: BuidlerRuntimeEnvironment): Promise<string> {
+async function getFromAccount(bre: BuidlerRuntimeEnvironment): Promise<string> {
     const network = bre.buidlerArguments.network! as Network
     console.log(`network=${network}`)
     if (network === "localhost") {

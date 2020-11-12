@@ -4,7 +4,6 @@
 import { ethers } from "@nomiclabs/buidler"
 import BN from "bn.js"
 import { Layer } from "../../scripts/common"
-import { sleep } from "../../scripts/utils"
 import { ContractAlias } from "../ContractName"
 import { OzScript } from "../OzScript"
 import { SettingsDao } from "../SettingsDao"
@@ -42,9 +41,6 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
     protected async deployUpgradableContract(...args: any[]): Promise<K> {
         const address = await this.ozScript.deploy(this.contractAlias, this.contractFileName, args)
 
-        // TODO this is a hack
-        await sleep(10000)
-
         // write to metadata
         this.updateMetadata(address)
 
@@ -53,11 +49,14 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
     }
 
     async upgradeContract(): Promise<void> {
-        const instance = await this.instance()!
-        const tx = await this.ozScript.upgrade(instance!.address, this.contractFileName)
+        await this.ozScript.upgrade(this.address!, this.contractFileName)
     }
 
     async instance(): Promise<K | undefined> {
+        return this.ozScript.getTruffleContractInstance(this.contractFileName, this.address)
+    }
+
+    private get address(): string | undefined {
         const metadata = this.systemMetadataDao.getContractMetadata(this.layerType, this.contractAlias)
         if (!metadata || !metadata.address) {
             console.error(`metadata not found, contractAlias=${this.contractAlias}`)
@@ -69,8 +68,7 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
                 `contract file name mismatched, metadata=${metadata.name}, contractFileName=${this.contractFileName}`,
             )
         }
-
-        return this.ozScript.getTruffleContractInstance(this.contractFileName, metadata.address)
+        return metadata.address
     }
 
     private updateMetadata(address: string): void {

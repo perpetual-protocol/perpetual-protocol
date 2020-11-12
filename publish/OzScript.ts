@@ -47,9 +47,4 @@ export class OzScript {
     getTruffleContractInstance<T>(contractName: string, address?: string): T {
         return this.contractLoader.truffle.fromArtifact(contractName, address) as T
     }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    getWeb3ContractInstance(contractName: string, address?: string): any {
-        return this.contractLoader.web3.fromArtifact(contractName, address)
-    }
 }
