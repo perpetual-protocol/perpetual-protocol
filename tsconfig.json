@@ -2,8 +2,6 @@
     "compilerOptions": {
         "outDir": "./build",
         "composite": true,
-        "rootDir": "./",
-        "baseUrl": "./",
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "lib": ["esnext"],
@@ -16,18 +14,19 @@
         "noImplicitAny": true,
         "noImplicitReturns": true,
         "resolveJsonModule": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
     },
     "include": [
         "./tests/**/*",
         "./build/contracts/**/*.json",
         "./scripts/**/*",
-        "./publish/**/*",
+        "./publish/*.ts",
+        "./publish/**/*.ts",
         "./publish/settings/*.json",
         "./ethereum.json",
         "./types/**/*.ts"
     ],
-    "exclude": [],
+    "exclude": ["./src"],
     "files": [
         "./buidler.config.ts",
         "./index.d.ts",
