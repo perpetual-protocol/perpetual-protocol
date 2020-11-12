@@ -294,7 +294,7 @@ contract ClearingHouse is
         requireEnoughMarginRatio(marginRatio);
 
         // transfer token back to trader
-        withdraw(_amm.quoteAsset(), trader, _removedMargin);
+        withdraw(_amm.quoteAsset(), trader, _removedMargin, false);
 
         // emit event
         emit MarginRemoved(trader, address(_amm), _removedMargin.toUint(), marginRatio.toInt());
@@ -323,9 +323,7 @@ contract ClearingHouse is
         if (settlementPrice.toUint() == 0) {
             settledValue = pos.margin;
         } else {
-            SignedDecimal.signedDecimal memory signedSettlePrice = SignedDecimal.signedDecimal(
-                int256(settlementPrice.toUint())
-            );
+            SignedDecimal.signedDecimal memory signedSettlePrice = MixedDecimal.fromDecimal(settlementPrice);
             Decimal.decimal memory openPrice = pos.openNotional.divD(pos.size.abs());
             SignedDecimal.signedDecimal memory returnedFund = pos.size.mulD(signedSettlePrice.subD(openPrice)).addD(
                 pos.margin
@@ -337,9 +335,8 @@ contract ClearingHouse is
         }
 
         // transfer token based on settledValue
-        if (settledValue.toUint() != 0) {
-            IERC20 quoteAsset = _amm.quoteAsset();
-            withdraw(quoteAsset, trader, settledValue);
+        if (settledValue.toUint() > 0) {
+            withdraw(_amm.quoteAsset(), trader, settledValue, true);
         }
 
         // emit event
@@ -430,7 +427,7 @@ contract ClearingHouse is
             if (positionResp.marginToVault.toInt() > 0) {
                 _transferFrom(quoteToken, trader, address(this), positionResp.marginToVault.abs());
             } else if (positionResp.marginToVault.toInt() < 0) {
-                withdraw(quoteToken, trader, positionResp.marginToVault.abs());
+                withdraw(quoteToken, trader, positionResp.marginToVault.abs(), false);
             }
         }
 
@@ -483,7 +480,7 @@ contract ClearingHouse is
                 enterRestrictionMode(_amm);
                 realizeBadDebt(quoteToken, positionResp.badDebt);
             }
-            withdraw(quoteToken, trader, positionResp.marginToVault.abs());
+            withdraw(quoteToken, trader, positionResp.marginToVault.abs(), false);
         }
 
         // calculate fee and transfer token for fees
@@ -555,7 +552,7 @@ contract ClearingHouse is
             if (totalMarginToVault.toInt() < 0) {
                 transferToInsuranceFund(quoteAsset, totalMarginToVault.abs());
             }
-            withdraw(quoteAsset, _msgSender(), liquidationFee);
+            withdraw(quoteAsset, _msgSender(), liquidationFee, false);
 
             emit PositionLiquidated(
                 _trader,
@@ -1062,7 +1059,8 @@ contract ClearingHouse is
     function withdraw(
         IERC20 _token,
         address _receiver,
-        Decimal.decimal memory _amount
+        Decimal.decimal memory _amount,
+        bool _forSettlement
     ) internal {
         // if withdraw amount is larger than entire balance of vault
         // means this trader's profit comes from other under collateral position's future loss
@@ -1071,9 +1069,14 @@ contract ClearingHouse is
         // in this case, insurance fund loss must be zero
         Decimal.decimal memory totalTokenBalance = _balanceOf(_token, address(this));
         if (totalTokenBalance.toUint() < _amount.toUint()) {
-            Decimal.decimal memory balanceShortage = _amount.subD(totalTokenBalance);
-            prepaidBadDebt[address(_token)] = getPrepaidBadDebt(address(_token)).addD(balanceShortage);
-            insuranceFund.withdraw(_token, balanceShortage);
+            if (_forSettlement) {
+                _amount = totalTokenBalance;
+                require(_amount.toUint() > 0, "clearingHouse is drained");
+            } else {
+                Decimal.decimal memory balanceShortage = _amount.subD(totalTokenBalance);
+                prepaidBadDebt[address(_token)] = getPrepaidBadDebt(address(_token)).addD(balanceShortage);
+                insuranceFund.withdraw(_token, balanceShortage);
+            }
         }
 
         _transfer(_token, _receiver, _amount);
