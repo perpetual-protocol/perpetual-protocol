@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { utils } from "ethers"
 import { L2PriceFeedContract, L2PriceFeedInstance } from "types/truffle"
-import { sleep } from "../../scripts/utils"
 import { ContractName } from "../ContractName"
 import { AbstractContractWrapper } from "./AbstractContractWrapper"
 
@@ -24,15 +23,11 @@ export class L2PriceFeed extends AbstractContractWrapper<L2PriceFeedContract, L2
         const instance = await this.instance()
         for (const priceFeedKey of this.aggregators) {
             await instance!.addAggregator(utils.formatBytes32String(priceFeedKey))
-            // TODO this is a hack
-            await sleep(10000)
         }
     }
 
     async addAggregator(priceFeedKey: PriceFeedKey): Promise<void> {
         const instance = await this.instance()
         await instance!.addAggregator(utils.formatBytes32String(priceFeedKey))
-        // TODO this is a hack
-        await sleep(10000)
     }
 }

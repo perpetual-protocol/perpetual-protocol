@@ -25,6 +25,7 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
     abstract async deploy(...args: any[]): Promise<K>
 
     protected async deployContract(...args: any[]): Promise<K> {
+        console.log(`deployContract: ${this.contractFileName} - ${this.contractAlias}`)
         const Contract = await ethers.getContractFactory(this.contractFileName)
         const deployedInstance = await Contract.deploy(...args)
 
@@ -37,6 +38,7 @@ export abstract class AbstractContractWrapper<T extends Truffle.Contract<K>, K e
     }
 
     protected async deployUpgradableContract(...args: any[]): Promise<K> {
+        console.log(`deployUpgradableContract: ${this.contractFileName} - ${this.contractAlias}`)
         const address = await this.ozScript.deploy(this.contractAlias, this.contractFileName, args)
 
         // write to metadata

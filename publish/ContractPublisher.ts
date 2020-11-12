@@ -2,7 +2,6 @@
 import BN from "bn.js"
 import { ethers } from "ethers"
 import { ExternalContracts, Layer } from "../scripts/common"
-import { sleep } from "../scripts/utils"
 import { Amm } from "./contract/Amm"
 import { AmmReader } from "./contract/AmmReader"
 import { ChainlinkL1 } from "./contract/ChainlinkL1"
@@ -37,7 +36,6 @@ export class ContractPublisher {
                     // deploy USDT
                     // only deploy USDT on local tests
                     if (this.settingsDao.isLocal()) {
-                        console.log("deploying USDT...")
                         const tetherToken = new TetherToken(this.layerType, this.systemMetadataDao, this.ozScript)
                         await tetherToken.deploy()
                     }
@@ -46,7 +44,6 @@ export class ContractPublisher {
                     // deploy perp token
                     // only do it on non-mainnet
                     if (!this.settingsDao.isMainnet()) {
-                        console.log("deploying PERP token...")
                         const perpToken = new PerpToken(this.layerType, this.systemMetadataDao, this.ozScript)
                         await perpToken.deploy()
 
@@ -75,7 +72,6 @@ export class ContractPublisher {
                 },
                 async (): Promise<void> => {
                     // deploy root bridge
-                    console.log("deploying root bridge...")
                     const ambBridgeOnEth = this.externalContract.ambBridgeOnEth!
                     const multiTokenMediatorOnEth = this.externalContract.multiTokenMediatorOnEth!
                     const rootBridge = new RootBridge(this.layerType, this.systemMetadataDao, this.ozScript)
@@ -120,24 +116,17 @@ export class ContractPublisher {
                 },
                 async (): Promise<void> => {
                     // deploy chainlink price feed on L1
-                    console.log("deploying ChainlinkL1...")
                     const rootBridge = await new RootBridge(
                         this.layerType,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
-                    // TODO this is a hack
-                    await sleep(10000)
                     const chainlinkL1 = new ChainlinkL1(this.layerType, this.systemMetadataDao, this.ozScript)
-                    // TODO this is a hack
-                    await sleep(10000)
                     const chainlinkL1Instance = await chainlinkL1.deploy(
                         rootBridge!.address,
                         this.systemMetadataDao.getContractMetadata("layer2", ContractName.L2PriceFeed).address,
                     )
                     await rootBridge!.setPriceFeed(chainlinkL1Instance.address)
-                    // TODO this is a hack
-                    await sleep(10000)
                 },
                 async (): Promise<void> => {
                     // add aggregator of chainlink price feed on L1
@@ -152,13 +141,11 @@ export class ContractPublisher {
             [
                 async (): Promise<void> => {
                     // deploy meta tx gateway
-                    console.log("deploying MetaTxGateway...")
                     const metaTxGateway = new MetaTxGateway(this.layerType, this.systemMetadataDao, this.ozScript)
                     await metaTxGateway.deploy("Perp", "1", this.settingsDao.getChainId("layer1"))
                 },
                 async (): Promise<void> => {
                     // deploy client bridge
-                    console.log("deploying ClientBridge...")
                     const ambBridgeOnXDai = this.externalContract.ambBridgeOnXDai!
                     const multiTokenMediatorOnXDai = this.externalContract.multiTokenMediatorOnXDai!
                     const metaTxGatewayInstance = await new MetaTxGateway(
@@ -173,18 +160,14 @@ export class ContractPublisher {
                         metaTxGatewayInstance!.address,
                     )
                     await metaTxGatewayInstance!.addToWhitelists(clientBridgeInstance.address)
-                    // TODO this is a hack
-                    await sleep(10000)
                 },
                 async (): Promise<void> => {
                     // deploy insurance fund
-                    console.log("deploying InsuranceFund...")
                     const insuranceFund = new InsuranceFund(this.layerType, this.systemMetadataDao, this.ozScript)
                     await insuranceFund.deploy()
                 },
                 async (): Promise<void> => {
                     // deploy L2 price feed
-                    console.log("deploying L2PriceFeed...")
                     const l2PriceFeed = new L2PriceFeed(this.layerType, this.systemMetadataDao, this.ozScript)
                     await l2PriceFeed.deploy(
                         this.settingsDao.getExternalContracts("layer2").ambBridgeOnXDai!,
@@ -199,44 +182,32 @@ export class ContractPublisher {
                 },
                 async (): Promise<void> => {
                     // deploy clearing house
-                    console.log("deploying ClearingHouse...")
                     const insuranceFundInstance = await new InsuranceFund(
                         this.layerType,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
-                    await sleep(10000)
                     const metaTxGatewayInstance = await new MetaTxGateway(
                         this.layerType,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
-                    await sleep(10000)
                     const clearingHouse = new ClearingHouse(this.layerType, this.systemMetadataDao, this.ozScript)
                     const clearingHouseInstance = await clearingHouse.deploy(
                         insuranceFundInstance!.address,
                         metaTxGatewayInstance!.address,
                     )
                     await metaTxGatewayInstance!.addToWhitelists(clearingHouseInstance.address)
-                    // TODO this is a hack
-                    await sleep(10000)
                     await insuranceFundInstance!.setBeneficiary(clearingHouseInstance.address)
-                    // TODO this is a hack
-                    await sleep(10000)
                 },
                 async (): Promise<void> => {
                     // deploy amm
-                    console.log("deploying Amm ETHUSDT...")
                     const l2PriceFeedInstance = await new L2PriceFeed(
                         this.layerType,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
-                    // TODO this is a hack
-                    await sleep(10000)
                     const amm = new Amm(this.layerType, this.systemMetadataDao, this.ozScript, AmmContractName.ETHUSDT)
-                    // TODO this is a hack
-                    await sleep(10000)
                     const tetherAddress = this.settingsDao.isLocal()
                         ? // USDT is custom-managed by us
                           this.systemMetadataDao.getContractMetadata("layer1", ContractName.TetherToken).address
@@ -244,7 +215,6 @@ export class ContractPublisher {
                           this.settingsDao.getExternalContracts("layer2").tether!
 
                     await amm.deploy(l2PriceFeedInstance!.address, tetherAddress)
-                    await sleep(10000)
                 },
                 async (): Promise<void> => {
                     // setup amm
@@ -254,47 +224,28 @@ export class ContractPublisher {
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
-                    // TODO this is a hack
-                    await sleep(10000)
                     const clearingHouseInstance = await new ClearingHouse(
                         this.layerType,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
-                    // TODO this is a hack
-                    await sleep(10000)
                     const amm = new Amm(this.layerType, this.systemMetadataDao, this.ozScript, AmmContractName.ETHUSDT)
                     const ammInstance = await amm.instance()
-                    // TODO this is a hack
-                    await sleep(10000)
                     const { maxHoldingBaseAsset } = amm.getAmmProperties()
-                    // TODO this is a hack
-                    await sleep(10000)
                     if (maxHoldingBaseAsset.gt(new BN(0))) {
                         await ammInstance!.setMaxHoldingBaseAsset({ d: maxHoldingBaseAsset.toString() })
-                        // TODO this is a hack
-                        await sleep(10000)
                     }
                     await ammInstance!.setCounterParty(clearingHouseInstance!.address)
-                    // TODO this is a hack
-                    await sleep(10000)
                     await insuranceFundInstance!.addAmm(ammInstance!.address)
-                    // TODO this is a hack
-                    await sleep(10000)
                 },
                 async (): Promise<void> => {
                     // deploy amm
-                    console.log("deploying Amm BTCUSDT...")
                     const l2PriceFeedInstance = await new L2PriceFeed(
                         this.layerType,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
-                    // TODO this is a hack
-                    await sleep(10000)
                     const amm = new Amm(this.layerType, this.systemMetadataDao, this.ozScript, AmmContractName.BTCUSDT)
-                    // TODO this is a hack
-                    await sleep(10000)
                     const tetherAddress = this.settingsDao.isLocal()
                         ? // USDT is custom-managed by us
                           this.systemMetadataDao.getContractMetadata("layer1", ContractName.TetherToken).address
@@ -302,7 +253,6 @@ export class ContractPublisher {
                           this.settingsDao.getExternalContracts("layer2").tether!
 
                     await amm.deploy(l2PriceFeedInstance!.address, tetherAddress)
-                    await sleep(10000)
                 },
                 async (): Promise<void> => {
                     // setup amm
@@ -312,37 +262,22 @@ export class ContractPublisher {
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
-                    // TODO this is a hack
-                    await sleep(10000)
                     const clearingHouseInstance = await new ClearingHouse(
                         this.layerType,
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
-                    // TODO this is a hack
-                    await sleep(10000)
                     const amm = new Amm(this.layerType, this.systemMetadataDao, this.ozScript, AmmContractName.BTCUSDT)
-                    // TODO this is a hack
-                    await sleep(10000)
                     const ammInstance = await amm.instance()
                     const { maxHoldingBaseAsset } = amm.getAmmProperties()
-                    // TODO this is a hack
-                    await sleep(10000)
                     if (maxHoldingBaseAsset.gt(new BN(0))) {
                         await ammInstance!.setMaxHoldingBaseAsset({ d: maxHoldingBaseAsset.toString() })
-                        // TODO this is a hack
-                        await sleep(10000)
                     }
                     await ammInstance!.setCounterParty(clearingHouseInstance!.address)
-                    // TODO this is a hack
-                    await sleep(10000)
                     await insuranceFundInstance!.addAmm(ammInstance!.address)
-                    // TODO this is a hack
-                    await sleep(10000)
                 },
                 async (): Promise<void> => {
                     //  deploy clearingHouseViewer
-                    console.log("deploying ClearingHouseViewer...")
                     const clearingHouseInstance = await new ClearingHouse(
                         this.layerType,
                         this.systemMetadataDao,
@@ -357,7 +292,6 @@ export class ContractPublisher {
                 },
                 async (): Promise<void> => {
                     //  deploy ammReader
-                    console.log("deploying AmmReader...")
                     const ammReader = new AmmReader(this.layerType, this.systemMetadataDao, this.ozScript)
                     await ammReader.deploy()
                 },
@@ -371,8 +305,6 @@ export class ContractPublisher {
                         AmmContractName.ETHUSDT,
                     ).instance()
                     await ethUsdtInstance!.setOpen(true)
-                    // TODO this is a hack
-                    await sleep(10000)
                 },
                 async (): Promise<void> => {
                     // open amm
@@ -384,8 +316,6 @@ export class ContractPublisher {
                         AmmContractName.BTCUSDT,
                     ).instance()
                     await btcUsdtInstance!.setOpen(true)
-                    // TODO this is a hack
-                    await sleep(10000)
                 },
                 async (): Promise<void> => {
                     const l2PriceFeedInstance = await new L2PriceFeed(
@@ -396,8 +326,6 @@ export class ContractPublisher {
                     await l2PriceFeedInstance!.setKeeper(
                         this.systemMetadataDao.getContractMetadata("layer1", ContractName.RootBridge).address,
                     )
-                    // TODO this is a hack
-                    await sleep(10000)
                 },
             ],
         ],
