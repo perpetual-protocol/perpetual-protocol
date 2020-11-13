@@ -261,8 +261,8 @@ describe("L2PriceFeed Spec", () => {
         })
 
         it("force error, get previous price", async () => {
-            await expectRevert(l2PriceFeed.getPreviousPrice(toBytes32("ETH"), 10), "Not enough history")
-            await expectRevert(l2PriceFeed.getPreviousTimestamp(toBytes32("ETH"), 10), "Not enough history")
+            await expectRevert(l2PriceFeed.getPreviousPrice(toBytes32("ETH"), 3), "Not enough history")
+            await expectRevert(l2PriceFeed.getPreviousTimestamp(toBytes32("ETH"), 3), "Not enough history")
         })
     })
 })

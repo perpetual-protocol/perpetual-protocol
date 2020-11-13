@@ -586,9 +586,8 @@ describe("ClearingHouse Test", () => {
             expectEvent(receipt, "PositionChanged", {
                 amm: amm.address,
                 trader: alice,
-                side: Side.SELL.toString(),
                 positionNotional: "84615384615384615377",
-                exchangedPositionSize: "7575757575757575757",
+                exchangedPositionSize: "-7575757575757575757",
                 fee: "0",
                 positionSizeAfter: "0",
                 realizedPnl: "-15384615384615384623",
@@ -1788,7 +1787,7 @@ describe("ClearingHouse Test", () => {
 
             const r = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
             await expectEvent.inTransaction(r.tx, clearingHouse, "PositionChanged", {
-                exchangedPositionSize: posMigrated.size.d,
+                exchangedPositionSize: new BN(posMigrated.size.d).mul(new BN("-1")),
             })
 
             const posClosed = await clearingHouse.getPosition(amm.address, alice)

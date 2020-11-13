@@ -48,18 +48,19 @@ contract ChainlinkL1 is PerpFiOwnableUpgrade, BlockContext {
     }
 
     function setRootBridge(address _rootBridge) public onlyOwner {
-        require(_rootBridge != address(0), "RootBridge address is empty");
+        requireNonEmptyAddress(_rootBridge);
         rootBridge = RootBridge(_rootBridge);
         emit RootBridgeChanged(_rootBridge);
     }
 
     function setPriceFeedL2(address _priceFeedL2) public onlyOwner {
-        require(_priceFeedL2 != address(0), "PriceFeedL2 address is empty");
+        requireNonEmptyAddress(_priceFeedL2);
         priceFeedL2Address = _priceFeedL2;
         emit PriceFeedL2Changed(_priceFeedL2);
     }
 
     function addAggregator(bytes32 _priceFeedKey, address _aggregator) external onlyOwner {
+        requireNonEmptyAddress(_aggregator);
         if (address(priceFeedMap[_priceFeedKey]) == address(0)) {
             priceFeedKeys.push(_priceFeedKey);
         }
@@ -67,13 +68,16 @@ contract ChainlinkL1 is PerpFiOwnableUpgrade, BlockContext {
     }
 
     function removeAggregator(bytes32 _priceFeedKey) external onlyOwner {
-        requireAggregatorExisted(getAggregator(_priceFeedKey));
+        requireNonEmptyAddress(address(getAggregator(_priceFeedKey)));
         delete priceFeedMap[_priceFeedKey];
 
         uint256 length = priceFeedKeys.length;
         for (uint256 i; i < length; i++) {
             if (priceFeedKeys[i] == _priceFeedKey) {
-                priceFeedKeys[i] = priceFeedKeys[length - 1];
+                // if the removal item is the last one, just `pop`
+                if (i != length - 1) {
+                    priceFeedKeys[i] = priceFeedKeys[length - 1];
+                }
                 priceFeedKeys.pop();
                 break;
             }
@@ -90,7 +94,7 @@ contract ChainlinkL1 is PerpFiOwnableUpgrade, BlockContext {
 
     function updateLatestRoundData(bytes32 _priceFeedKey) external {
         AggregatorV3Interface aggregator = getAggregator(_priceFeedKey);
-        requireAggregatorExisted(aggregator);
+        requireNonEmptyAddress(address(aggregator));
 
         (uint80 roundId, int256 price, , uint256 timestamp, ) = aggregator.latestRoundData();
         require(timestamp > prevTimestampMap[_priceFeedKey], "incorrect timestamp");
@@ -112,8 +116,9 @@ contract ChainlinkL1 is PerpFiOwnableUpgrade, BlockContext {
     //
     // REQUIRE FUNCTIONS
     //
-    function requireAggregatorExisted(AggregatorV3Interface aggregator) internal pure {
-        require(address(aggregator) != address(0), "aggregator not existed");
+
+    function requireNonEmptyAddress(address _addr) internal pure {
+        require(_addr != address(0), "empty address");
     }
 
     //

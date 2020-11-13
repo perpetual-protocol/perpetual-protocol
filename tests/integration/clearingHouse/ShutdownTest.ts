@@ -583,7 +583,7 @@ describe("Protocol shutdown test", () => {
                 })
             })
 
-            it("debt is more than clearingHouse' balance, ask insuranceFund to pay", async () => {
+            it("debt is more than clearingHouse' balance, insuranceFund won't pay for it", async () => {
                 await transfer(admin, alice, 100)
                 await approve(alice, clearingHouse.address, 200)
                 await transfer(admin, bob, 100)
@@ -606,19 +606,17 @@ describe("Protocol shutdown test", () => {
                 await amm.shutdown()
 
                 // balance of clearingHouse is 600
-                // alice gets 600, bob gets 180.95, carol losses 180.95 (can not get collateral back)
-                // need to pay (600 + 180.95), insuranceFund help to pay 180.95
+                // alice should get 600, bob should get 180.95, carol losses 180.95 (can not get collateral back)
                 const aliceReceipt = await clearingHouse.settlePosition(amm.address, { from: alice })
                 expect(await quoteToken.balanceOf(alice)).to.eq("600000000")
 
-                await clearingHouse.settlePosition(amm.address, { from: bob })
-                expect(await quoteToken.balanceOf(bob)).to.eq("180952380")
+                await expectRevert(
+                    clearingHouse.settlePosition(amm.address, { from: bob }),
+                    "VM Exception while processing transaction: revert DecimalERC20: transfer failed",
+                )
+                const r = await clearingHouse.settlePosition(amm.address, { from: carol })
+                expectEvent.inTransaction(r.tx, clearingHouse, "PositionSettled", { valueTransferred: "0" })
 
-                await clearingHouse.settlePosition(amm.address, { from: carol })
-                expect(await quoteToken.balanceOf(carol)).to.eq("0")
-
-                // 5000 - (180.952 + 0.00...75) = 4819.047
-                expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("4819047620")
                 expect(await quoteToken.balanceOf(clearingHouse.address)).eq(0)
             })
         })
