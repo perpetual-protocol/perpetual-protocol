@@ -108,4 +108,8 @@ describe("BaseBridgeSpec Spec", () => {
             "PerpFiOwnableUpgrade: caller is not the owner",
         )
     })
+
+    it("force error, transfer zero amount", async () => {
+        await expectRevert(rootBridge.erc20Transfer(quoteToken.address, alice, toDecimal(0)), "amount is zero")
+    })
 })
