@@ -21,8 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.12.4] - 2020-11-02
 ### Added
 - add `Amm::getUnderlyingTwapPrice` #16
-- add event `ClearingHouse::FeePoolSet` #28
-- add event `ClearingHouse::WhitelistChanged` #28
 
 ### Changed
 - the definition of `ClearingHouse::getPosition` has changed (the size becomes dynamic after liquidity migration) #5
