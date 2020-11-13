@@ -1,8 +1,8 @@
 import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
-import { ChainlinkL1Instance, ChainlinkL1MockInstance, RootBridgeMockInstance } from "../../types"
 import BN from "bn.js"
 import { expect, use } from "chai"
+import { ChainlinkL1Instance, ChainlinkL1MockInstance, RootBridgeMockInstance } from "../../types"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { deployChainlinkL1 } from "../helper/contract"
 import { deployChainlinkL1Mock, deployRootBridgeMock } from "../helper/mockContract"
@@ -32,11 +32,11 @@ describe("chainlinkL1 Spec", () => {
 
     describe("initialize()", () => {
         it("force error, RootBridge address cannot be address(0)", async () => {
-            await expectRevert(deployChainlinkL1(EMPTY_ADDRESS, addresses[1]), "RootBridge address is empty")
+            await expectRevert(deployChainlinkL1(EMPTY_ADDRESS, addresses[1]), "empty address")
         })
 
         it("force error, PriceFeedL2 address cannot be address(0)", async () => {
-            await expectRevert(deployChainlinkL1(addresses[1], EMPTY_ADDRESS), "PriceFeedL2 address is empty")
+            await expectRevert(deployChainlinkL1(addresses[1], EMPTY_ADDRESS), "empty address")
         })
     })
 
@@ -59,11 +59,11 @@ describe("chainlinkL1 Spec", () => {
 
         // expectRevert section
         it("force error, RootBridge address cannot be address(0)", async () => {
-            await expectRevert(chainlinkL1.setRootBridge(EMPTY_ADDRESS), "RootBridge address is empty")
+            await expectRevert(chainlinkL1.setRootBridge(EMPTY_ADDRESS), "empty address")
         })
 
         it("force error, PriceFeedL2 address cannot be address(0)", async () => {
-            await expectRevert(chainlinkL1.setPriceFeedL2(EMPTY_ADDRESS), "PriceFeedL2 address is empty")
+            await expectRevert(chainlinkL1.setPriceFeedL2(EMPTY_ADDRESS), "empty address")
         })
     })
 
@@ -91,6 +91,10 @@ describe("chainlinkL1 Spec", () => {
             expect(await chainlinkL1.getAggregator(stringToBytes32("ETH"))).eq(chainlinkL1Mock.address)
             expect(fromBytes32(await chainlinkL1.priceFeedKeys(2))).eq("LINK")
             expect(await chainlinkL1.getAggregator(stringToBytes32("LINK"))).eq(addresses[2])
+        })
+
+        it("force error, addAggregator with zero address", async () => {
+            await expectRevert(chainlinkL1.addAggregator(stringToBytes32("ETH"), EMPTY_ADDRESS), "empty address")
         })
     })
 
@@ -151,10 +155,7 @@ describe("chainlinkL1 Spec", () => {
         // expectRevert section
         it("force error, get non-existing aggregator", async () => {
             const _wrongPriceFeedKey = "Ha"
-            await expectRevert(
-                chainlinkL1.updateLatestRoundData(stringToBytes32(_wrongPriceFeedKey)),
-                "aggregator not existed",
-            )
+            await expectRevert(chainlinkL1.updateLatestRoundData(stringToBytes32(_wrongPriceFeedKey)), "empty address")
         })
 
         it("force error, timestamp equal to 0", async () => {
