@@ -3,6 +3,16 @@ export type Stage = "production" | "staging" | "test"
 export type Network = "homestead" | "rinkeby" | "ropsten" | "kovan" | "xdai" | "sokol" | "localhost"
 export type Layer = "layer1" | "layer2"
 
+export const ozNetworkFile: Record<Network, string> = {
+    homestead: "mainnet-1",
+    rinkeby: "rinkeby-4",
+    kovan: "kovan-42",
+    ropsten: "ropsten-3",
+    localhost: "unknown-31337",
+    xdai: "unknown-100",
+    sokol: "unknown-100",
+}
+
 // TODO deprecated
 export enum DeployMode {
     Init = "init",
