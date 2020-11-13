@@ -3,18 +3,9 @@ import { ShellString } from "shelljs"
 import { ExternalContracts, Layer, Network, Stage, SystemDeploySettings } from "../scripts/common"
 import production from "./settings/production.json"
 import staging from "./settings/staging.json"
-import test from "./settings/test.json"
 
 export class SettingsDao {
     private settingsCached!: SystemDeploySettings
-
-    // must handle edge cases when local metadata file hasn't been created yet
-    // let localSystemMetadata
-    // try {
-    //     localSystemMetadata = require("../system.json")
-    // } catch (e) {
-    //     localSystemMetadata = {}
-    // }
     constructor(private readonly stage: Stage) {
         switch (stage) {
             case "production":
@@ -24,11 +15,29 @@ export class SettingsDao {
                 this.settingsCached = staging as SystemDeploySettings
                 break
             case "test":
-                this.settingsCached = test as SystemDeploySettings
+                try {
+                    this.settingsCached = require("./settings/test.json")
+                } catch (e) {
+                    this.settingsCached = {
+                        layers: {
+                            layer1: {
+                                chainId: 31337,
+                                network: "localhost",
+                                version: "0",
+                                externalContracts: {},
+                            },
+                            layer2: {
+                                chainId: 31337,
+                                network: "localhost",
+                                version: "0",
+                                externalContracts: {},
+                            },
+                        },
+                    }
+                }
                 break
             default:
                 throw new Error(`Stage not found=${stage}`)
-                break
         }
     }
 
