@@ -185,7 +185,7 @@ contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
         require(isExistedKey(_priceFeedKey), "key not existed");
 
         uint256 len = getPriceFeedLength(_priceFeedKey);
-        require(len > 0 && _numOfRoundBack <= len, "Not enough history");
+        require(len > 0 && _numOfRoundBack < len, "Not enough history");
         return priceFeedMap[_priceFeedKey].priceData[len - _numOfRoundBack - 1].price;
     }
 
@@ -198,7 +198,7 @@ contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
         require(isExistedKey(_priceFeedKey), "key not existed");
 
         uint256 len = getPriceFeedLength(_priceFeedKey);
-        require(len > 0 && _numOfRoundBack <= len, "Not enough history");
+        require(len > 0 && _numOfRoundBack < len, "Not enough history");
         return priceFeedMap[_priceFeedKey].priceData[len - _numOfRoundBack - 1].timestamp;
     }
 
