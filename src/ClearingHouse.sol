@@ -295,7 +295,7 @@ contract ClearingHouse is
         requireEnoughMarginRatio(marginRatio);
 
         // transfer token back to trader
-        withdraw(_amm.quoteAsset(), trader, _removedMargin, false);
+        withdraw(_amm.quoteAsset(), trader, _removedMargin);
 
         // emit event
         emit MarginRemoved(trader, address(_amm), _removedMargin.toUint(), marginRatio.toInt());
@@ -335,9 +335,9 @@ contract ClearingHouse is
             }
         }
 
-        // transfer token based on settledValue
+        // transfer token based on settledValue. no insurance fund support
         if (settledValue.toUint() > 0) {
-            withdraw(_amm.quoteAsset(), trader, settledValue, true);
+            _transfer(_amm.quoteAsset(), trader, settledValue);
         }
 
         // emit event
@@ -399,8 +399,7 @@ contract ClearingHouse is
         {
             // add scope for stack too deep error
             address trader = _msgSender();
-            SignedDecimal.signedDecimal memory oldPosSize;
-            oldPosSize = adjustPositionForLiquidityChanged(_amm, trader).size;
+            SignedDecimal.signedDecimal memory oldPosSize = adjustPositionForLiquidityChanged(_amm, trader).size;
             int256 oldPositionSize = oldPosSize.toInt();
 
             // increase or decrease position depends on old position's side and size
@@ -429,7 +428,7 @@ contract ClearingHouse is
             if (positionResp.marginToVault.toInt() > 0) {
                 _transferFrom(quoteToken, trader, address(this), positionResp.marginToVault.abs());
             } else if (positionResp.marginToVault.toInt() < 0) {
-                withdraw(quoteToken, trader, positionResp.marginToVault.abs(), false);
+                withdraw(quoteToken, trader, positionResp.marginToVault.abs());
             }
         }
 
@@ -482,7 +481,7 @@ contract ClearingHouse is
                 enterRestrictionMode(_amm);
                 realizeBadDebt(quoteToken, positionResp.badDebt);
             }
-            withdraw(quoteToken, trader, positionResp.marginToVault.abs(), false);
+            withdraw(quoteToken, trader, positionResp.marginToVault.abs());
         }
 
         // calculate fee and transfer token for fees
@@ -554,7 +553,7 @@ contract ClearingHouse is
             if (totalMarginToVault.toInt() < 0) {
                 transferToInsuranceFund(quoteAsset, totalMarginToVault.abs());
             }
-            withdraw(quoteAsset, _msgSender(), liquidationFee, false);
+            withdraw(quoteAsset, _msgSender(), liquidationFee);
 
             emit PositionLiquidated(
                 _trader,
@@ -1061,8 +1060,7 @@ contract ClearingHouse is
     function withdraw(
         IERC20 _token,
         address _receiver,
-        Decimal.decimal memory _amount,
-        bool _forSettlement
+        Decimal.decimal memory _amount
     ) internal {
         // if withdraw amount is larger than entire balance of vault
         // means this trader's profit comes from other under collateral position's future loss
@@ -1071,14 +1069,9 @@ contract ClearingHouse is
         // in this case, insurance fund loss must be zero
         Decimal.decimal memory totalTokenBalance = _balanceOf(_token, address(this));
         if (totalTokenBalance.toUint() < _amount.toUint()) {
-            if (_forSettlement) {
-                _amount = totalTokenBalance;
-                require(_amount.toUint() > 0, "clearingHouse is drained");
-            } else {
-                Decimal.decimal memory balanceShortage = _amount.subD(totalTokenBalance);
-                prepaidBadDebt[address(_token)] = getPrepaidBadDebt(address(_token)).addD(balanceShortage);
-                insuranceFund.withdraw(_token, balanceShortage);
-            }
+            Decimal.decimal memory balanceShortage = _amount.subD(totalTokenBalance);
+            prepaidBadDebt[address(_token)] = getPrepaidBadDebt(address(_token)).addD(balanceShortage);
+            insuranceFund.withdraw(_token, balanceShortage);
         }
 
         _transfer(_token, _receiver, _amount);

@@ -610,7 +610,10 @@ describe("Protocol shutdown test", () => {
                 const aliceReceipt = await clearingHouse.settlePosition(amm.address, { from: alice })
                 expect(await quoteToken.balanceOf(alice)).to.eq("600000000")
 
-                await expectRevert(clearingHouse.settlePosition(amm.address, { from: bob }), "clearingHouse is drained")
+                await expectRevert(
+                    clearingHouse.settlePosition(amm.address, { from: bob }),
+                    "VM Exception while processing transaction: revert DecimalERC20: transfer failed",
+                )
                 const r = await clearingHouse.settlePosition(amm.address, { from: carol })
                 expectEvent.inTransaction(r.tx, clearingHouse, "PositionSettled", { valueTransferred: "0" })
 
