@@ -240,9 +240,10 @@ export class ContractPublisher {
                         this.systemMetadataDao,
                         this.ozScript,
                     )
+
                     await l2PriceFeed.deploy(
                         this.settingsDao.getExternalContracts("layer2").ambBridgeOnXDai!,
-                        "0x0000000000000000000000000000000000000000", // root bridge not deployed yet
+                        this.systemMetadataDao.getContractMetadata("layer1", ContractName.RootBridge).address,
                     )
                 },
                 async (): Promise<void> => {
@@ -499,7 +500,7 @@ export class ContractPublisher {
                         this.systemMetadataDao,
                         this.ozScript,
                     ).instance()
-                    await l2PriceFeedInstance!.setKeeper(
+                    await l2PriceFeedInstance!.setRootBridge(
                         this.systemMetadataDao.getContractMetadata("layer1", ContractName.RootBridge).address,
                     )
                     // TODO this is a hack
