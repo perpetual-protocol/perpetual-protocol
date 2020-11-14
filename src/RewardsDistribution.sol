@@ -110,7 +110,9 @@ contract RewardsDistribution is PerpFiOwnableUpgrade, BlockContext, DecimalERC20
     function removeRewardsDistribution(uint256 _index) external onlyOwner {
         require(distributions.length != 0 && _index <= distributions.length - 1, "index out of bounds");
 
-        distributions[_index] = distributions[distributions.length - 1];
+        if (_index < distributions.length - 1) {
+            distributions[_index] = distributions[distributions.length - 1];
+        }
         distributions.pop();
     }
 

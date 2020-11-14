@@ -118,7 +118,9 @@ contract InsuranceFund is IInsuranceFund, PerpFiOwnableUpgrade, BlockContext, Re
         uint256 quoteTokensLength = getQuoteTokenLength();
         for (uint256 i = 0; i < quoteTokensLength; i++) {
             if (quoteTokens[i] == _token) {
-                quoteTokens[i] = quoteTokens[quoteTokensLength - 1];
+                if (i < quoteTokensLength - 1) {
+                    quoteTokens[i] = quoteTokens[quoteTokensLength - 1];
+                }
                 quoteTokens.pop();
                 break;
             }
