@@ -388,6 +388,7 @@ export class ContractPublisher {
         const governance = this.externalContract.foundationGovernance!
         console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
         await OzContractDeployer.transferProxyAdminOwnership(governance)
+        console.log("contract deployment finished.")
     }
 
     private async attemptExec(task: DeployTask, retriesRemaining = 1): Promise<void> {
