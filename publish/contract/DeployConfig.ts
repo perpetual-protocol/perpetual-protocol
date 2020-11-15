@@ -1,6 +1,6 @@
 import { BigNumber } from "ethers"
 import { Stage } from "../../scripts/common"
-import { AmmContractName } from "../ContractName"
+import { AmmInstanceName } from "../ContractName"
 
 const DEFAULT_DIGITS = BigNumber.from("1000000000000000000")
 
@@ -102,8 +102,8 @@ export class DeployConfig {
 
     // amm
     readonly ammConfigMap: Record<string, AmmConfig> = {
-        [AmmContractName.BTCUSDT]: BTC_USD_AMM,
-        [AmmContractName.ETHUSDT]: ETH_USD_AMM,
+        [AmmInstanceName.BTCUSDT]: BTC_USD_AMM,
+        [AmmInstanceName.ETHUSDT]: ETH_USD_AMM,
     }
 
     constructor(stage: Stage) {

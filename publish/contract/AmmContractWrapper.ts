@@ -12,7 +12,7 @@ export class AmmContractWrapper extends ContractWrapper<Amm> {
         priceFeedAddress: string,
         quoteAssetAddress: string,
     ): Promise<Amm> {
-        const ammConfig = ammConfigMap[this.contractAlias]
+        const ammConfig = ammConfigMap[this.contractInstanceName]
         const {
             quoteAssetReserve,
             baseAssetReserve,

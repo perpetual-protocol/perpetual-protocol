@@ -1,4 +1,4 @@
-export enum AmmContractName {
+export enum AmmInstanceName {
     BTCUSDT = "BTCUSDT",
     ETHUSDT = "ETHUSDT",
     LINKUSDT = "LINKUSDT",
@@ -27,4 +27,4 @@ export enum ContractName {
     MultiTokenMediatorMock = "MultiTokenMediatorMock",
 }
 
-export type ContractAlias = ContractName | AmmContractName
+export type ContractInstanceName = ContractName | AmmInstanceName

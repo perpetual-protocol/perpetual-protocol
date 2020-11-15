@@ -71,8 +71,8 @@ export class SystemMetadataDao {
         )
     }
 
-    getContractMetadata(layerType: Layer, contractAlias: string): ContractMetadata {
-        return this.systemMetadataCache.layers[layerType]!.contracts[contractAlias]
+    getContractMetadata(layerType: Layer, contractInstanceName: string): ContractMetadata {
+        return this.systemMetadataCache.layers[layerType]!.contracts[contractInstanceName]
     }
 
     setMetadata(metadata: SystemMetadata): void {

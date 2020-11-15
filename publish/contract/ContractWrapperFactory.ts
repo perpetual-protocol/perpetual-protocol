@@ -4,7 +4,7 @@
 import { Contract } from "ethers"
 import { Layer } from "../../scripts/common"
 import { Amm } from "../../types/ethers"
-import { ContractAlias, ContractName } from "../ContractName"
+import { ContractInstanceName, ContractName } from "../ContractName"
 import { SystemMetadataDao } from "../SystemMetadataDao"
 import { AmmContractWrapper } from "./AmmContractWrapper"
 import { ContractWrapper } from "./ContractWrapper"
@@ -26,12 +26,12 @@ export class ContractWrapperFactory {
         )
     }
 
-    createAmm(contractAlias: ContractAlias): ContractWrapper<Amm> {
+    createAmm(contractInstanceName: ContractInstanceName): ContractWrapper<Amm> {
         return new AmmContractWrapper(
             this.layerType,
             this.systemMetadataDao,
             ContractName.Amm,
-            contractAlias,
+            contractInstanceName,
             this.confirmations,
         )
     }
