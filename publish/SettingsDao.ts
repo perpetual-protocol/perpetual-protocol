@@ -6,7 +6,7 @@ import staging from "./settings/staging.json"
 
 export class SettingsDao {
     private settingsCached!: SystemDeploySettings
-    constructor(private readonly stage: Stage) {
+    constructor(readonly stage: Stage) {
         switch (stage) {
             case "production":
                 this.settingsCached = production as SystemDeploySettings
