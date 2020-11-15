@@ -1,28 +1,28 @@
 {
   "manifestVersion": "3.1",
   "impls": {
-    "3b4249b4a55d6465553dea528e14f40fa18fb6753cd98b863358f04bc2246aa2": {
-      "address": "0xE3376C2067115c86020339BC6a3879B4778f5b15",
-      "txHash": "0xc382285818798d1386f71c9178745ce23435a6f443600ddaa234a0b8d952b56b",
+    "929d25c84c811dd7f8a9e75eeb982eeaf0fc0b04b49d1ecdbf6db0d58ceb3d63": {
+      "address": "0xA19a49582635CFCe018f64f386A041bBDB43FEf0",
+      "txHash": "0xf0e164c140792de8b0e09402958404337bed9fe6a81a56f6f22445094ffa1136",
       "layout": {
         "storage": [
           {
             "contract": "Initializable",
             "label": "initialized",
             "type": "t_bool",
-            "src": "@openzeppelin/upgrades/contracts/Initializable.sol:21"
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
           },
           {
             "contract": "Initializable",
             "label": "initializing",
             "type": "t_bool",
-            "src": "@openzeppelin/upgrades/contracts/Initializable.sol:26"
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
           },
           {
             "contract": "Initializable",
             "label": "______gap",
             "type": "t_array(t_uint256)50_storage",
-            "src": "@openzeppelin/upgrades/contracts/Initializable.sol:61"
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
           },
           {
             "contract": "ContextUpgradeSafe",
@@ -57,31 +57,37 @@
           {
             "contract": "BaseBridge",
             "label": "ambBridge",
-            "type": "t_address",
-            "src": "src/bridge/BaseBridge.sol:29"
+            "type": "t_contract(IAMB)15798",
+            "src": "src/bridge/BaseBridge.sol:28"
           },
           {
             "contract": "BaseBridge",
             "label": "multiTokenMediator",
-            "type": "t_address",
-            "src": "src/bridge/BaseBridge.sol:32"
+            "type": "t_contract(IMultiTokenMediator)15810",
+            "src": "src/bridge/BaseBridge.sol:31"
           },
           {
             "contract": "RootBridge",
             "label": "priceFeed",
-            "type": "t_contract(IPriceFeed)17215",
-            "src": "src/bridge/ethereum/RootBridge.sol:19"
+            "type": "t_contract(IPriceFeed)18137",
+            "src": "src/bridge/ethereum/RootBridge.sol:17"
           }
         ],
         "types": {
-          "t_contract(IPriceFeed)17215": {
+          "t_contract(IPriceFeed)18137": {
             "label": "contract IPriceFeed"
           },
-          "t_address": {
-            "label": "address"
+          "t_contract(IAMB)15798": {
+            "label": "contract IAMB"
+          },
+          "t_contract(IMultiTokenMediator)15810": {
+            "label": "contract IMultiTokenMediator"
           },
           "t_mapping(t_address,t_uint256)": {
             "label": "mapping(address => uint256)"
+          },
+          "t_address": {
+            "label": "address"
           },
           "t_array(t_uint256)50_storage": {
             "label": "uint256[50]"
@@ -92,28 +98,28 @@
         }
       }
     },
-    "415a7de43eded7ef4bfc5186630bf0c1c50093341e7d7c03a5a81ef93531aba1": {
-      "address": "0x4c660785Fd7a5A49637573fa752e2f2fC6963fDB",
-      "txHash": "0x05f1951ac2f6e06ba84401cd2796dc36f6474790fe423a69fa9259865ef65ccf",
+    "7766957e9c0377775015d83a977cdad05393ea8a746a350b796df7ab78ee7208": {
+      "address": "0xcB898b899846bdF2770979942438833c2A074BF7",
+      "txHash": "0xc1095d5d3a15af1b9223b060ba8de643af8a3f04bf7908c24ab9166204443806",
       "layout": {
         "storage": [
           {
             "contract": "Initializable",
             "label": "initialized",
             "type": "t_bool",
-            "src": "@openzeppelin/upgrades/contracts/Initializable.sol:21"
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
           },
           {
             "contract": "Initializable",
             "label": "initializing",
             "type": "t_bool",
-            "src": "@openzeppelin/upgrades/contracts/Initializable.sol:26"
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
           },
           {
             "contract": "Initializable",
             "label": "______gap",
             "type": "t_array(t_uint256)50_storage",
-            "src": "@openzeppelin/upgrades/contracts/Initializable.sol:61"
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
           },
           {
             "contract": "ContextUpgradeSafe",
@@ -148,48 +154,48 @@
           {
             "contract": "ChainlinkL1",
             "label": "priceFeedMap",
-            "type": "t_mapping(t_bytes32,t_contract(AggregatorV3Interface)93)",
-            "src": "src/ChainlinkL1.sol:27"
+            "type": "t_mapping(t_bytes32,t_contract(AggregatorV3Interface)45)",
+            "src": "src/ChainlinkL1.sol:26"
           },
           {
             "contract": "ChainlinkL1",
             "label": "priceFeedKeys",
             "type": "t_array(t_bytes32)dyn_storage",
-            "src": "src/ChainlinkL1.sol:28"
+            "src": "src/ChainlinkL1.sol:27"
           },
           {
             "contract": "ChainlinkL1",
             "label": "rootBridge",
-            "type": "t_contract(RootBridge)15070",
-            "src": "src/ChainlinkL1.sol:29"
+            "type": "t_contract(RootBridge)15721",
+            "src": "src/ChainlinkL1.sol:28"
           },
           {
             "contract": "ChainlinkL1",
             "label": "priceFeedL2Address",
             "type": "t_address",
-            "src": "src/ChainlinkL1.sol:30"
+            "src": "src/ChainlinkL1.sol:29"
           },
           {
             "contract": "ChainlinkL1",
             "label": "prevTimestampMap",
             "type": "t_mapping(t_bytes32,t_uint256)",
-            "src": "src/ChainlinkL1.sol:31"
+            "src": "src/ChainlinkL1.sol:30"
           },
           {
             "contract": "ChainlinkL1",
             "label": "__gap",
             "type": "t_array(t_uint256)50_storage",
-            "src": "src/ChainlinkL1.sol:45"
+            "src": "src/ChainlinkL1.sol:44"
           }
         ],
         "types": {
-          "t_mapping(t_bytes32,t_contract(AggregatorV3Interface)93)": {
+          "t_mapping(t_bytes32,t_contract(AggregatorV3Interface)45)": {
             "label": "mapping(bytes32 => contract AggregatorV3Interface)"
           },
           "t_array(t_bytes32)dyn_storage": {
             "label": "bytes32[]"
           },
-          "t_contract(RootBridge)15070": {
+          "t_contract(RootBridge)15721": {
             "label": "contract RootBridge"
           },
           "t_address": {
@@ -209,7 +215,7 @@
     }
   },
   "admin": {
-    "address": "0xA1af8D434a1421E470250A5189cC5825B2c7Ef26",
-    "txHash": "0x7718970e7f61ccbdb5a2c1c44e773c0b0bb3db8b4afcd8b2151a63ffea43f153"
+    "address": "0xf1f17C9338d7e7F33bd6060d79B65e0797B3A2A2",
+    "txHash": "0x614bfa26361902968fb78891408d870b690616ce9cc4f3c69cb6b2e30b0e586b"
   }
 }
