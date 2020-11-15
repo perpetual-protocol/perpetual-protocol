@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { ethers } from "@nomiclabs/buidler"
-import { BigNumber } from "ethers"
+import { BigNumber, Signer } from "ethers"
 import { ExternalContracts, Layer } from "../scripts/common"
 import {
     AmmReader,
@@ -30,7 +30,7 @@ export class ContractPublisher {
     readonly externalContract: ExternalContracts
     readonly factory: ContractWrapperFactory
     readonly deployConfig: DeployConfig
-    private confirmations: number
+    private signer!: Signer
 
     readonly taskBatchesMap: Record<Layer, DeployTask[][]> = {
         layer1: [
@@ -55,15 +55,17 @@ export class ContractPublisher {
                         return
                     }
 
-                    // deploy perp token
-                    const supply = this.deployConfig.perpInitSupply
                     const perpContract = this.factory.create<PerpToken>(ContractName.PerpToken)
-                    const perpToken = await perpContract.deployImmutableContract(supply)
-
-                    // distribute PERP to faucet
-                    // should only do it on testnets
+                    await perpContract.deployImmutableContract(this.deployConfig.perpInitSupply)
+                },
+                async (): Promise<void> => {
+                    console.log("distribute PERP to faucet...(should only do it on testnets)")
+                    const perpToken = await this.factory.create<PerpToken>(ContractName.PerpToken).instance()
                     if (this.externalContract.testnetFaucet) {
-                        await perpToken.transfer(this.externalContract.testnetFaucet!, supply.toString())
+                        await perpToken.transfer(
+                            this.externalContract.testnetFaucet!,
+                            this.deployConfig.perpInitSupply.toString(),
+                        )
                     }
                 },
                 async (): Promise<void> => {
@@ -103,10 +105,13 @@ export class ContractPublisher {
                     const tetherDigits = await tether.decimals()
 
                     // approve tether and distribute to arb and insurance fund
+                    console.log("tether.approve...")
                     await (await tether.approve(mediatorOnEth, "0")).wait(this.confirmations)
                     await (await tether.approve(mediatorOnEth, ethers.constants.MaxUint256.toString())).wait(
                         this.confirmations,
                     )
+
+                    console.log("relayTokens...")
                     await mediator.relayTokens(
                         tetherOnEth,
                         insuranceFundOnXdai,
@@ -129,13 +134,14 @@ export class ContractPublisher {
                         ContractName.L2PriceFeed,
                     ).address
                     const rootBridgeContract = this.factory.create<RootBridge>(ContractName.RootBridge)
-                    const rootBridge = await rootBridgeContract.instance()
                     const chainlinkContract = this.factory.create<ChainlinkL1>(ContractName.ChainlinkL1)
-                    const chainlink = await chainlinkContract.deployUpgradableContract(
-                        rootBridge.address,
-                        l2PriceFeedOnXdai,
-                    )
-                    await (await rootBridge.setPriceFeed(chainlink.address)).wait(this.confirmations)
+                    await chainlinkContract.deployUpgradableContract(rootBridgeContract.address!, l2PriceFeedOnXdai)
+                },
+                async (): Promise<void> => {
+                    console.log("setPriceFeed...")
+                    const chainlinkContract = this.factory.create<ChainlinkL1>(ContractName.ChainlinkL1)
+                    const rootBridge = await this.factory.create<RootBridge>(ContractName.RootBridge).instance()
+                    await (await rootBridge.setPriceFeed(chainlinkContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     console.log("add aggregator of chainlink price feed on L1...")
@@ -143,6 +149,7 @@ export class ContractPublisher {
                     const chainlink = await chainlinkContract.instance()
                     for (const priceFeedKey in this.deployConfig.chainlinkMap) {
                         const address = this.deployConfig.chainlinkMap[priceFeedKey]
+                        console.log("addAggregator...")
                         await (await chainlink.addAggregator(ethers.utils.id(priceFeedKey.toString()), address)).wait(
                             this.confirmations,
                         )
@@ -164,15 +171,19 @@ export class ContractPublisher {
                     const ambBridgeOnXDai = this.externalContract.ambBridgeOnXDai!
                     const multiTokenMediatorOnXDai = this.externalContract.multiTokenMediatorOnXDai!
                     const metaTxGatewayContract = this.factory.create<MetaTxGateway>(ContractName.MetaTxGateway)
-                    const metaTxGateway = await metaTxGatewayContract.instance()
-
                     const clientBridgeContract = this.factory.create<ClientBridge>(ContractName.ClientBridge)
-                    const clientBridge = await clientBridgeContract.deployUpgradableContract(
+                    await clientBridgeContract.deployUpgradableContract(
                         ambBridgeOnXDai,
                         multiTokenMediatorOnXDai,
-                        metaTxGateway.address,
+                        metaTxGatewayContract.address!,
                     )
-                    await (await metaTxGateway.addToWhitelists(clientBridge.address)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("metaTxGateway.addToWhitelists(clientBridge.address)...")
+                    const metaTxGatewayContract = this.factory.create<MetaTxGateway>(ContractName.MetaTxGateway)
+                    const metaTxGateway = await metaTxGatewayContract.instance()
+                    const clientBridgeContract = this.factory.create<ClientBridge>(ContractName.ClientBridge)
+                    await (await metaTxGateway.addToWhitelists(clientBridgeContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     // deploy insurance fund
@@ -193,6 +204,7 @@ export class ContractPublisher {
                     console.log("add aggregators to L2PriceFeed")
                     const l2PriceFeed = await this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed).instance()
                     for (const priceFeedKey in this.deployConfig.chainlinkMap) {
+                        console.log(`add aggregator=${priceFeedKey}`)
                         await (await l2PriceFeed.addAggregator(ethers.utils.id(priceFeedKey.toString()))).wait(
                             this.confirmations,
                         )
@@ -203,18 +215,27 @@ export class ContractPublisher {
                     const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
                     const metaTxGatewayContract = this.factory.create<MetaTxGateway>(ContractName.MetaTxGateway)
                     const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-
-                    const clearingHouse = await clearingHouseContract.deployUpgradableContract(
+                    await clearingHouseContract.deployUpgradableContract(
                         this.deployConfig.initMarginRequirement,
                         this.deployConfig.maintenanceMarginRequirement,
                         this.deployConfig.liquidationFeeRatio,
                         insuranceFundContract.address!,
                         metaTxGatewayContract.address!,
                     )
-                    const metaTxGateway = await metaTxGatewayContract.instance()
-                    await (await metaTxGateway.addToWhitelists(clearingHouse.address)).wait(this.confirmations)
-                    const insuranceFund = await insuranceFundContract.instance()
-                    await (await insuranceFund.setBeneficiary(clearingHouse.address)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const metaTxGateway = await this.factory
+                        .create<MetaTxGateway>(ContractName.MetaTxGateway)
+                        .instance()
+                    const insuranceFund = await this.factory
+                        .create<InsuranceFund>(ContractName.InsuranceFund)
+                        .instance()
+
+                    console.log("metaTxGateway.addToWhitelists...")
+                    await (await metaTxGateway.addToWhitelists(clearingHouseContract.address!)).wait(this.confirmations)
+                    console.log("insuranceFundContract.setBeneficiary...")
+                    await (await insuranceFund.setBeneficiary(clearingHouseContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     // deploy amm
@@ -242,16 +263,18 @@ export class ContractPublisher {
                     const { maxHoldingBaseAsset } = this.deployConfig.ammConfigMap[AmmContractName.ETHUSDT].properties
 
                     if (maxHoldingBaseAsset.gt(0)) {
+                        console.log("setMaxHoldingBaseAsset...")
                         await (await amm.setMaxHoldingBaseAsset({ d: maxHoldingBaseAsset.toString() })).wait(
                             this.confirmations,
                         )
                     }
+                    console.log("amm.setCounterParty...")
                     await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
+                    console.log("insuranceFund.addAmm...")
                     await (await insuranceFund.addAmm(amm.address)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     // deploy amm
-
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
                     const ammContract = this.factory.createAmm(AmmContractName.BTCUSDT)
                     const tetherAddr = this.deployConfig.deployUsdt
@@ -276,11 +299,14 @@ export class ContractPublisher {
                     const { maxHoldingBaseAsset } = this.deployConfig.ammConfigMap[AmmContractName.BTCUSDT].properties
 
                     if (maxHoldingBaseAsset.gt(0)) {
+                        console.log("setMaxHoldingBaseAsset...")
                         await (await amm.setMaxHoldingBaseAsset({ d: maxHoldingBaseAsset.toString() })).wait(
                             this.confirmations,
                         )
                     }
+                    console.log("amm.setCounterParty...")
                     await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
+                    console.log("insuranceFund.addAmm...")
                     await (await insuranceFund.addAmm(amm.address)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
@@ -326,9 +352,12 @@ export class ContractPublisher {
         readonly ozScript: OzScript,
     ) {
         this.externalContract = settingsDao.getExternalContracts(layerType)
-        this.factory = new ContractWrapperFactory(layerType, systemMetadataDao)
         this.deployConfig = new DeployConfig(settingsDao.stage)
-        this.confirmations = this.settingsDao.isLocal() ? 1 : 5
+        this.factory = new ContractWrapperFactory(layerType, systemMetadataDao, this.deployConfig.confirmations)
+    }
+
+    get confirmations(): number {
+        return this.deployConfig.confirmations
     }
 
     async publishContracts(batch: number): Promise<void> {
@@ -358,7 +387,7 @@ export class ContractPublisher {
         }
 
         for (const task of tasks.slice(ver - batchStartVer, batchEndVer - batchStartVer)) {
-            await this.attemptExec(task)
+            await task()
             this.settingsDao.increaseVersion(this.layerType)
         }
 
@@ -381,18 +410,5 @@ export class ContractPublisher {
         // console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
         // await OzContractDeployer.transferProxyAdminOwnership(governance)
         console.log("contract deployment finished.")
-    }
-
-    private async attemptExec(task: DeployTask, retriesRemaining = 1): Promise<void> {
-        try {
-            await task()
-        } catch (error) {
-            console.error(error)
-            if (retriesRemaining > 0) {
-                console.log("Execute publish task failed, retry....")
-                return this.attemptExec(task, retriesRemaining - 1)
-            }
-            throw new Error("Exceed retry limit")
-        }
     }
 }
