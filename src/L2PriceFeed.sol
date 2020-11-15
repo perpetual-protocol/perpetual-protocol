@@ -33,7 +33,8 @@ contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
     //**********************************************************//
 
     address public ambBridge;
-    address public l1PriceFeed;
+    address public rootBridge;
+
     // key by currency symbol, eg ETH
     mapping(bytes32 => PriceFeed) public priceFeedMap;
     bytes32[] public priceFeedKeys;
@@ -50,10 +51,10 @@ contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
     //
     // FUNCTIONS
     //
-    function initialize(address _ambBridge, address _l1PriceFeed) public initializer {
+    function initialize(address _ambBridge, address _rootBridge) public initializer {
         __Ownable_init();
         ambBridge = _ambBridge;
-        l1PriceFeed = _l1PriceFeed;
+        rootBridge = _rootBridge;
     }
 
     function addAggregator(bytes32 _priceFeedKey) external onlyOwner {
@@ -76,9 +77,9 @@ contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
         }
     }
 
-    function setKeeper(address _keeper) external onlyOwner {
-        require(_keeper != address(0), "addr is empty");
-        l1PriceFeed = _keeper;
+    function setRootBridge(address _rootBridge) external onlyOwner {
+        require(_rootBridge != address(0), "addr is empty");
+        rootBridge = _rootBridge;
     }
 
     //
@@ -91,7 +92,7 @@ contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
         uint256 _timestamp,
         uint256 _roundId
     ) external override onlyBridge {
-        require(IAMB(ambBridge).messageSender() == l1PriceFeed, "sender not l1PriceFeed");
+        require(IAMB(ambBridge).messageSender() == rootBridge, "sender not RootBridge");
         requireKeyExisted(_priceFeedKey, true);
         require(_timestamp > getLatestTimestamp(_priceFeedKey), "incorrect timestamp");
 

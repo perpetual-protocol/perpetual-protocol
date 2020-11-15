@@ -335,11 +335,12 @@ export class ContractPublisher {
                     await (await btcUsdt.setOpen(true)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
-                    const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const l2PriceFeedInstance = await l2PriceFeedContract.instance()
-                    await l2PriceFeedInstance.setKeeper(
-                        this.systemMetadataDao.getContractMetadata("layer1", ContractName.RootBridge).address,
-                    )
+                    const l2PriceFeed = await this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed).instance()
+                    await (
+                        await l2PriceFeed!.setRootBridge(
+                            this.systemMetadataDao.getContractMetadata("layer1", ContractName.RootBridge).address,
+                        )
+                    ).wait(this.confirmations)
                 },
             ],
         ],

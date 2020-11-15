@@ -17,6 +17,7 @@ contract ChainlinkL1 is PerpFiOwnableUpgrade, BlockContext {
     event RootBridgeChanged(address rootBridge);
     event PriceFeedL2Changed(address priceFeedL2);
     event PriceUpdateMessageIdSent(bytes32 messageId);
+    event PriceUpdated(uint80 roundId, uint256 price, uint256 timestamp);
 
     //**********************************************************//
     //    The below state variables can not change the order    //
@@ -98,17 +99,20 @@ contract ChainlinkL1 is PerpFiOwnableUpgrade, BlockContext {
 
         (uint80 roundId, int256 price, , uint256 timestamp, ) = aggregator.latestRoundData();
         require(timestamp > prevTimestampMap[_priceFeedKey], "incorrect timestamp");
+        require(price >= 0, "negative answer");
 
         uint8 decimals = aggregator.decimals();
 
+        Decimal.decimal memory decimalPrice = Decimal.decimal(formatDecimals(uint256(price), decimals));
         bytes32 messageId = rootBridge.updatePriceFeed(
             priceFeedL2Address,
             _priceFeedKey,
-            Decimal.decimal(formatDecimals(uint256(price), decimals)),
+            decimalPrice,
             timestamp,
             roundId
         );
         emit PriceUpdateMessageIdSent(messageId);
+        emit PriceUpdated(roundId, decimalPrice.toUint(), timestamp);
 
         prevTimestampMap[_priceFeedKey] = timestamp;
     }
