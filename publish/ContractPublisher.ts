@@ -30,7 +30,7 @@ export class ContractPublisher {
     readonly externalContract: ExternalContracts
     readonly factory: ContractWrapperFactory
     readonly deployConfig: DeployConfig
-    readonly confirmations = 5
+    private confirmations: number
 
     readonly taskBatchesMap: Record<Layer, DeployTask[][]> = {
         layer1: [
@@ -328,6 +328,7 @@ export class ContractPublisher {
         this.externalContract = settingsDao.getExternalContracts(layerType)
         this.factory = new ContractWrapperFactory(layerType, systemMetadataDao)
         this.deployConfig = new DeployConfig(settingsDao.stage)
+        this.confirmations = this.settingsDao.isLocal() ? 1 : 5
     }
 
     async publishContracts(batch: number): Promise<void> {
@@ -379,7 +380,7 @@ export class ContractPublisher {
         // const governance = this.externalContract.foundationGovernance!
         // console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
         // await OzContractDeployer.transferProxyAdminOwnership(governance)
-        // console.log("contract deployment finished.")
+        console.log("contract deployment finished.")
     }
 
     private async attemptExec(task: DeployTask, retriesRemaining = 1): Promise<void> {
