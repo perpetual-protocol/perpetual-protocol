@@ -16,9 +16,9 @@ export class ContractWrapper<T extends Contract> {
         protected readonly systemMetadataDao: SystemMetadataDao,
         protected readonly contractFileName: ContractName,
         protected contractInstanceName: ContractInstanceName,
-        protected readonly confirmations: number = 1,
+        confirmations: number = 1,
     ) {
-        this.ozContractDeployer = new OzContractDeployer()
+        this.ozContractDeployer = new OzContractDeployer(confirmations)
     }
 
     async deployImmutableContract(...args: any[]): Promise<T> {

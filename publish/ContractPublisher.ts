@@ -149,7 +149,7 @@ export class ContractPublisher {
                     const chainlink = await chainlinkContract.instance()
                     for (const priceFeedKey in this.deployConfig.chainlinkMap) {
                         const address = this.deployConfig.chainlinkMap[priceFeedKey]
-                        console.log("addAggregator...")
+                        console.log(`addAggregator=${priceFeedKey.toString()}`)
                         await (await chainlink.addAggregator(ethers.utils.id(priceFeedKey.toString()), address)).wait(
                             this.confirmations,
                         )

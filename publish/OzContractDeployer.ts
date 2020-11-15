@@ -3,7 +3,7 @@ import { ethers, upgrades } from "@nomiclabs/buidler"
 
 // @openzeppelin wrapper
 export class OzContractDeployer {
-    constructor(readonly ozInitMethodName = "initialize") {}
+    constructor(readonly confirmations: number = 1, readonly ozInitMethodName = "initialize") {}
 
     static async transferProxyAdminOwnership(newAdmin: string): Promise<void> {
         // TODO this is a hack due to @openzeppelin/buidler-upgrades doesn't expose "admin" in type-extensions.d.ts
@@ -15,7 +15,7 @@ export class OzContractDeployer {
         const signers = await ethers.getSigners()
         const signer = signers[0]
         const nonceManager = new NonceManager(signer)
-        await ethers.provider.waitForTransaction(txHash, 5)
+        await ethers.provider.waitForTransaction(txHash, this.confirmations)
         const nonce = await signer.getTransactionCount()
         nonceManager.setTransactionCount(nonce)
     }
