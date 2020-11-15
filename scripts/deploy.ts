@@ -17,8 +17,12 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
     }
 
     // remove .openzeppelin/${network}.json for the initial deploy
-    rm(`.openzeppelin/${ozNetworkFile[layer1Network]}.json`)
-    rm(`.openzeppelin/${ozNetworkFile[layer2Network]}.json`)
+    if (0 === settings.getVersion("layer1")) {
+        rm(`.openzeppelin/${ozNetworkFile[layer1Network]}.json`)
+    }
+    if (0 === settings.getVersion("layer2")) {
+        rm(`.openzeppelin/${ozNetworkFile[layer2Network]}.json`)
+    }
 
     // we have to break deployment up into multiple batches because:
     // (1) layer1 and layer2 contracts have circular dependencies
