@@ -4,10 +4,10 @@ export type Network = "homestead" | "rinkeby" | "ropsten" | "kovan" | "xdai" | "
 export type Layer = "layer1" | "layer2"
 
 export const ozNetworkFile: Record<Network, string> = {
-    homestead: "mainnet-1",
-    rinkeby: "rinkeby-4",
-    kovan: "kovan-42",
-    ropsten: "ropsten-3",
+    homestead: "mainnet",
+    rinkeby: "rinkeby",
+    kovan: "kovan",
+    ropsten: "ropsten",
     localhost: "unknown-31337",
     xdai: "unknown-100",
     sokol: "unknown-100",
