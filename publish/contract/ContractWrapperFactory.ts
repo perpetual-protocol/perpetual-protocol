@@ -10,13 +10,29 @@ import { AmmContractWrapper } from "./AmmContractWrapper"
 import { ContractWrapper } from "./ContractWrapper"
 
 export class ContractWrapperFactory {
-    constructor(protected readonly layerType: Layer, protected readonly systemMetadataDao: SystemMetadataDao) {}
+    constructor(
+        protected readonly layerType: Layer,
+        protected readonly systemMetadataDao: SystemMetadataDao,
+        protected readonly confirmations: number,
+    ) {}
 
     create<T extends Contract>(contractFileName: ContractName): ContractWrapper<T> {
-        return new ContractWrapper<T>(this.layerType, this.systemMetadataDao, contractFileName, contractFileName)
+        return new ContractWrapper<T>(
+            this.layerType,
+            this.systemMetadataDao,
+            contractFileName,
+            contractFileName,
+            this.confirmations,
+        )
     }
 
     createAmm(contractAlias: ContractAlias): ContractWrapper<Amm> {
-        return new AmmContractWrapper(this.layerType, this.systemMetadataDao, ContractName.Amm, contractAlias)
+        return new AmmContractWrapper(
+            this.layerType,
+            this.systemMetadataDao,
+            ContractName.Amm,
+            contractAlias,
+            this.confirmations,
+        )
     }
 }

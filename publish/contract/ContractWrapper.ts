@@ -16,6 +16,7 @@ export class ContractWrapper<T extends Contract> {
         protected readonly systemMetadataDao: SystemMetadataDao,
         protected readonly contractFileName: ContractName,
         protected contractAlias: ContractAlias,
+        protected readonly confirmations: number = 1,
     ) {
         this.ozContractDeployer = new OzContractDeployer()
     }
@@ -25,10 +26,12 @@ export class ContractWrapper<T extends Contract> {
         const factory = await ethers.getContractFactory(this.contractFileName)
         const instance = (await factory.deploy(...args)) as T
         this.updateMetadata(instance.address)
+
         return instance
     }
 
     async deployUpgradableContract(...args: any[]): Promise<T> {
+        console.log(`deployUpgradableContract ${this.contractFileName}:[${args}]`)
         const address = await this.ozContractDeployer.deploy(this.contractFileName, args)
         this.updateMetadata(address)
         return await this.instance()
