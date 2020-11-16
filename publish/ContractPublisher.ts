@@ -19,6 +19,7 @@ import { IMultiTokenMediator } from "../types/ethers/IMultiTokenMediator"
 import { ContractWrapperFactory } from "./contract/ContractWrapperFactory"
 import { DeployConfig } from "./contract/DeployConfig"
 import { AmmInstanceName, ContractName } from "./ContractName"
+import { OzContractDeployer } from "./OzContractDeployer"
 import { OzScript } from "./OzScript"
 import { SettingsDao } from "./SettingsDao"
 import { SystemMetadataDao } from "./SystemMetadataDao"
@@ -407,9 +408,9 @@ export class ContractPublisher {
         }
 
         // TODO add a prompt
-        // const governance = this.externalContract.foundationGovernance!
-        // console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
-        // await OzContractDeployer.transferProxyAdminOwnership(governance)
+        const governance = this.externalContract.foundationGovernance!
+        console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
+        await OzContractDeployer.transferProxyAdminOwnership(governance)
         console.log("contract deployment finished.")
     }
 }
