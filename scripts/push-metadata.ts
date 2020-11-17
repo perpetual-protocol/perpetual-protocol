@@ -1,6 +1,6 @@
+import { SettingsDao } from "../publish/SettingsDao"
 import { SystemMetadataDao } from "../publish/SystemMetadataDao"
 import { Stage } from "./common"
-import { SettingsDao } from "../publish/SettingsDao"
 
 async function main(): Promise<void> {
     const stage = process.argv[2] as Stage

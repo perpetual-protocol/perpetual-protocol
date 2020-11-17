@@ -18,7 +18,7 @@ import {
     SupplyScheduleFakeInstance,
     TraderWalletContract,
     TraderWalletInstance,
-} from "../../../types"
+} from "../../../types/truffle"
 import { ClearingHouse } from "../../../types/web3/ClearingHouse"
 import { assertionHelper } from "../../helper/assertion-plugin"
 import { Dir, PnlCalcOption, Side } from "../../helper/contract"
@@ -1165,9 +1165,9 @@ describe("ClearingHouse Test", () => {
                     .openPosition(
                         amm.address,
                         Side.SELL,
-                        { d: toFullDigitStr(20) },
-                        { d: toFullDigitStr(5) },
-                        { d: toFullDigitStr(11.12) },
+                        [toFullDigitStr(20)],
+                        [toFullDigitStr(5)],
+                        [toFullDigitStr(11.12)],
                     )
                     .encodeABI(),
                 nonce: 0,

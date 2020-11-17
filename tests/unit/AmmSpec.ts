@@ -1,15 +1,13 @@
-import { artifacts, web3 } from "@nomiclabs/buidler"
+import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { default as BigNumber, default as BN } from "bn.js"
 import { expect, use } from "chai"
-import { AmmFakeInstance, ERC20FakeInstance, L2PriceFeedMockContract, L2PriceFeedMockInstance } from "../../types"
+import { AmmFakeInstance, ERC20FakeInstance, L2PriceFeedMockInstance } from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { deployAmm, deployErc20Fake, deployL2MockPriceFeed, Dir } from "../helper/contract"
 import { toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
-
-const L2PriceFeedMock = artifacts.require("L2PriceFeedMock") as L2PriceFeedMockContract
 
 describe("Amm Unit Test", () => {
     const ETH_PRICE = 100
