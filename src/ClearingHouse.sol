@@ -175,6 +175,7 @@ contract ClearingHouse is
 
     // contract dependencies
     IInsuranceFund public insuranceFund;
+    // WRONG!! SHOULD BE STAKING RESERVE
     IMultiTokenRewardRecipient public feePool;
 
     //**********************************************************//
