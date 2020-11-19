@@ -741,7 +741,11 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             : quoteAssetReserve.addD(quoteAssetAmount).divD(baseAssetReserve.subD(_baseAssetAmount));
         if (
             !_skipFluctuationCheck &&
-            isOverPriceFluctuation(priceAfterReserveUpdated, reserveSnapshots[reserveSnapshots.length.sub(1)])
+            isOverPriceLimit(
+                priceAfterReserveUpdated,
+                fluctuationLimit,
+                reserveSnapshots[reserveSnapshots.length.sub(1)]
+            )
         ) {
             _skipFluctuationCheck = true;
         }
@@ -789,7 +793,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
             // restrict the up/down limit of fluctuation in one single block.
             require(
-                !isOverPriceFluctuation(quoteAssetReserve.divD(baseAssetReserve), latestSnapshot),
+                !isOverPriceLimit(quoteAssetReserve.divD(baseAssetReserve), fluctuationLimit, latestSnapshot),
                 "price is over fluctuation limit"
             );
         }
@@ -906,14 +910,14 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         revert("not supported option");
     }
 
-    function isOverPriceFluctuation(Decimal.decimal memory _price, ReserveSnapshot memory _latestSnapshot)
-        internal
-        view
-        returns (bool)
-    {
-        Decimal.decimal memory lastPrice = _latestSnapshot.quoteAssetReserve.divD(_latestSnapshot.baseAssetReserve);
-        Decimal.decimal memory upperLimit = lastPrice.mulD(Decimal.one().addD(fluctuationLimit));
-        Decimal.decimal memory lowerLimit = lastPrice.mulD(Decimal.one().subD(fluctuationLimit));
+    function isOverPriceLimit(
+        Decimal.decimal memory _price,
+        Decimal.decimal memory _limit,
+        ReserveSnapshot memory _snapshot
+    ) internal pure returns (bool) {
+        Decimal.decimal memory lastPrice = _snapshot.quoteAssetReserve.divD(_snapshot.baseAssetReserve);
+        Decimal.decimal memory upperLimit = lastPrice.mulD(Decimal.one().addD(_limit));
+        Decimal.decimal memory lowerLimit = lastPrice.mulD(Decimal.one().subD(_limit));
 
         if (_price.cmp(upperLimit) <= 0 && _price.cmp(lowerLimit) >= 0) {
             return false;
