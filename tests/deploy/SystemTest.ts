@@ -28,7 +28,7 @@ const XDAI_NAME = "xdai"
 const XDAI_CHAINID = 100
 const STAGE = "staging"
 
-describe.only("SystemTest Spec", () => {
+describe("SystemTest Spec", () => {
     const l1Provider = ethers.getDefaultProvider(RINKEBY)
     const l2Provider = new ethers.providers.JsonRpcProvider(XDAI_URL, { name: XDAI_NAME, chainId: XDAI_CHAINID })
     const settingsDao: SettingsDao = new SettingsDao(STAGE)

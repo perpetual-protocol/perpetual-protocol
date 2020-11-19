@@ -94,7 +94,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     Decimal.decimal public tradeLimitRatio;
     Decimal.decimal public quoteAssetReserve;
     Decimal.decimal public baseAssetReserve;
-    Decimal.decimal public fluctuationLimit;
+    Decimal.decimal public fluctuationLimitRatio;
 
     // owner can update
     Decimal.decimal public tollRatio;
@@ -140,7 +140,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         IPriceFeed _priceFeed,
         bytes32 _priceFeedKey,
         address _quoteAsset,
-        uint256 _fluctuationLimit,
+        uint256 _fluctuationLimitRatio,
         uint256 _tollRatio,
         uint256 _spreadRatio
     ) public initializer {
@@ -160,7 +160,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         tradeLimitRatio = Decimal.decimal(_tradeLimitRatio);
         tollRatio = Decimal.decimal(_tollRatio);
         spreadRatio = Decimal.decimal(_spreadRatio);
-        fluctuationLimit = Decimal.decimal(_fluctuationLimit);
+        fluctuationLimitRatio = Decimal.decimal(_fluctuationLimitRatio);
         fundingPeriod = _fundingPeriod;
         fundingBufferPeriod = _fundingPeriod.div(2);
         spotPriceTwapInterval = 1 hours;
@@ -180,7 +180,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     }
 
     /**
-     * @notice Swap your quote asset to base asset, the impact of the price MUST be less than `fluctuationLimit`
+     * @notice Swap your quote asset to base asset, the impact of the price MUST be less than `fluctuationLimitRatio`
      * @dev Only clearingHouse can call this function
      * @param _dir ADD_TO_AMM for long, REMOVE_FROM_AMM for short
      * @param _quoteAssetAmount quote asset amount
@@ -220,12 +220,12 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     }
 
     /**
-     * @notice swap your base asset to quote asset; the impact of the price can be restricted with fluctuationLimit
+     * @notice swap your base asset to quote asset; the impact of the price can be restricted with fluctuationLimitRatio
      * @dev only clearingHouse can call this function
      * @param _dir ADD_TO_AMM for short, REMOVE_FROM_AMM for long, opposite direction from swapInput
      * @param _baseAssetAmount base asset amount
      * @param _quoteAssetAmountLimit limit of quote asset amount; for slippage protection
-     * @param _skipFluctuationCheck false for checking fluctuationLimit; true for no limit, only when closePosition()
+     * @param _skipFluctuationCheck false for checking fluctuationLimitRatio; true for no limit, only when closePosition()
      * @return quote asset amount
      */
     function swapOutput(
@@ -274,8 +274,32 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         return premiumFraction;
     }
 
-    function migrateLiquidity(Decimal.decimal calldata _liquidityMultiplier) external override onlyOwner {
+    function migrateLiquidity(
+        Decimal.decimal calldata _liquidityMultiplier,
+        Decimal.decimal calldata _fluctuationLimitRatio
+    ) external override onlyOwner {
         require(_liquidityMultiplier.toUint() != Decimal.one().toUint(), "multiplier can't be 1");
+
+        // #53 fix sandwich attack during liquidity migration
+        // A fluctuation limit is added
+        if (_fluctuationLimitRatio.toUint() > 0) {
+            uint256 len = reserveSnapshots.length;
+            ReserveSnapshot memory latestSnapshot = reserveSnapshots[len - 1];
+
+            // if the latest snapshot is the same as current block, get the previous one
+            if (latestSnapshot.blockNumber == _blockNumber() && len > 1) {
+                latestSnapshot = reserveSnapshots[len - 2];
+            }
+
+            require(
+                !isOverFluctuationLimit(
+                    quoteAssetReserve.divD(baseAssetReserve),
+                    _fluctuationLimitRatio,
+                    latestSnapshot
+                ),
+                "price is over fluctuation limit"
+            );
+        }
 
         // get current reserve values
         Decimal.decimal memory quoteAssetBeforeAddingLiquidity = quoteAssetReserve;
@@ -373,10 +397,10 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     /**
      * @notice set fluctuation limit rate. Default value is `1 / max leverage`
      * @dev only owner can call this function
-     * @param _fluctuationLimit fluctuation limit rate in 18 digits, 0 means skip the checking
+     * @param _fluctuationLimitRatio fluctuation limit rate in 18 digits, 0 means skip the checking
      */
-    function setFluctuationLimit(Decimal.decimal memory _fluctuationLimit) public onlyOwner {
-        fluctuationLimit = _fluctuationLimit;
+    function setFluctuationLimitRatio(Decimal.decimal memory _fluctuationLimitRatio) public onlyOwner {
+        fluctuationLimitRatio = _fluctuationLimitRatio;
     }
 
     /**
@@ -741,9 +765,9 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             : quoteAssetReserve.addD(quoteAssetAmount).divD(baseAssetReserve.subD(_baseAssetAmount));
         if (
             !_skipFluctuationCheck &&
-            isOverPriceLimit(
+            isOverFluctuationLimit(
                 priceAfterReserveUpdated,
-                fluctuationLimit,
+                fluctuationLimitRatio,
                 reserveSnapshots[reserveSnapshots.length.sub(1)]
             )
         ) {
@@ -781,8 +805,8 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             cumulativeNotional = cumulativeNotional.subD(_quoteAssetAmount);
         }
 
-        // check if it's over fluctuationLimit, if the limit is 0 = skip the checking
-        if (!_skipFluctuationCheck && fluctuationLimit.toUint() > 0) {
+        // check if it's over fluctuationLimitRatio, if the limit is 0 = skip the checking
+        if (!_skipFluctuationCheck && fluctuationLimitRatio.toUint() > 0) {
             uint256 len = reserveSnapshots.length;
             ReserveSnapshot memory latestSnapshot = reserveSnapshots[len - 1];
 
@@ -793,7 +817,11 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
             // restrict the up/down limit of fluctuation in one single block.
             require(
-                !isOverPriceLimit(quoteAssetReserve.divD(baseAssetReserve), fluctuationLimit, latestSnapshot),
+                !isOverFluctuationLimit(
+                    quoteAssetReserve.divD(baseAssetReserve),
+                    fluctuationLimitRatio,
+                    latestSnapshot
+                ),
                 "price is over fluctuation limit"
             );
         }
@@ -910,14 +938,14 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         revert("not supported option");
     }
 
-    function isOverPriceLimit(
+    function isOverFluctuationLimit(
         Decimal.decimal memory _price,
-        Decimal.decimal memory _limit,
+        Decimal.decimal memory _fluctuationLimitRatio,
         ReserveSnapshot memory _snapshot
     ) internal pure returns (bool) {
         Decimal.decimal memory lastPrice = _snapshot.quoteAssetReserve.divD(_snapshot.baseAssetReserve);
-        Decimal.decimal memory upperLimit = lastPrice.mulD(Decimal.one().addD(_limit));
-        Decimal.decimal memory lowerLimit = lastPrice.mulD(Decimal.one().subD(_limit));
+        Decimal.decimal memory upperLimit = lastPrice.mulD(Decimal.one().addD(_fluctuationLimitRatio));
+        Decimal.decimal memory lowerLimit = lastPrice.mulD(Decimal.one().subD(_fluctuationLimitRatio));
 
         if (_price.cmp(upperLimit) <= 0 && _price.cmp(lowerLimit) >= 0) {
             return false;

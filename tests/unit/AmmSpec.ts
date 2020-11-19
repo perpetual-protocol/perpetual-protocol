@@ -468,7 +468,7 @@ describe("Amm Unit Test", () => {
 
     describe("restrict price fluctuation", () => {
         beforeEach(async () => {
-            await amm.setFluctuationLimit(toDecimal(0.05))
+            await amm.setFluctuationLimitRatio(toDecimal(0.05))
             await amm.setOpen(true)
             await moveToNextBlocks()
         })
