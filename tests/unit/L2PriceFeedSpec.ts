@@ -1,7 +1,7 @@
 import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
-import { AMBBridgeMockInstance, L2PriceFeedFakeInstance } from "../../types"
 import BN from "bn.js"
+import { AMBBridgeMockInstance, L2PriceFeedFakeInstance } from "../../types/truffle"
 import { deployL2PriceFeed, deployMockAMBBridge } from "../helper/contract"
 import { toFullDigit } from "../helper/number"
 
@@ -261,8 +261,8 @@ describe("L2PriceFeed Spec", () => {
         })
 
         it("force error, get previous price", async () => {
-            await expectRevert(l2PriceFeed.getPreviousPrice(toBytes32("ETH"), 10), "Not enough history")
-            await expectRevert(l2PriceFeed.getPreviousTimestamp(toBytes32("ETH"), 10), "Not enough history")
+            await expectRevert(l2PriceFeed.getPreviousPrice(toBytes32("ETH"), 3), "Not enough history")
+            await expectRevert(l2PriceFeed.getPreviousTimestamp(toBytes32("ETH"), 3), "Not enough history")
         })
     })
 })

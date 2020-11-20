@@ -7,7 +7,7 @@ import {
     ERC20FakeInstance,
     MultiTokenMediatorMockInstance,
     RootBridgeInstance,
-} from "../../../types"
+} from "../../../types/truffle"
 import { assertionHelper } from "../../helper/assertion-plugin"
 import { deployErc20Fake, deployMockAMBBridge, deployMockMultiToken, deployRootBridge } from "../../helper/contract"
 import { toDecimal, toFullDigit } from "../../helper/number"
@@ -71,30 +71,6 @@ describe("BaseBridgeSpec Spec", () => {
         )
     })
 
-    it("callOtherSideFunction - approve", async () => {
-        const encodedFunctionCall = web3.eth.abi.encodeFunctionCall(
-            {
-                name: "approve",
-                type: "function",
-                inputs: [
-                    { type: "address", name: "spender" },
-                    { type: "uint256", name: "amount" },
-                ],
-            },
-            [alice, toFullDigit(100).toString()],
-        )
-
-        // call `approve` of erc20
-        // the first parameter should be a contract on the other side, but it's difficult to test
-        // in the implementation of AMBBridgeMock, we do like this, `_contract.call(_data)`
-        // the contract of the 1st parameter will execute the data of 2nd parameter directly
-        // in that way, we could verify our function should be called correctly on the other side.
-        const receipt = await rootBridge.callOtherSideFunction(quoteToken.address, encodedFunctionCall, "6000000")
-        expectEvent.inTransaction(receipt.tx, quoteToken, "Approval")
-        // ambBridgeMock is the one who call `approve` so the spender of allowance is ambBridgeMock
-        expect(await quoteToken.allowance(ambBridgeMock.address, alice)).to.eq(toFullDigit(100))
-    })
-
     it("force error, only owner can setAMBBridge", async () => {
         await expectRevert(
             rootBridge.setAMBBridge(alice, { from: alice }),
@@ -107,5 +83,9 @@ describe("BaseBridgeSpec Spec", () => {
             rootBridge.setMultiTokenMediator(alice, { from: alice }),
             "PerpFiOwnableUpgrade: caller is not the owner",
         )
+    })
+
+    it("force error, transfer zero amount", async () => {
+        await expectRevert(rootBridge.erc20Transfer(quoteToken.address, alice, toDecimal(0)), "amount is zero")
     })
 })

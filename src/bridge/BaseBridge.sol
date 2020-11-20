@@ -60,15 +60,8 @@ abstract contract BaseBridge is PerpFiOwnableUpgrade, IBaseBridge, DecimalERC20 
         address _receiver,
         Decimal.decimal calldata _amount
     ) external override {
+        require(_amount.toUint() > 0, "amount is zero");
         multiTokenTransfer(_token, _receiver, _amount);
-    }
-
-    function callOtherSideFunction(
-        address _contractOnOtherSide,
-        bytes calldata _data,
-        uint256 _gasLimit
-    ) external override returns (bytes32 messageId) {
-        return callBridge(_contractOnOtherSide, _data, _gasLimit);
     }
 
     //

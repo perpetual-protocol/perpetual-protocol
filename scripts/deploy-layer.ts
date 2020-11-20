@@ -1,41 +1,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-// import { buidlerArguments, config, web3 } from "@nomiclabs/buidler"
-import { ConfigManager } from "@openzeppelin/cli"
-import { Wallet } from "ethers"
+import { ethers } from "@nomiclabs/buidler"
+import { BuidlerRuntimeEnvironment } from "@nomiclabs/buidler/types"
 import { ContractPublisher } from "../publish/ContractPublisher"
-import { AccountMetadata, SystemMetadataDao } from "../publish/SystemMetadataDao"
 import { OzScript } from "../publish/OzScript"
 import { SettingsDao } from "../publish/SettingsDao"
-import { Layer, Network, Stage } from "./common"
-import { BuidlerRuntimeEnvironment } from "@nomiclabs/buidler/types"
+import { SystemMetadataDao } from "../publish/SystemMetadataDao"
+import { AccountMetadata, Layer, Network, Stage } from "./common"
 
-export async function getFromAccount(bre: BuidlerRuntimeEnvironment): Promise<string> {
-    const network = bre.buidlerArguments.network! as Network
-    console.log(`network=${network}`)
-    if (network === "localhost") {
-        return (await bre.web3.eth.getAccounts())[0]
-    } else if (network === "ropsten") {
-        const wallet = Wallet.fromMnemonic(process.env["ROPSTEN_MNEMONIC"] || "")
-        return wallet.address
-    } else if (network === "kovan") {
-        const wallet = Wallet.fromMnemonic(process.env["KOVAN_MNEMONIC"] || "")
-        return wallet.address
-    } else if (network === "rinkeby") {
-        const wallet = Wallet.fromMnemonic(process.env["RINKEBY_MNEMONIC"] || "")
-        return wallet.address
-    } else if (network === "homestead") {
-        const wallet = Wallet.fromMnemonic(process.env["HOMESTEAD_MNEMONIC"] || "")
-        return wallet.address
-    } else if (network === "sokol") {
-        const wallet = Wallet.fromMnemonic(process.env["SOKOL_MNEMONIC"] || "")
-        return wallet.address
-    } else if (network === "xdai") {
-        const wallet = Wallet.fromMnemonic(process.env["XDAI_MNEMONIC"] || "")
-        return wallet.address
-    } else {
-        throw new Error("network not found: " + network)
-    }
-}
+export type DeployTask = () => Promise<void>
 
 export async function deployLayer(
     stage: Stage,
@@ -43,10 +15,7 @@ export async function deployLayer(
     batch: number,
     bre: BuidlerRuntimeEnvironment,
 ): Promise<void> {
-    const from = await getFromAccount(bre)
-    console.log("from:", from)
     const network = bre.buidlerArguments.network! as Network
-    const ozNetworkConfig = await ConfigManager.initNetworkConfiguration({ network, from })
 
     // only expose accounts when deploy on local node, otherwise assign a empty array
     const isLocalhost: boolean = network === "localhost"
@@ -55,8 +24,11 @@ export async function deployLayer(
     const settingsDao = new SettingsDao(stage)
     const systemMetadataDao = new SystemMetadataDao(settingsDao)
     systemMetadataDao.setAccounts(layerType, accounts)
-    const ozScript = new OzScript(bre.web3.currentProvider, ozNetworkConfig)
-    const publisher = new ContractPublisher(layerType, batch, settingsDao, systemMetadataDao, ozScript)
 
-    await publisher.publishContracts()
+    const signers = await ethers.getSigners()
+    const address = await signers[0].getAddress()
+    const ozScript = new OzScript(bre.web3.currentProvider, address)
+    const publisher = new ContractPublisher(layerType, settingsDao, systemMetadataDao, ozScript)
+
+    await publisher.publishContracts(batch)
 }

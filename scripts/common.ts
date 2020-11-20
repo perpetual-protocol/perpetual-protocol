@@ -3,6 +3,16 @@ export type Stage = "production" | "staging" | "test"
 export type Network = "homestead" | "rinkeby" | "ropsten" | "kovan" | "xdai" | "sokol" | "localhost"
 export type Layer = "layer1" | "layer2"
 
+export const ozNetworkFile: Record<Network, string> = {
+    homestead: "mainnet",
+    rinkeby: "rinkeby",
+    kovan: "kovan",
+    ropsten: "ropsten",
+    localhost: "unknown-31337",
+    xdai: "unknown-100",
+    sokol: "unknown-100",
+}
+
 // TODO deprecated
 export enum DeployMode {
     Init = "init",
@@ -36,10 +46,10 @@ export interface SystemMetadata {
 }
 
 export interface ExternalContracts {
-    // default is gnosis multisig (old version)
-    foundationMultisig?: string
+    // default is gnosis multisig safe which plays the governance role
+    foundationGovernance?: string
 
-    // default is gnosis multisig safe
+    // default is gnosis multisig safe which plays the treasury role
     foundationTreasury?: string
 
     keeper?: string

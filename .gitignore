@@ -8,7 +8,8 @@ doc
 .env
 .serverless
 .openzeppelin/.session
-publish/settings/localhost.json
+publish/settings/test.json
+system-local.json
 
 /.serverless
 /.env.staging

@@ -50,3 +50,6 @@ export function writeMetadata(metadata: EthereumMetadata) {
     ShellString(JSON.stringify(metadata, null, 2)).to(`./ethereum.json`)
     ShellString(JSON.stringify(metadata, null, 2)).to(`${buildDir}/ethereum.json`)
 }
+export function sleep(ms: number): Promise<unknown> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}

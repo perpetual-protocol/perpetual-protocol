@@ -1,28 +1,28 @@
 {
   "manifestVersion": "3.1",
   "impls": {
-    "3b4249b4a55d6465553dea528e14f40fa18fb6753cd98b863358f04bc2246aa2": {
-      "address": "0xE3376C2067115c86020339BC6a3879B4778f5b15",
-      "txHash": "0xc382285818798d1386f71c9178745ce23435a6f443600ddaa234a0b8d952b56b",
+    "b6c401908971ed15d2d0f5b961f3741f45eee97ccfed5c61ecdcae5e00c9c583": {
+      "address": "0xC1E0bbF36D9e660c701Ad7aEfFbFb230E1D0015B",
+      "txHash": "0xd6401e3f3853913d103648f53d6d85778a76f5646b96e3cc0d70c65b51448f2d",
       "layout": {
         "storage": [
           {
             "contract": "Initializable",
             "label": "initialized",
             "type": "t_bool",
-            "src": "@openzeppelin/upgrades/contracts/Initializable.sol:21"
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
           },
           {
             "contract": "Initializable",
             "label": "initializing",
             "type": "t_bool",
-            "src": "@openzeppelin/upgrades/contracts/Initializable.sol:26"
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
           },
           {
             "contract": "Initializable",
             "label": "______gap",
             "type": "t_array(t_uint256)50_storage",
-            "src": "@openzeppelin/upgrades/contracts/Initializable.sol:61"
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
           },
           {
             "contract": "ContextUpgradeSafe",
@@ -52,36 +52,42 @@
             "contract": "DecimalERC20",
             "label": "decimalMap",
             "type": "t_mapping(t_address,t_uint256)",
-            "src": "src/utils/DecimalERC20.sol:12"
+            "src": "src/utils/DecimalERC20.sol:13"
           },
           {
             "contract": "BaseBridge",
             "label": "ambBridge",
-            "type": "t_address",
-            "src": "src/bridge/BaseBridge.sol:29"
+            "type": "t_contract(IAMB)15853",
+            "src": "src/bridge/BaseBridge.sol:28"
           },
           {
             "contract": "BaseBridge",
             "label": "multiTokenMediator",
-            "type": "t_address",
-            "src": "src/bridge/BaseBridge.sol:32"
+            "type": "t_contract(IMultiTokenMediator)15865",
+            "src": "src/bridge/BaseBridge.sol:31"
           },
           {
             "contract": "RootBridge",
             "label": "priceFeed",
-            "type": "t_contract(IPriceFeed)17215",
-            "src": "src/bridge/ethereum/RootBridge.sol:19"
+            "type": "t_contract(IPriceFeed)18194",
+            "src": "src/bridge/ethereum/RootBridge.sol:17"
           }
         ],
         "types": {
-          "t_contract(IPriceFeed)17215": {
+          "t_contract(IPriceFeed)18194": {
             "label": "contract IPriceFeed"
           },
-          "t_address": {
-            "label": "address"
+          "t_contract(IAMB)15853": {
+            "label": "contract IAMB"
+          },
+          "t_contract(IMultiTokenMediator)15865": {
+            "label": "contract IMultiTokenMediator"
           },
           "t_mapping(t_address,t_uint256)": {
             "label": "mapping(address => uint256)"
+          },
+          "t_address": {
+            "label": "address"
           },
           "t_array(t_uint256)50_storage": {
             "label": "uint256[50]"
@@ -92,28 +98,28 @@
         }
       }
     },
-    "415a7de43eded7ef4bfc5186630bf0c1c50093341e7d7c03a5a81ef93531aba1": {
-      "address": "0x4c660785Fd7a5A49637573fa752e2f2fC6963fDB",
-      "txHash": "0x05f1951ac2f6e06ba84401cd2796dc36f6474790fe423a69fa9259865ef65ccf",
+    "f2f138f13395b2cb5d31f3b5d716be05acd3ff35f6fd1ace35796f0f32d969c3": {
+      "address": "0x73f019878e006cDb1F30706297f318a347bdb367",
+      "txHash": "0x3ec5fef58163666216f5999cb188270ef8b939d642cec278cd5df48742299b38",
       "layout": {
         "storage": [
           {
             "contract": "Initializable",
             "label": "initialized",
             "type": "t_bool",
-            "src": "@openzeppelin/upgrades/contracts/Initializable.sol:21"
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
           },
           {
             "contract": "Initializable",
             "label": "initializing",
             "type": "t_bool",
-            "src": "@openzeppelin/upgrades/contracts/Initializable.sol:26"
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
           },
           {
             "contract": "Initializable",
             "label": "______gap",
             "type": "t_array(t_uint256)50_storage",
-            "src": "@openzeppelin/upgrades/contracts/Initializable.sol:61"
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
           },
           {
             "contract": "ContextUpgradeSafe",
@@ -148,7 +154,7 @@
           {
             "contract": "ChainlinkL1",
             "label": "priceFeedMap",
-            "type": "t_mapping(t_bytes32,t_contract(AggregatorV3Interface)93)",
+            "type": "t_mapping(t_bytes32,t_contract(AggregatorV3Interface)45)",
             "src": "src/ChainlinkL1.sol:27"
           },
           {
@@ -160,7 +166,7 @@
           {
             "contract": "ChainlinkL1",
             "label": "rootBridge",
-            "type": "t_contract(RootBridge)15070",
+            "type": "t_contract(RootBridge)15776",
             "src": "src/ChainlinkL1.sol:29"
           },
           {
@@ -183,13 +189,13 @@
           }
         ],
         "types": {
-          "t_mapping(t_bytes32,t_contract(AggregatorV3Interface)93)": {
+          "t_mapping(t_bytes32,t_contract(AggregatorV3Interface)45)": {
             "label": "mapping(bytes32 => contract AggregatorV3Interface)"
           },
           "t_array(t_bytes32)dyn_storage": {
             "label": "bytes32[]"
           },
-          "t_contract(RootBridge)15070": {
+          "t_contract(RootBridge)15776": {
             "label": "contract RootBridge"
           },
           "t_address": {
@@ -209,7 +215,7 @@
     }
   },
   "admin": {
-    "address": "0xA1af8D434a1421E470250A5189cC5825B2c7Ef26",
-    "txHash": "0x7718970e7f61ccbdb5a2c1c44e773c0b0bb3db8b4afcd8b2151a63ffea43f153"
+    "address": "0xc8FF12cE7fD42478A7cCF1336D24c4Cd7C726Ae3",
+    "txHash": "0x5f03756fb6d86ca3d29929d77656bdc6257f8af1e0f48a53bb049f15c1ebcdd1"
   }
 }

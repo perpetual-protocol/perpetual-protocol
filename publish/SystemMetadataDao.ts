@@ -4,14 +4,15 @@ import { resolve } from "path"
 import { mkdir, ShellString } from "shelljs"
 import {
     ContractMetadata,
-    SystemMetadata,
-    Stage,
     Layer,
-    Network,
     LayerDeploySettings,
     LayerMetadata,
+    Network,
+    Stage,
+    SystemMetadata,
 } from "../scripts/common"
 import { asyncExec } from "../scripts/helper"
+import { ContractInstanceName } from "./ContractName"
 import { SettingsDao } from "./SettingsDao"
 
 export interface AccountMetadata {
@@ -28,7 +29,7 @@ export class SystemMetadataDao {
         // must handle edge cases when local metadata file hasn't been created yet
         let localSystemMetadata
         try {
-            localSystemMetadata = require("../system.json")
+            localSystemMetadata = require(`../${this.metadataFileName}`)
         } catch (e) {
             localSystemMetadata = {}
         }
@@ -71,8 +72,8 @@ export class SystemMetadataDao {
         )
     }
 
-    getContractMetadata(layerType: Layer, contractAlias: string): ContractMetadata {
-        return this.systemMetadataCache.layers[layerType]!.contracts[contractAlias]
+    getContractMetadata(layerType: Layer, contractInstanceName: ContractInstanceName): ContractMetadata {
+        return this.systemMetadataCache.layers[layerType]!.contracts[contractInstanceName]
     }
 
     setMetadata(metadata: SystemMetadata): void {
@@ -93,7 +94,7 @@ export class SystemMetadataDao {
     }
 
     private get metadataFileName(): string {
-        return "system.json"
+        return this.settingsDao.isLocal() ? "system-local.json" : "system.json"
     }
 
     private get buildDir(): string {

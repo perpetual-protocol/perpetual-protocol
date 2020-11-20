@@ -2,7 +2,8 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { SignedDecimal, Decimal } from "./SignedDecimal.sol";
+import { Decimal } from "./Decimal.sol";
+import { SignedDecimal } from "./SignedDecimal.sol";
 import { SignedSafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SignedSafeMath.sol";
 
 /// @dev To handle a signedDecimal add/sub/mul/div a decimal and provide convert decimal to signedDecimal helper

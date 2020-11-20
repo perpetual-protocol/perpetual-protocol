@@ -2,9 +2,9 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { SignedDecimalMath, SignedSafeMath } from "./SignedDecimalMath.sol";
+import { SignedSafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SignedSafeMath.sol";
+import { SignedDecimalMath } from "./SignedDecimalMath.sol";
 import { Decimal } from "./Decimal.sol";
-
 
 library SignedDecimal {
     using SignedDecimalMath for int256;

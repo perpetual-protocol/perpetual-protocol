@@ -15,7 +15,7 @@ import {
     PerpTokenInstance,
     TetherTokenContract,
     TetherTokenInstance,
-} from "../../types"
+} from "../../types/truffle"
 import { deployErc20Fake, deployExchangeWrapper, deployMockBalancer, deployMockCUsdt } from "../helper/contract"
 import { toDecimal, toFullDigit } from "../helper/number"
 use(chaiAsPromised)

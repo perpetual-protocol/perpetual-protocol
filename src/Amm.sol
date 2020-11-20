@@ -2,13 +2,15 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
-import { Decimal, SafeMath } from "./utils/Decimal.sol";
-import { SignedDecimal, MixedDecimal } from "./utils/MixedDecimal.sol";
-import { IPriceFeed } from "./interface/IPriceFeed.sol";
-import { IAmm } from "./interface/IAmm.sol";
 import { BlockContext } from "./utils/BlockContext.sol";
+import { IPriceFeed } from "./interface/IPriceFeed.sol";
+import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Decimal } from "./utils/Decimal.sol";
+import { SignedDecimal } from "./utils/SignedDecimal.sol";
+import { MixedDecimal } from "./utils/MixedDecimal.sol";
+import { IAmm } from "./interface/IAmm.sol";
+import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 
 contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     using SafeMath for uint256;
@@ -94,7 +96,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     Decimal.decimal public tradeLimitRatio;
     Decimal.decimal public quoteAssetReserve;
     Decimal.decimal public baseAssetReserve;
-    Decimal.decimal public fluctuationLimit;
+    Decimal.decimal public fluctuationLimitRatio;
 
     // owner can update
     Decimal.decimal public tollRatio;
@@ -140,7 +142,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         IPriceFeed _priceFeed,
         bytes32 _priceFeedKey,
         address _quoteAsset,
-        uint256 _fluctuationLimit,
+        uint256 _fluctuationLimitRatio,
         uint256 _tollRatio,
         uint256 _spreadRatio
     ) public initializer {
@@ -160,7 +162,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         tradeLimitRatio = Decimal.decimal(_tradeLimitRatio);
         tollRatio = Decimal.decimal(_tollRatio);
         spreadRatio = Decimal.decimal(_spreadRatio);
-        fluctuationLimit = Decimal.decimal(_fluctuationLimit);
+        fluctuationLimitRatio = Decimal.decimal(_fluctuationLimitRatio);
         fundingPeriod = _fundingPeriod;
         fundingBufferPeriod = _fundingPeriod.div(2);
         spotPriceTwapInterval = 1 hours;
@@ -180,7 +182,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     }
 
     /**
-     * @notice Swap your quote asset to base asset, the impact of the price MUST be less than `fluctuationLimit`
+     * @notice Swap your quote asset to base asset, the impact of the price MUST be less than `fluctuationLimitRatio`
      * @dev Only clearingHouse can call this function
      * @param _dir ADD_TO_AMM for long, REMOVE_FROM_AMM for short
      * @param _quoteAssetAmount quote asset amount
@@ -220,12 +222,12 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     }
 
     /**
-     * @notice swap your base asset to quote asset; the impact of the price can be restricted with fluctuationLimit
+     * @notice swap your base asset to quote asset; the impact of the price can be restricted with fluctuationLimitRatio
      * @dev only clearingHouse can call this function
      * @param _dir ADD_TO_AMM for short, REMOVE_FROM_AMM for long, opposite direction from swapInput
      * @param _baseAssetAmount base asset amount
      * @param _quoteAssetAmountLimit limit of quote asset amount; for slippage protection
-     * @param _skipFluctuationCheck false for checking fluctuationLimit; true for no limit, only when closePosition()
+     * @param _skipFluctuationCheck false for checking fluctuationLimitRatio; true for no limit, only when closePosition()
      * @return quote asset amount
      */
     function swapOutput(
@@ -274,8 +276,14 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         return premiumFraction;
     }
 
-    function migrateLiquidity(Decimal.decimal calldata _liquidityMultiplier) external override onlyOwner {
+    function migrateLiquidity(
+        Decimal.decimal calldata _liquidityMultiplier,
+        Decimal.decimal calldata _fluctuationLimitRatio
+    ) external override onlyOwner {
         require(_liquidityMultiplier.toUint() != Decimal.one().toUint(), "multiplier can't be 1");
+
+        // #53 fix sandwich attack during liquidity migration
+        checkFluctuationLimit(_fluctuationLimitRatio);
 
         // get current reserve values
         Decimal.decimal memory quoteAssetBeforeAddingLiquidity = quoteAssetReserve;
@@ -373,10 +381,10 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     /**
      * @notice set fluctuation limit rate. Default value is `1 / max leverage`
      * @dev only owner can call this function
-     * @param _fluctuationLimit fluctuation limit rate in 18 digits, 0 means skip the checking
+     * @param _fluctuationLimitRatio fluctuation limit rate in 18 digits, 0 means skip the checking
      */
-    function setFluctuationLimit(Decimal.decimal memory _fluctuationLimit) public onlyOwner {
-        fluctuationLimit = _fluctuationLimit;
+    function setFluctuationLimitRatio(Decimal.decimal memory _fluctuationLimitRatio) public onlyOwner {
+        fluctuationLimitRatio = _fluctuationLimitRatio;
     }
 
     /**
@@ -735,15 +743,10 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             }
         }
 
-        // if the price impact by single tx is already over the priceFluctuation, skip check
-        Decimal.decimal memory priceAfterReserveUpdated = (_dir == Dir.ADD_TO_AMM)
-            ? quoteAssetReserve.subD(quoteAssetAmount).divD(baseAssetReserve.addD(_baseAssetAmount))
-            : quoteAssetReserve.addD(quoteAssetAmount).divD(baseAssetReserve.subD(_baseAssetAmount));
-        if (
-            !_skipFluctuationCheck &&
-            isOverPriceFluctuation(priceAfterReserveUpdated, reserveSnapshots[reserveSnapshots.length.sub(1)])
-        ) {
-            _skipFluctuationCheck = true;
+        // If the price impact of one single tx is larger than priceFluctuation, skip the check
+        // only for liquidate()
+        if (!_skipFluctuationCheck) {
+            _skipFluctuationCheck = isSingleTxOverFluctuation(_dir, quoteAssetAmount, _baseAssetAmount);
         }
 
         updateReserve(
@@ -777,21 +780,9 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             cumulativeNotional = cumulativeNotional.subD(_quoteAssetAmount);
         }
 
-        // check if it's over fluctuationLimit, if the limit is 0 = skip the checking
-        if (!_skipFluctuationCheck && fluctuationLimit.toUint() > 0) {
-            uint256 len = reserveSnapshots.length;
-            ReserveSnapshot memory latestSnapshot = reserveSnapshots[len - 1];
-
-            // if the latest snapshot is the same as current block, get the previous one
-            if (latestSnapshot.blockNumber == _blockNumber() && len > 1) {
-                latestSnapshot = reserveSnapshots[len - 2];
-            }
-
-            // restrict the up/down limit of fluctuation in one single block.
-            require(
-                !isOverPriceFluctuation(quoteAssetReserve.divD(baseAssetReserve), latestSnapshot),
-                "price is over fluctuation limit"
-            );
+        // check if it's over fluctuationLimitRatio
+        if (!_skipFluctuationCheck) {
+            checkFluctuationLimit(fluctuationLimitRatio);
         }
 
         // addReserveSnapshot must be after checking price fluctuation
@@ -906,14 +897,52 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         revert("not supported option");
     }
 
-    function isOverPriceFluctuation(Decimal.decimal memory _price, ReserveSnapshot memory _latestSnapshot)
-        internal
-        view
-        returns (bool)
-    {
-        Decimal.decimal memory lastPrice = _latestSnapshot.quoteAssetReserve.divD(_latestSnapshot.baseAssetReserve);
-        Decimal.decimal memory upperLimit = lastPrice.mulD(Decimal.one().addD(fluctuationLimit));
-        Decimal.decimal memory lowerLimit = lastPrice.mulD(Decimal.one().subD(fluctuationLimit));
+    function isSingleTxOverFluctuation(
+        Dir _dir,
+        Decimal.decimal memory _quoteAssetAmount,
+        Decimal.decimal memory _baseAssetAmount
+    ) internal view returns (bool) {
+        Decimal.decimal memory priceAfterReserveUpdated = (_dir == Dir.ADD_TO_AMM)
+            ? quoteAssetReserve.subD(_quoteAssetAmount).divD(baseAssetReserve.addD(_baseAssetAmount))
+            : quoteAssetReserve.addD(_quoteAssetAmount).divD(baseAssetReserve.subD(_baseAssetAmount));
+        return
+            isOverFluctuationLimit(
+                priceAfterReserveUpdated,
+                fluctuationLimitRatio,
+                reserveSnapshots[reserveSnapshots.length.sub(1)]
+            );
+    }
+
+    function checkFluctuationLimit(Decimal.decimal memory _fluctuationLimitRatio) internal view {
+        // Skip the check if the limit is 0
+        if (_fluctuationLimitRatio.toUint() > 0) {
+            uint256 len = reserveSnapshots.length;
+            ReserveSnapshot memory latestSnapshot = reserveSnapshots[len - 1];
+
+            // if the latest snapshot is the same as current block, get the previous one
+            if (latestSnapshot.blockNumber == _blockNumber() && len > 1) {
+                latestSnapshot = reserveSnapshots[len - 2];
+            }
+
+            require(
+                !isOverFluctuationLimit(
+                    quoteAssetReserve.divD(baseAssetReserve),
+                    _fluctuationLimitRatio,
+                    latestSnapshot
+                ),
+                "price is over fluctuation limit"
+            );
+        }
+    }
+
+    function isOverFluctuationLimit(
+        Decimal.decimal memory _price,
+        Decimal.decimal memory _fluctuationLimitRatio,
+        ReserveSnapshot memory _snapshot
+    ) internal pure returns (bool) {
+        Decimal.decimal memory lastPrice = _snapshot.quoteAssetReserve.divD(_snapshot.baseAssetReserve);
+        Decimal.decimal memory upperLimit = lastPrice.mulD(Decimal.one().addD(_fluctuationLimitRatio));
+        Decimal.decimal memory lowerLimit = lastPrice.mulD(Decimal.one().subD(_fluctuationLimitRatio));
 
         if (_price.cmp(upperLimit) <= 0 && _price.cmp(lowerLimit) >= 0) {
             return false;

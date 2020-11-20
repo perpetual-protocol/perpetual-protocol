@@ -18,7 +18,7 @@ import {
     SupplyScheduleFakeInstance,
     TraderWalletContract,
     TraderWalletInstance,
-} from "../../../types"
+} from "../../../types/truffle"
 import { ClearingHouse } from "../../../types/web3/ClearingHouse"
 import { assertionHelper } from "../../helper/assertion-plugin"
 import { Dir, PnlCalcOption, Side } from "../../helper/contract"
@@ -586,9 +586,8 @@ describe("ClearingHouse Test", () => {
             expectEvent(receipt, "PositionChanged", {
                 amm: amm.address,
                 trader: alice,
-                side: Side.SELL.toString(),
                 positionNotional: "84615384615384615377",
-                exchangedPositionSize: "7575757575757575757",
+                exchangedPositionSize: "-7575757575757575757",
                 fee: "0",
                 positionSizeAfter: "0",
                 realizedPnl: "-15384615384615384623",
@@ -777,7 +776,7 @@ describe("ClearingHouse Test", () => {
         }
 
         it("liquidate one position within the fluctuation limit", async () => {
-            await amm.setFluctuationLimit(toDecimal(0.148))
+            await amm.setFluctuationLimitRatio(toDecimal(0.148))
 
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
@@ -810,7 +809,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("liquidate two positions within the fluctuation limit", async () => {
-            await amm.setFluctuationLimit(toDecimal(0.148))
+            await amm.setFluctuationLimitRatio(toDecimal(0.148))
             traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
             await transfer(admin, traderWallet1.address, 1000)
@@ -847,7 +846,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("liquidate three positions within the fluctuation limit", async () => {
-            await amm.setFluctuationLimit(toDecimal(0.22))
+            await amm.setFluctuationLimitRatio(toDecimal(0.22))
             traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
             await transfer(admin, traderWallet1.address, 1000)
@@ -892,7 +891,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("liquidates one position if the price impact of single tx exceeds the fluctuation limit ", async () => {
-            await amm.setFluctuationLimit(toDecimal(0.147))
+            await amm.setFluctuationLimitRatio(toDecimal(0.147))
 
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
@@ -915,7 +914,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("force error, liquidate two positions while exceeding the fluctuation limit", async () => {
-            await amm.setFluctuationLimit(toDecimal(0.147))
+            await amm.setFluctuationLimitRatio(toDecimal(0.147))
             traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
             await transfer(admin, traderWallet1.address, 1000)
@@ -950,7 +949,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("force error, liquidate three positions while exceeding the fluctuation limit", async () => {
-            await amm.setFluctuationLimit(toDecimal(0.21))
+            await amm.setFluctuationLimitRatio(toDecimal(0.21))
             traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
             await transfer(admin, traderWallet1.address, 1000)
@@ -1166,9 +1165,9 @@ describe("ClearingHouse Test", () => {
                     .openPosition(
                         amm.address,
                         Side.SELL,
-                        { d: toFullDigitStr(20) },
-                        { d: toFullDigitStr(5) },
-                        { d: toFullDigitStr(11.12) },
+                        [toFullDigitStr(20)],
+                        [toFullDigitStr(5)],
+                        [toFullDigitStr(11.12)],
                     )
                     .encodeABI(),
                 nonce: 0,
@@ -1420,7 +1419,7 @@ describe("ClearingHouse Test", () => {
             // quoteReserve = 1200
             // new baseReserve = 166.66
             // new quoteReserve = 2400
-            const receipt = await amm.migrateLiquidity(toDecimal(2), { from: admin })
+            const receipt = await amm.migrateLiquidity(toDecimal(2), toDecimal(0), { from: admin })
             expectEvent(receipt, "LiquidityChanged", {
                 cumulativeNotional: toFullDigit(200),
             })
@@ -1458,7 +1457,7 @@ describe("ClearingHouse Test", () => {
             // quoteReserve = 700
             // new baseReserve = 285.71
             // new quoteReserve = 1400
-            const receipt = await amm.migrateLiquidity(toDecimal(2))
+            const receipt = await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             const newBaseReserve = await amm.baseAssetReserve()
             const newQuoteReserve = await amm.quoteAssetReserve()
             expect(newBaseReserve).eq("285714285714285714288")
@@ -1495,7 +1494,7 @@ describe("ClearingHouse Test", () => {
             // quoteReserve = 1000
             // new baseReserve = 200
             // new quoteReserve = 2000
-            const receipt = await amm.migrateLiquidity(toDecimal(2))
+            const receipt = await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             const newBaseReserve = await amm.baseAssetReserve()
             const newQuoteReserve = await amm.quoteAssetReserve()
             expect(newBaseReserve).eq("200000000000000000002")
@@ -1523,7 +1522,7 @@ describe("ClearingHouse Test", () => {
             // total position = 9.09
             // baseReserve = 90.909
             // quoteReserve = 1100
-            const migrateReceipt = await amm.migrateLiquidity(toDecimal(2))
+            const migrateReceipt = await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             expectEvent(migrateReceipt, "LiquidityChanged", {
                 cumulativeNotional: toFullDigit(100),
             })
@@ -1566,10 +1565,10 @@ describe("ClearingHouse Test", () => {
             // quoteReserve = 1100
             // new baseReserve = 181.818
             // new quoteReserve = 2200
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             // new baseReserve = 363.636
             // new quoteReserve = 4400
-            const receipt = await amm.migrateLiquidity(toDecimal(2))
+            const receipt = await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             expectEvent(receipt, "LiquidityChanged", {
                 cumulativeNotional: toFullDigit(100),
             })
@@ -1603,12 +1602,12 @@ describe("ClearingHouse Test", () => {
             })
 
             // when double the liquidity
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             let liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
             expect(liquidityChangedSnapshot.totalPositionSize).eq("17777777777777777778")
 
             // when half the liquidity
-            await amm.migrateLiquidity(toDecimal(0.5))
+            await amm.migrateLiquidity(toDecimal(0.5), toDecimal(0))
             liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(2)
             expect(liquidityChangedSnapshot.totalPositionSize).eq("20000000000000000001")
 
@@ -1622,7 +1621,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("still able to migrate liquidity without any position opened", async () => {
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
 
             const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
             expect(liquidityChangedSnapshot.cumulativeNotional).eq(0)
@@ -1639,7 +1638,7 @@ describe("ClearingHouse Test", () => {
             })
 
             // when double the liquidity
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
             expect(liquidityChangedSnapshot.totalPositionSize).eq(0) // totalPositionSize
         })
@@ -1650,7 +1649,7 @@ describe("ClearingHouse Test", () => {
             })
 
             // when double the liquidity
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
 
             // alice close
             await clearingHouse.closePosition(amm.address, toDecimal(0), {
@@ -1661,7 +1660,7 @@ describe("ClearingHouse Test", () => {
 
         it("open position after adding liquidity, then add liquidity", async () => {
             // when double the liquidity
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
 
             // then alice open position
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(0), {
@@ -1682,7 +1681,7 @@ describe("ClearingHouse Test", () => {
             })
 
             // when double the liquidity
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
 
             // then alice open position
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(0), {
@@ -1690,7 +1689,7 @@ describe("ClearingHouse Test", () => {
             })
 
             // then half the liquidity
-            await amm.migrateLiquidity(toDecimal(0.5))
+            await amm.migrateLiquidity(toDecimal(0.5), toDecimal(0))
 
             // then alice can get her entire margin (250) back if she close her position
             const alicePreBalance = await quoteToken.balanceOf(alice)
@@ -1720,7 +1719,7 @@ describe("ClearingHouse Test", () => {
             // quoteReserve = 1200
             // new baseReserve = 41.666
             // new quoteReserve = 600
-            await amm.migrateLiquidity(toDecimal(0.5))
+            await amm.migrateLiquidity(toDecimal(0.5), toDecimal(0))
             const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
             expect(liquidityChangedSnapshot.totalPositionSize).eq("20833333333333333333")
 
@@ -1752,7 +1751,7 @@ describe("ClearingHouse Test", () => {
             const posBob = await clearingHouse.getPosition(amm.address, bob)
             const posCarol = await clearingHouse.getPosition(amm.address, carol)
 
-            await amm.migrateLiquidity(toDecimal(2), { from: admin })
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0), { from: admin })
 
             const posAlice1 = await clearingHouse.getPosition(amm.address, alice)
             expect(posAlice.openNotional).to.eq(posAlice1.openNotional)
@@ -1769,7 +1768,7 @@ describe("ClearingHouse Test", () => {
             })
 
             const ratio1 = await clearingHouse.getMarginRatio(amm.address, alice)
-            await amm.migrateLiquidity(toDecimal(2), { from: admin })
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0), { from: admin })
             const ratio2 = await clearingHouse.getMarginRatio(amm.address, alice)
             // ratio and ratio2 should be the same, but rounding issue...
             expect(ratio1).to.eq("99999999999999999")
@@ -1783,12 +1782,12 @@ describe("ClearingHouse Test", () => {
             })
 
             // migrated position size = 8.658
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             const posMigrated = await clearingHouse.getPosition(amm.address, alice)
 
             const r = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
             await expectEvent.inTransaction(r.tx, clearingHouse, "PositionChanged", {
-                exchangedPositionSize: posMigrated.size.d,
+                exchangedPositionSize: new BN(posMigrated.size.d).mul(new BN("-1")),
             })
 
             const posClosed = await clearingHouse.getPosition(amm.address, alice)
@@ -1802,7 +1801,7 @@ describe("ClearingHouse Test", () => {
             })
 
             // migrated position size = 8.658
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             // new baseReserve = 181.818
             // new quoteReserve = 2200
 
@@ -1832,7 +1831,7 @@ describe("ClearingHouse Test", () => {
             })
 
             // migrated position size = 8.658
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             // new baseReserve = 181.818
             // new quoteReserve = 2200
 
@@ -1874,7 +1873,7 @@ describe("ClearingHouse Test", () => {
             })
 
             // alice's migrated position size = 7.21
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
 
             const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
             expectEvent(receipt, "PositionLiquidated", {
@@ -1892,7 +1891,7 @@ describe("ClearingHouse Test", () => {
             })
 
             // migrated position size = 8.658
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             // new baseReserve = 181.818
             // new quoteReserve = 2200
 
@@ -1911,7 +1910,7 @@ describe("ClearingHouse Test", () => {
             })
 
             // migrated position size = 8.658
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             // new baseReserve = 181.818
             // new quoteReserve = 2200
 
@@ -1930,7 +1929,7 @@ describe("ClearingHouse Test", () => {
             })
 
             // migrated position size = 8.658
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
 
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
@@ -1950,7 +1949,7 @@ describe("ClearingHouse Test", () => {
                 alice,
                 PnlCalcOption.SPOT_PRICE,
             )
-            await amm.migrateLiquidity(toDecimal(2), { from: admin })
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0), { from: admin })
             const positionNotionalAndUnrealizedPnl2 = await clearingHouse.getPositionNotionalAndUnrealizedPnl(
                 amm.address,
                 alice,
@@ -1974,7 +1973,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
                 from: bob,
             })
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
 
             const posAlice = await clearingHouse.getPosition(amm.address, alice)
             expect(posAlice.size).to.eq("8695652173913043479")
@@ -1996,7 +1995,7 @@ describe("ClearingHouse Test", () => {
                 from: bob,
             })
 
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
 
             const r = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
             expectEvent.inTransaction(r.tx, clearingHouse, "PositionChanged", { realizedPnl: "-16666666666666666661" })
@@ -2023,7 +2022,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(85), toDecimal(10), toDecimal(0), {
                 from: carol,
             })
-            await amm.migrateLiquidity(toDecimal(2))
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             const p = await clearingHouse.getPosition(amm.address, carol)
             console.log(p.size.d.toString())
 
