@@ -3,7 +3,8 @@ pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Decimal, SafeMath } from "./Decimal.sol";
+import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import { Decimal } from "./Decimal.sol";
 
 abstract contract DecimalERC20 {
     using SafeMath for uint256;

@@ -2,13 +2,15 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
-import { Decimal, SafeMath } from "./utils/Decimal.sol";
-import { SignedDecimal, MixedDecimal } from "./utils/MixedDecimal.sol";
-import { IPriceFeed } from "./interface/IPriceFeed.sol";
-import { IAmm } from "./interface/IAmm.sol";
 import { BlockContext } from "./utils/BlockContext.sol";
+import { IPriceFeed } from "./interface/IPriceFeed.sol";
+import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Decimal } from "./utils/Decimal.sol";
+import { SignedDecimal } from "./utils/SignedDecimal.sol";
+import { MixedDecimal } from "./utils/MixedDecimal.sol";
+import { IAmm } from "./interface/IAmm.sol";
+import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 
 contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     using SafeMath for uint256;

@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 
 import { Decimal } from "../utils/Decimal.sol";
 
-
 interface IRewardRecipient {
     function notifyRewardAmount(Decimal.decimal calldata _amount) external;
 }

@@ -2,8 +2,8 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { DecimalMath, SafeMath } from "./DecimalMath.sol";
-
+import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import { DecimalMath } from "./DecimalMath.sol";
 
 library Decimal {
     using DecimalMath for uint256;

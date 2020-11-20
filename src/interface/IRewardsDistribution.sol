@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 
 import { Decimal } from "../utils/Decimal.sol";
 
-
 interface IRewardsDistribution {
     function distributeRewards(Decimal.decimal calldata) external;
 }

@@ -2,19 +2,21 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
+import { BlockContext } from "./utils/BlockContext.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IMultiTokenRewardRecipient } from "./interface/IMultiTokenRewardRecipient.sol";
+import { Decimal } from "./utils/Decimal.sol";
+import { SignedDecimal } from "./utils/SignedDecimal.sol";
+import { MixedDecimal } from "./utils/MixedDecimal.sol";
+import { DecimalERC20 } from "./utils/DecimalERC20.sol";
+import { IAmm } from "./interface/IAmm.sol";
+import { IInsuranceFund } from "./interface/IInsuranceFund.sol";
 import { BaseRelayRecipient } from "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 import { ContextUpgradeSafe } from "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {
-    ReentrancyGuardUpgradeSafe
-} from "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
 import { OwnerPausableUpgradeSafe } from "./OwnerPausable.sol";
-import { MixedDecimal, SignedDecimal, Decimal } from "./utils/MixedDecimal.sol";
-import { BlockContext } from "./utils/BlockContext.sol";
-import { IAmm } from "./interface/IAmm.sol";
-import { DecimalERC20 } from "./utils/DecimalERC20.sol";
-import { IMultiTokenRewardRecipient } from "./interface/IMultiTokenRewardRecipient.sol";
-import { IInsuranceFund } from "./interface/IInsuranceFund.sol";
+// prettier-ignore
+// solhint-disable-next-line
+import { ReentrancyGuardUpgradeSafe } from "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
 
 // note BaseRelayRecipient must come after OwnerPausableUpgradeSafe so its _msgSender() takes precedence
 // (yes, the ordering is reversed comparing to Python)

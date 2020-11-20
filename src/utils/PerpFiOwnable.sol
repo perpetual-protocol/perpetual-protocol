@@ -3,7 +3,6 @@ pragma solidity 0.6.9;
 
 import { Context } from "@openzeppelin/contracts/GSN/Context.sol";
 
-
 // copy from openzeppelin Ownable, only modify how the owner transfer
 /**
  * @dev Contract module which provides a basic access control mechanism, where
