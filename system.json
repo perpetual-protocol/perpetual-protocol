@@ -4,15 +4,15 @@
       "contracts": {
         "PerpToken": {
           "name": "PerpToken",
-          "address": "0xbE98B9165B611babeD0cb56bF80cedA023bc6B9F"
+          "address": "0x45D9e6f4C4802021505dc90139DB297fA6402579"
         },
         "RootBridge": {
           "name": "RootBridge",
-          "address": "0x10F62d2EaF686C983B5AC7aE73E84DC296aF149f"
+          "address": "0x0B10bD3c0761b50D6da34e9050d6d10B48917D54"
         },
         "ChainlinkL1": {
           "name": "ChainlinkL1",
-          "address": "0x3b18D7333a8C1fac000b15f089EefeE0d477b231"
+          "address": "0x0E0197a50D82553ECDf46d0AffD3803C73EFf93d"
         }
       },
       "accounts": [],
@@ -30,39 +30,39 @@
       "contracts": {
         "MetaTxGateway": {
           "name": "MetaTxGateway",
-          "address": "0x5BB2B220C58B6B6BC6D325b3235F1907c02C98fa"
+          "address": "0x77e14ED2bfbc2E7E44CC53668AbD000970BB00a5"
         },
         "ClientBridge": {
           "name": "ClientBridge",
-          "address": "0xe18dd135CA1F6b198B48Fbf1E28F1E89bB58c54a"
+          "address": "0x2877F860940916c3B0a6dfcF789D52c054B40c7a"
         },
         "InsuranceFund": {
           "name": "InsuranceFund",
-          "address": "0x5ed9Ee1364D473C604027c071B9f7eB1Fed5d085"
+          "address": "0xE51b87E4ADDe381539c67DEb511951bA39854834"
         },
         "L2PriceFeed": {
           "name": "L2PriceFeed",
-          "address": "0xc38db90adB42466AF6031A7a4D0ac775967C8c33"
+          "address": "0x72626973827EE5176447B0992D4Bd5a66b171873"
         },
         "ClearingHouse": {
           "name": "ClearingHouse",
-          "address": "0x691247Ea2a12eCC465Dd3F4d3a39142024f87688"
+          "address": "0x02D399BEa7a807f79c16dBefc5E02Fe0c6f93590"
         },
         "ETHUSDT": {
           "name": "Amm",
-          "address": "0x15f4C389b8B8756dc1FBF45A4c76b10d82d57590"
+          "address": "0x0145464B40A1000613392f101AeE474493b0DcAf"
         },
         "BTCUSDT": {
           "name": "Amm",
-          "address": "0xF0F50F4c294007899B914335B9BAA49B3E0BCC88"
+          "address": "0xdD76F02e46cBc335Ce0e9DBd79079B1aD2A9865e"
         },
         "ClearingHouseViewer": {
           "name": "ClearingHouseViewer",
-          "address": "0x3c942B969C85cfd24942ECE39de6F843767F1755"
+          "address": "0xf40A817AB8be175c19F5aF8a7F3e9842D5C34eD9"
         },
         "AmmReader": {
           "name": "AmmReader",
-          "address": "0xe3cE33f1C3EA2c20922027A47f613A718D2783C6"
+          "address": "0xBc69aA17cB800D6a984590634A2E71ba88fdC385"
         }
       },
       "accounts": [],
