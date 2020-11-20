@@ -151,9 +151,12 @@ export class ContractPublisher {
                     for (const priceFeedKey in this.deployConfig.chainlinkMap) {
                         const address = this.deployConfig.chainlinkMap[priceFeedKey]
                         console.log(`addAggregator=${priceFeedKey.toString()}`)
-                        await (await chainlink.addAggregator(ethers.utils.id(priceFeedKey.toString()), address)).wait(
-                            this.confirmations,
-                        )
+                        await (
+                            await chainlink.addAggregator(
+                                ethers.utils.formatBytes32String(priceFeedKey.toString()),
+                                address,
+                            )
+                        ).wait(this.confirmations)
                     }
                 },
             ],
@@ -206,9 +209,9 @@ export class ContractPublisher {
                     const l2PriceFeed = await this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed).instance()
                     for (const priceFeedKey in this.deployConfig.chainlinkMap) {
                         console.log(`add aggregator=${priceFeedKey}`)
-                        await (await l2PriceFeed.addAggregator(ethers.utils.id(priceFeedKey.toString()))).wait(
-                            this.confirmations,
-                        )
+                        await (
+                            await l2PriceFeed.addAggregator(ethers.utils.formatBytes32String(priceFeedKey.toString()))
+                        ).wait(this.confirmations)
                     }
                 },
                 async (): Promise<void> => {

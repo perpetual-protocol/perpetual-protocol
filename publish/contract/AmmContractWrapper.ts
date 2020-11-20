@@ -23,7 +23,7 @@ export class AmmContractWrapper extends ContractWrapper<Amm> {
             tollRatio,
             spreadRatio,
         } = ammConfig.deployArgs
-        const priceFeedKeyBytes = ethers.utils.id(priceFeedKey.toString())
+        const priceFeedKeyBytes = ethers.utils.formatBytes32String(priceFeedKey.toString())
         const args = [
             quoteAssetReserve.toString(),
             baseAssetReserve.toString(),
