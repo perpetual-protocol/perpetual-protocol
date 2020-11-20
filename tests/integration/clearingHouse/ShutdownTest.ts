@@ -455,7 +455,7 @@ describe("Protocol shutdown test", () => {
                 })
 
                 // after migrate liquidity, total position = 15.151515
-                await amm.migrateLiquidity(toDecimal(2))
+                await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
                 const totalPositionSize = await amm.totalPositionSize()
                 const dir = totalPositionSize.isNeg() ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM
                 const totalPositionNotional = await amm.getOutputPrice(dir, { d: totalPositionSize.toString() })
@@ -532,7 +532,7 @@ describe("Protocol shutdown test", () => {
 
                 // Amm reserve 10200 : 98.04 --> 20400 : 196.08
                 // migrated position size = 1.94
-                await amm.migrateLiquidity(toDecimal(2))
+                await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
 
                 // get -2.93 positions
                 // Amm: 20100 : 199
