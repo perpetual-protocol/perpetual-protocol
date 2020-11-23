@@ -26,7 +26,8 @@ const CErc20 = artifacts.require("CErc20") as CErc20Contract
 const ERC20 = artifacts.require("ERC20") as ERC20Contract
 const TetherToken = artifacts.require("TetherToken") as TetherTokenContract
 
-describe("ExchangeWrapper UT", () => {
+// skip, won't be in v1
+describe.skip("ExchangeWrapper UT", () => {
     let addresses: string[]
     let admin: string
     let alice: string
