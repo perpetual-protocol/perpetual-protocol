@@ -235,7 +235,9 @@ export class ContractPublisher {
                     )
                 },
                 async (): Promise<void> => {
-                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const clearingHouse = await this.factory
+                        .create<ClearingHouse>(ContractName.ClearingHouse)
+                        .instance()
                     const metaTxGateway = await this.factory
                         .create<MetaTxGateway>(ContractName.MetaTxGateway)
                         .instance()
@@ -244,9 +246,11 @@ export class ContractPublisher {
                         .instance()
 
                     console.log("metaTxGateway.addToWhitelists...")
-                    await (await metaTxGateway.addToWhitelists(clearingHouseContract.address!)).wait(this.confirmations)
+                    await (await metaTxGateway.addToWhitelists(clearingHouse.address)).wait(this.confirmations)
                     console.log("insuranceFundContract.setBeneficiary...")
-                    await (await insuranceFund.setBeneficiary(clearingHouseContract.address!)).wait(this.confirmations)
+                    await (await insuranceFund.setBeneficiary(clearingHouse.address)).wait(this.confirmations)
+                    console.log("clearingHouse.setWhitelist...")
+                    await clearingHouse.setWhitelist(this.settingsDao.getExternalContracts("layer2").arbitrageur!)
                 },
                 async (): Promise<void> => {
                     // deploy amm
