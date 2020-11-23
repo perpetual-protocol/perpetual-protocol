@@ -77,6 +77,13 @@ export class ContractPublisher {
                         this.externalContract.multiTokenMediatorOnEth!,
                     )
                 },
+                async (): Promise<void> => {
+                    const rootBridge = await this.factory.create<RootBridge>(ContractName.RootBridge).instance()
+                    await (await rootBridge.setOwner(this.externalContract.foundationGovernance!)).wait(
+                        this.confirmations,
+                    )
+                    // governance should claim the owner by calling `updateOwner`
+                },
             ],
             // batch 1
             [
@@ -345,6 +352,32 @@ export class ContractPublisher {
                             this.systemMetadataDao.getContractMetadata("layer1", ContractName.RootBridge).address,
                         )
                     ).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    // transfer owner to multisig
+                    const gov = this.externalContract.foundationGovernance!
+                    const metaTxGateway = await this.factory
+                        .create<MetaTxGateway>(ContractName.MetaTxGateway)
+                        .instance()
+                    const clientBridge = await this.factory.create<ClientBridge>(ContractName.ClientBridge).instance()
+                    const insuranceFund = await this.factory
+                        .create<InsuranceFund>(ContractName.InsuranceFund)
+                        .instance()
+                    const l2PriceFeed = await this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed).instance()
+                    const clearingHouse = await this.factory
+                        .create<ClearingHouse>(ContractName.ClearingHouse)
+                        .instance()
+                    const ETHUSDT = await this.factory.createAmm(AmmInstanceName.ETHUSDT).instance()
+                    const BTCUSDT = await this.factory.createAmm(AmmInstanceName.BTCUSDT).instance()
+
+                    await (await metaTxGateway.setOwner(gov)).wait(this.confirmations)
+                    await (await clientBridge.setOwner(gov)).wait(this.confirmations)
+                    await (await insuranceFund.setOwner(gov)).wait(this.confirmations)
+                    await (await l2PriceFeed.setOwner(gov)).wait(this.confirmations)
+                    await (await clearingHouse.setOwner(gov)).wait(this.confirmations)
+                    await (await ETHUSDT.setOwner(gov)).wait(this.confirmations)
+                    await (await BTCUSDT.setOwner(gov)).wait(this.confirmations)
+                    // governance should claim the owner by calling `updateOwner`
                 },
             ],
         ],
