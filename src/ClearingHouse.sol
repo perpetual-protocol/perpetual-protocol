@@ -46,8 +46,6 @@ contract ClearingHouse is
     );
     event PositionSettled(address amm, address trader, uint256 valueTransferred);
     event RestrictionModeEntered(address amm, uint256 blockNumber);
-    event FeePoolSet(address feePool);
-    event WhitelistChanged(address whitelist);
 
     /// @notice This event is emitted when position change
     /// @param trader the address which execute this transaction
@@ -158,15 +156,19 @@ contract ClearingHouse is
     //**********************************************************//
     string public override versionRecipient;
 
-    /**
-     * Following states are able to be updated by DAO
-     */
+    // only admin
     Decimal.decimal public initMarginRatio;
-    Decimal.decimal public maintenanceMarginRatio;
-    Decimal.decimal public liquidationFeeRatio;
-    Decimal.decimal public totalOpenPositionNotionalCap;
 
-    Decimal.decimal public totalOpenPositionNotional;
+    // only admin
+    Decimal.decimal public maintenanceMarginRatio;
+
+    // only admin
+    Decimal.decimal public liquidationFeeRatio;
+
+    // only admin. during the guarded period the open interest will be capped
+    Decimal.decimal public openInterestNotionalNotionalCap;
+
+    Decimal.decimal public openInterestNotional;
 
     // key by amm address
     mapping(address => AmmMap) internal ammMap;
@@ -241,11 +243,10 @@ contract ClearingHouse is
 
     function setFeePool(IMultiTokenRewardRecipient _feePool) external onlyOwner {
         feePool = _feePool;
-        emit FeePoolSet(address(_feePool));
     }
 
-    function setTotalOpenPositionNotionalCap(Decimal.decimal memory _totalOpenPositionNotionalCap) external onlyOwner {
-        totalOpenPositionNotionalCap = _totalOpenPositionNotionalCap;
+    function setOpenInterestNotionalCap(Decimal.decimal memory _openInterestNotionalNotionalCap) external onlyOwner {
+        openInterestNotionalNotionalCap = _openInterestNotionalNotionalCap;
     }
 
     /**
@@ -255,7 +256,6 @@ contract ClearingHouse is
      */
     function setWhitelist(address _whitelist) external onlyOwner {
         whitelist = _whitelist;
-        emit WhitelistChanged(_whitelist);
     }
 
     /**
@@ -795,7 +795,7 @@ contract ClearingHouse is
         }
 
         address trader = _msgSender();
-        updateTotalPositionNotional(_openNotional, false);
+        updateOpenInterestNotional(_openNotional, false);
         // if the trader is not in the whitelist, check max position size
         if (trader != whitelist) {
             Decimal.decimal memory maxHoldingBaseAsset = _amm.getMaxHoldingBaseAsset();
@@ -844,7 +844,7 @@ contract ClearingHouse is
         Decimal.decimal memory _baseAssetAmountLimit
     ) internal returns (PositionResp memory) {
         Decimal.decimal memory openNotional = _quoteAssetAmount.mulD(_leverage);
-        updateTotalPositionNotional(openNotional, true);
+        updateOpenInterestNotional(openNotional, true);
         (
             Decimal.decimal memory oldPositionNotional,
             SignedDecimal.signedDecimal memory unrealizedPnl
@@ -988,7 +988,7 @@ contract ClearingHouse is
             _skipFluctuationCheck
         );
 
-        updateTotalPositionNotional(positionResp.exchangedQuoteAssetAmount, true);
+        updateOpenInterestNotional(positionResp.exchangedQuoteAssetAmount, true);
         clearPosition(_amm, _trader);
     }
 
@@ -1101,12 +1101,15 @@ contract ClearingHouse is
         _transfer(_token, address(insuranceFund), tokenToInsuranceFund);
     }
 
-    function updateTotalPositionNotional(Decimal.decimal memory _amount, bool _reduce) internal {
+    function updateOpenInterestNotional(Decimal.decimal memory _amount, bool _reduce) internal {
         if (_reduce) {
-            totalOpenPositionNotional = totalOpenPositionNotional.subD(_amount);
+            openInterestNotional = openInterestNotional.subD(_amount);
         } else {
-            totalOpenPositionNotional = totalOpenPositionNotional.addD(_amount);
-            require(totalOpenPositionNotional.toUint() <= totalOpenPositionNotionalCap.toUint(), "over limit");
+            openInterestNotional = openInterestNotional.addD(_amount);
+            uint256 cap = openInterestNotionalNotionalCap.toUint();
+
+            // when cap = 0 means no cap
+            require(cap == 0 || openInterestNotional.toUint() <= cap, "over limit");
         }
     }
 
