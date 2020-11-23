@@ -270,14 +270,10 @@ contract ClearingHouse is
 
         // update margin part in personal position
         address trader = _msgSender();
-        SignedDecimal.signedDecimal memory addedMarginAmount = MixedDecimal.fromDecimal(_addedMargin);
-        updateMargin(_amm, trader, addedMarginAmount);
+        updateMargin(_amm, trader, MixedDecimal.fromDecimal(_addedMargin));
 
         // transfer token from trader
         _transferFrom(_amm.quoteAsset(), trader, address(this), _addedMargin);
-
-        // emit event
-        emit MarginChanged(trader, address(_amm), addedMarginAmount.toInt());
     }
 
     /**
@@ -292,8 +288,7 @@ contract ClearingHouse is
 
         // update margin part in personal position, and get new margin
         address trader = _msgSender();
-        SignedDecimal.signedDecimal memory removedMarginAmount = MixedDecimal.fromDecimal(_removedMargin).mulScalar(-1);
-        updateMargin(_amm, trader, removedMarginAmount);
+        updateMargin(_amm, trader, MixedDecimal.fromDecimal(_removedMargin).mulScalar(-1));
 
         // check margin ratio
         SignedDecimal.signedDecimal memory marginRatio = getMarginRatio(_amm, trader);
@@ -301,9 +296,6 @@ contract ClearingHouse is
 
         // transfer token back to trader
         withdraw(_amm.quoteAsset(), trader, _removedMargin);
-
-        // emit event
-        emit MarginChanged(trader, address(_amm), removedMarginAmount.toInt());
     }
 
     /**
@@ -1027,6 +1019,8 @@ contract ClearingHouse is
         position.margin = remainMargin.abs();
         position.lastUpdatedCumulativePremiumFraction = latestCumulativePremiumFraction;
         setPosition(_amm, _trader, position);
+
+        emit MarginChanged(_trader, address(_amm), _margin.toInt());
         return position.margin;
     }
 
