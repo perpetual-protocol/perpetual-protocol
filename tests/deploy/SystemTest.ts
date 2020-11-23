@@ -173,8 +173,7 @@ describe("SystemTest Spec", () => {
             instance = new ethers.Contract(l2PriceFeed.address, L2PriceFeedArtifact.abi, l2Provider) as L2PriceFeed
         })
 
-        // rootBridge is set by function setRootBridge() in this contract
-        it.skip("has rootBridge", async () => {
+        it("has rootBridge", async () => {
             expect(await instance.rootBridge()).to.eq(rootBridge.address)
         })
 

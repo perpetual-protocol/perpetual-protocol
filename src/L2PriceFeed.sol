@@ -228,7 +228,7 @@ contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
         return priceFeedMap[_priceFeedKey].registered;
     }
 
-    function requireKeyExisted(bytes32 _key, bool _existed) private {
+    function requireKeyExisted(bytes32 _key, bool _existed) private view {
         if (_existed) {
             require(isExistedKey(_key), "key not existed");
         } else {
