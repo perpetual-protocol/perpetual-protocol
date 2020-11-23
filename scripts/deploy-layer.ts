@@ -27,6 +27,7 @@ export async function deployLayer(
 
     const signers = await ethers.getSigners()
     const address = await signers[0].getAddress()
+    console.log(`deployer=${address}`)
     const ozScript = new OzScript(bre.web3.currentProvider, address)
     const publisher = new ContractPublisher(layerType, settingsDao, systemMetadataDao, ozScript)
 
