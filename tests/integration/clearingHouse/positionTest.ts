@@ -1200,7 +1200,7 @@ describe("ClearingHouse - open/close position Test", () => {
 
         describe("whitelisting", () => {
             it("add whitelists, and open a long which larger than the limit", async () => {
-                await clearingHouse.addToWhitelists(alice)
+                await clearingHouse.setWhitelist(alice)
 
                 // position size is 10.7
                 const r = await clearingHouse.openPosition(
@@ -1215,7 +1215,7 @@ describe("ClearingHouse - open/close position Test", () => {
             })
 
             it("add whitelists, and open a short, a larger reverse long", async () => {
-                await clearingHouse.addToWhitelists(alice)
+                await clearingHouse.setWhitelist(alice)
                 // position size is -9.89
                 await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(9), toDecimal(10), toDecimal(0), {
                     from: alice,
@@ -1234,13 +1234,13 @@ describe("ClearingHouse - open/close position Test", () => {
             })
 
             it("remove from whitelist, open a long and a larger reverse short", async () => {
-                await clearingHouse.addToWhitelists(alice)
+                await clearingHouse.setWhitelist(alice)
                 // position size is 10.7
                 await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(120), toDecimal(1), toDecimal(0), {
                     from: alice,
                 })
 
-                await clearingHouse.removeFromWhitelists(alice)
+                await clearingHouse.setWhitelist("0x")
                 // position size would be -14.9, revert
                 const r = await expectRevert(
                     clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(25), toDecimal(10), toDecimal(0), {
@@ -1251,13 +1251,13 @@ describe("ClearingHouse - open/close position Test", () => {
             })
 
             it("remove from whitelist and add back", async () => {
-                await clearingHouse.addToWhitelists(alice)
+                await clearingHouse.setWhitelist(alice)
                 // position size is 10.7
                 await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(120), toDecimal(1), toDecimal(0), {
                     from: alice,
                 })
 
-                await clearingHouse.removeFromWhitelists(alice)
+                await clearingHouse.setWhitelist("0x")
                 // position size would be -14.9, revert
                 await expectRevert(
                     clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(25), toDecimal(10), toDecimal(0), {
@@ -1266,7 +1266,7 @@ describe("ClearingHouse - open/close position Test", () => {
                     "hit position size upper bound",
                 )
 
-                await clearingHouse.addToWhitelists(alice)
+                await clearingHouse.setWhitelist(alice)
                 const r = await clearingHouse.openPosition(
                     amm.address,
                     Side.SELL,

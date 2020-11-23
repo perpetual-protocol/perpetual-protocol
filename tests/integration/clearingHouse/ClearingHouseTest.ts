@@ -143,6 +143,69 @@ describe("ClearingHouse Test", () => {
         })
     })
 
+    describe("openInterestNotional", () => {
+        it("increase when increase position", async () => {
+            await approve(alice, clearingHouse.address, 600)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            expect(await clearingHouse.openInterestNotional()).eq(toFullDigitStr(600))
+        })
+
+        it("reduce when reduce position", async () => {
+            await approve(alice, clearingHouse.address, 600)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(300), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            expect(await clearingHouse.openInterestNotional()).eq(toFullDigitStr(300))
+        })
+
+        it("reduce when close position", async () => {
+            await approve(alice, clearingHouse.address, 600)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(400), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            await approve(bob, clearingHouse.address, 600)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(200), toDecimal(1), toDecimal(0), {
+                from: bob,
+            })
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(100), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            expect(await clearingHouse.openInterestNotional()).eq(toFullDigitStr(500))
+        })
+
+        it("stop trading if it's over openInterestCap", async () => {
+            await clearingHouse.setOpenInterestNotionalCap(toDecimal(600))
+            await approve(alice, clearingHouse.address, 600)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            await expectRevert(
+                clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                }),
+                "over limit",
+            )
+        })
+
+        it("won't stop trading if it's reducing position, even it's more than cap", async () => {
+            await clearingHouse.setOpenInterestNotionalCap(toDecimal(600))
+            await approve(alice, clearingHouse.address, 600)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            await clearingHouse.setOpenInterestNotionalCap(toDecimal(300))
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(300), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            expect(await clearingHouse.openInterestNotional()).eq(toFullDigitStr(300))
+        })
+    })
+
     describe("payFunding", () => {
         beforeEach(async () => {
             // given alice takes 2x long position (37.5Q) with 300 margin
