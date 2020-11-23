@@ -78,7 +78,7 @@ export class DeployConfig {
     readonly confirmations: number
 
     // token
-    readonly deployUsdt: boolean
+    readonly deployFakeERC20: boolean
     readonly usdtToFaucet: boolean
     readonly usdtInitSupply: BigNumber = BigNumber.from("10000000000").mul("1000000")
 
@@ -102,15 +102,15 @@ export class DeployConfig {
 
     // amm
     readonly ammConfigMap: Record<string, AmmConfig> = {
-        [AmmInstanceName.BTCUSDT]: BTC_USD_AMM,
-        [AmmInstanceName.ETHUSDT]: ETH_USD_AMM,
+        [AmmInstanceName.BTCUSDC]: BTC_USD_AMM,
+        [AmmInstanceName.ETHUSDC]: ETH_USD_AMM,
     }
 
     constructor(stage: Stage) {
         switch (stage) {
             case "production":
                 this.confirmations = 5
-                this.deployUsdt = false
+                this.deployFakeERC20 = false
                 this.deployPerp = false
                 this.usdtToFaucet = false
                 this.chainlinkMap = {
@@ -121,7 +121,7 @@ export class DeployConfig {
                 break
             case "staging":
                 this.confirmations = 5
-                this.deployUsdt = false
+                this.deployFakeERC20 = false
                 this.deployPerp = true
                 this.usdtToFaucet = false
                 this.chainlinkMap = {
@@ -132,7 +132,7 @@ export class DeployConfig {
                 break
             case "test":
                 this.confirmations = 1
-                this.deployUsdt = true
+                this.deployFakeERC20 = true
                 this.deployPerp = true
                 this.usdtToFaucet = false
                 this.chainlinkMap = {

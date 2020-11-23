@@ -38,7 +38,7 @@ export class ContractPublisher {
             // batch 0
             [
                 async (): Promise<void> => {
-                    if (!this.deployConfig.deployUsdt) {
+                    if (!this.deployConfig.deployFakeERC20) {
                         return
                     }
 
@@ -251,27 +251,26 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     // deploy amm
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.ETHUSDT)
-                    const tetherAddr = this.deployConfig.deployUsdt
-                        ? // USDT is custom-managed by us
+                    const ammContract = this.factory.createAmm(AmmInstanceName.ETHUSDC)
+                    const quoteTokenAddr = this.deployConfig.deployFakeERC20
+                        ?
                           this.systemMetadataDao.getContractMetadata("layer1", ContractName.TetherToken).address
-                        : // USDT is externally managed
-                          this.settingsDao.getExternalContracts("layer2").tether!
+                        : this.settingsDao.getExternalContracts("layer2").usdc!
                     await ammContract.deployUpgradableContract(
                         this.deployConfig.ammConfigMap,
                         l2PriceFeedContract.address!,
-                        tetherAddr,
+                        quoteTokenAddr,
                     )
                 },
                 async (): Promise<void> => {
                     // setup amm
-                    console.log("setting up Amm ETHUSDT...")
+                    console.log("setting up Amm ETHUSDC...")
                     const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
                     const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.ETHUSDT)
+                    const ammContract = this.factory.createAmm(AmmInstanceName.ETHUSDC)
                     const amm = await ammContract.instance()
                     const insuranceFund = await insuranceFundContract.instance()
-                    const { maxHoldingBaseAsset } = this.deployConfig.ammConfigMap[AmmInstanceName.ETHUSDT].properties
+                    const { maxHoldingBaseAsset } = this.deployConfig.ammConfigMap[AmmInstanceName.ETHUSDC].properties
 
                     if (maxHoldingBaseAsset.gt(0)) {
                         console.log("setMaxHoldingBaseAsset...")
@@ -287,27 +286,26 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     // deploy amm
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.BTCUSDT)
-                    const tetherAddr = this.deployConfig.deployUsdt
-                        ? // USDT is custom-managed by us
-                          this.systemMetadataDao.getContractMetadata("layer1", ContractName.TetherToken).address
-                        : // USDT is externally managed
-                          this.settingsDao.getExternalContracts("layer2").tether!
+                    const ammContract = this.factory.createAmm(AmmInstanceName.BTCUSDC)
+                    const quoteTokenAddr = this.deployConfig.deployFakeERC20
+                        ?
+                        this.systemMetadataDao.getContractMetadata("layer1", ContractName.TetherToken).address
+                        : this.settingsDao.getExternalContracts("layer2").usdc!
                     await ammContract.deployUpgradableContract(
                         this.deployConfig.ammConfigMap,
                         l2PriceFeedContract.address!,
-                        tetherAddr,
+                        quoteTokenAddr,
                     )
                 },
                 async (): Promise<void> => {
                     // setup amm
-                    console.log("setting up Amm BTCUSDT...")
+                    console.log("setting up Amm BTCUSDC...")
                     const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
                     const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.BTCUSDT)
+                    const ammContract = this.factory.createAmm(AmmInstanceName.BTCUSDC)
                     const amm = await ammContract.instance()
                     const insuranceFund = await insuranceFundContract.instance()
-                    const { maxHoldingBaseAsset } = this.deployConfig.ammConfigMap[AmmInstanceName.BTCUSDT].properties
+                    const { maxHoldingBaseAsset } = this.deployConfig.ammConfigMap[AmmInstanceName.BTCUSDC].properties
 
                     if (maxHoldingBaseAsset.gt(0)) {
                         console.log("setMaxHoldingBaseAsset...")
@@ -335,15 +333,15 @@ export class ContractPublisher {
                 },
                 async (): Promise<void> => {
                     // open amm
-                    console.log("opening Amm ETHUSDT...")
-                    const ethUsdt = await this.factory.createAmm(AmmInstanceName.ETHUSDT).instance()
-                    await (await ethUsdt.setOpen(true)).wait(this.confirmations)
+                    console.log("opening Amm ETHUSDC...")
+                    const ethUsdc = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
+                    await (await ethUsdc.setOpen(true)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     // open amm
-                    console.log("opening Amm ETHUSDT...")
-                    const btcUsdt = await this.factory.createAmm(AmmInstanceName.BTCUSDT).instance()
-                    await (await btcUsdt.setOpen(true)).wait(this.confirmations)
+                    console.log("opening Amm ETHUSDC...")
+                    const btcUsdc = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
+                    await (await btcUsdc.setOpen(true)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     const l2PriceFeed = await this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed).instance()
@@ -367,16 +365,16 @@ export class ContractPublisher {
                     const clearingHouse = await this.factory
                         .create<ClearingHouse>(ContractName.ClearingHouse)
                         .instance()
-                    const ETHUSDT = await this.factory.createAmm(AmmInstanceName.ETHUSDT).instance()
-                    const BTCUSDT = await this.factory.createAmm(AmmInstanceName.BTCUSDT).instance()
+                    const ETHUSDC = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
+                    const BTCUSDC = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
 
                     await (await metaTxGateway.setOwner(gov)).wait(this.confirmations)
                     await (await clientBridge.setOwner(gov)).wait(this.confirmations)
                     await (await insuranceFund.setOwner(gov)).wait(this.confirmations)
                     await (await l2PriceFeed.setOwner(gov)).wait(this.confirmations)
                     await (await clearingHouse.setOwner(gov)).wait(this.confirmations)
-                    await (await ETHUSDT.setOwner(gov)).wait(this.confirmations)
-                    await (await BTCUSDT.setOwner(gov)).wait(this.confirmations)
+                    await (await ETHUSDC.setOwner(gov)).wait(this.confirmations)
+                    await (await BTCUSDC.setOwner(gov)).wait(this.confirmations)
                     // governance should claim the owner by calling `updateOwner`
                 },
             ],

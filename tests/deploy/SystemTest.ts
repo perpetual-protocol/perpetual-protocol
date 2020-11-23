@@ -45,11 +45,11 @@ describe("SystemTest Spec", () => {
     const insuranceFund = systemMetadataDao.getContractMetadata("layer2", ContractName.InsuranceFund)
     const clearingHouse = systemMetadataDao.getContractMetadata("layer2", ContractName.ClearingHouse)
     const clientBridge = systemMetadataDao.getContractMetadata("layer2", ContractName.ClientBridge)
-    const ETHUSDT = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.ETHUSDT)
-    const BTCUSDT = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.BTCUSDT)
+    const ETHUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.ETHUSDC)
+    const BTCUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.BTCUSDC)
     const ambBridgeL2 = settingsDao.getExternalContracts("layer2").ambBridgeOnXDai
     const multiTokenMediatorL2 = settingsDao.getExternalContracts("layer2").multiTokenMediatorOnXDai
-    const USDT = settingsDao.getExternalContracts("layer2").tether
+    const usdc = settingsDao.getExternalContracts("layer2").usdc
     const multiTokenMediator = settingsDao.getExternalContracts("layer2").multiTokenMediatorOnXDai
 
     describe("RootBridge", () => {
@@ -138,17 +138,17 @@ describe("SystemTest Spec", () => {
 
         // with function isExistedAmm(), as amms are private
         describe("has amms", async () => {
-            it("has ETHUSDT", async () => {
-                expect(await instance.isExistedAmm(ETHUSDT.address))
+            it("has ETHUSDC", async () => {
+                expect(await instance.isExistedAmm(ETHUSDC.address))
             })
 
-            it("has BTCUSDT", async () => {
-                expect(await instance.isExistedAmm(BTCUSDT.address))
+            it("has BTCUSDC", async () => {
+                expect(await instance.isExistedAmm(BTCUSDC.address))
             })
         })
 
-        it("has USDT as quoteTokens[0]", async () => {
-            expect(await instance.quoteTokens(0)).to.eq(USDT)
+        it("has USDC as quoteTokens[0]", async () => {
+            expect(await instance.quoteTokens(0)).to.eq(usdc)
         })
 
         // not yet implemented
@@ -210,18 +210,18 @@ describe("SystemTest Spec", () => {
     })
 
     describe("Amm", async () => {
-        describe("ETHUSDT", async () => {
+        describe("ETHUSDC", async () => {
             let instance: Amm
 
             beforeEach(async () => {
-                instance = new ethers.Contract(ETHUSDT.address, AmmArtifact.abi, l2Provider) as Amm
+                instance = new ethers.Contract(ETHUSDC.address, AmmArtifact.abi, l2Provider) as Amm
             })
 
             // private
             it.skip("has ClearingHouse as counterParty", async () => {})
 
             it("has quoteAsset", async () => {
-                expect(await instance.quoteAsset()).to.eq(USDT)
+                expect(await instance.quoteAsset()).to.eq(usdc)
             })
 
             it("has L2PriceFeed", async () => {
@@ -229,18 +229,18 @@ describe("SystemTest Spec", () => {
             })
         })
 
-        describe("BTCUSDT", async () => {
+        describe("BTCUSDC", async () => {
             let instance: Amm
 
             beforeEach(async () => {
-                instance = new ethers.Contract(BTCUSDT.address, AmmArtifact.abi, l2Provider) as Amm
+                instance = new ethers.Contract(BTCUSDC.address, AmmArtifact.abi, l2Provider) as Amm
             })
 
             // private
             it.skip("has ClearingHouse", async () => {})
 
             it("has quoteAsset", async () => {
-                expect(await instance.quoteAsset()).to.eq(USDT)
+                expect(await instance.quoteAsset()).to.eq(usdc)
             })
 
             it("has L2PriceFeed", async () => {
