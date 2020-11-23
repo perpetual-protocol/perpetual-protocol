@@ -144,6 +144,10 @@ describe("ClearingHouse Test", () => {
     })
 
     describe("openInterestNotional", () => {
+        beforeEach(async () => {
+            await clearingHouse.setOpenInterestNotionalCap(toDecimal(600))
+        })
+
         it("increase when increase position", async () => {
             await approve(alice, clearingHouse.address, 600)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
@@ -179,7 +183,6 @@ describe("ClearingHouse Test", () => {
         })
 
         it("stop trading if it's over openInterestCap", async () => {
-            await clearingHouse.setOpenInterestNotionalCap(toDecimal(600))
             await approve(alice, clearingHouse.address, 600)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
                 from: alice,
@@ -193,7 +196,6 @@ describe("ClearingHouse Test", () => {
         })
 
         it("won't stop trading if it's reducing position, even it's more than cap", async () => {
-            await clearingHouse.setOpenInterestNotionalCap(toDecimal(600))
             await approve(alice, clearingHouse.address, 600)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
                 from: alice,
@@ -404,7 +406,7 @@ describe("ClearingHouse Test", () => {
 
         it("add margin", async () => {
             const receipt = await clearingHouse.addMargin(amm.address, toDecimal(80), { from: alice })
-            await expectEvent.inTransaction(receipt.tx, clearingHouse, "MarginAdded", {
+            await expectEvent.inTransaction(receipt.tx, clearingHouse, "MarginChanged", {
                 sender: alice,
                 amm: amm.address,
                 amount: toFullDigit(80),
@@ -421,16 +423,14 @@ describe("ClearingHouse Test", () => {
         })
 
         it("remove margin", async () => {
-            const removedMargin = 20
-
             // remove margin 20
-            const receipt = await clearingHouse.removeMargin(amm.address, toDecimal(removedMargin), {
+            const receipt = await clearingHouse.removeMargin(amm.address, toDecimal(20), {
                 from: alice,
             })
-            await expectEvent.inTransaction(receipt.tx, clearingHouse, "MarginRemoved", {
+            await expectEvent.inTransaction(receipt.tx, clearingHouse, "MarginChanged", {
                 sender: alice,
                 amm: amm.address,
-                amount: toFullDigit(removedMargin),
+                amount: toFullDigit(-20),
             })
             await expectEvent.inTransaction(receipt.tx, quoteToken, "Transfer", {
                 from: clearingHouse.address,

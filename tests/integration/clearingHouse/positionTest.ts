@@ -1240,7 +1240,7 @@ describe("ClearingHouse - open/close position Test", () => {
                     from: alice,
                 })
 
-                await clearingHouse.setWhitelist("0x")
+                await clearingHouse.setWhitelist("0x0000000000000000000000000000000000000000")
                 // position size would be -14.9, revert
                 const r = await expectRevert(
                     clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(25), toDecimal(10), toDecimal(0), {
@@ -1257,7 +1257,7 @@ describe("ClearingHouse - open/close position Test", () => {
                     from: alice,
                 })
 
-                await clearingHouse.setWhitelist("0x")
+                await clearingHouse.setWhitelist("0x0000000000000000000000000000000000000000")
                 // position size would be -14.9, revert
                 await expectRevert(
                     clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(25), toDecimal(10), toDecimal(0), {
