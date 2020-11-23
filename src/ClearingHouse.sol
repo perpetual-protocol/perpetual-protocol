@@ -165,7 +165,7 @@ contract ClearingHouse is
     // only admin
     Decimal.decimal public liquidationFeeRatio;
 
-    // only admin. during the guarded period the open interest will be capped
+    // only admin. there will be a open interest cap during guarded period
     Decimal.decimal public openInterestNotionalNotionalCap;
 
     Decimal.decimal public openInterestNotional;
@@ -844,7 +844,6 @@ contract ClearingHouse is
         Decimal.decimal memory _baseAssetAmountLimit
     ) internal returns (PositionResp memory) {
         Decimal.decimal memory openNotional = _quoteAssetAmount.mulD(_leverage);
-        updateOpenInterestNotional(openNotional, true);
         (
             Decimal.decimal memory oldPositionNotional,
             SignedDecimal.signedDecimal memory unrealizedPnl
@@ -853,6 +852,7 @@ contract ClearingHouse is
 
         // reduce position if old position is larger
         if (oldPositionNotional.toUint() > openNotional.toUint()) {
+            updateOpenInterestNotional(openNotional, true);
             Position memory oldPosition = getUnadjustedPosition(_amm, _msgSender());
             positionResp.exchangedPositionSize = swapInput(_amm, _side, openNotional, _baseAssetAmountLimit);
 
@@ -1102,14 +1102,17 @@ contract ClearingHouse is
     }
 
     function updateOpenInterestNotional(Decimal.decimal memory _amount, bool _reduce) internal {
+        // when cap = 0 means no cap
+        uint256 cap = openInterestNotionalNotionalCap.toUint();
+        if (cap == 0) {
+            return;
+        }
+
         if (_reduce) {
             openInterestNotional = openInterestNotional.subD(_amount);
         } else {
             openInterestNotional = openInterestNotional.addD(_amount);
-            uint256 cap = openInterestNotionalNotionalCap.toUint();
-
-            // when cap = 0 means no cap
-            require(cap == 0 || openInterestNotional.toUint() <= cap, "over limit");
+            require(openInterestNotional.toUint() <= cap, "over limit");
         }
     }
 
