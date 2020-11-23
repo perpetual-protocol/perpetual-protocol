@@ -160,11 +160,14 @@ contract ClearingHouse is
     string public override versionRecipient;
 
     /**
-     * Following 3 states are able to be updated by DAO
+     * Following states are able to be updated by DAO
      */
     Decimal.decimal public initMarginRatio;
     Decimal.decimal public maintenanceMarginRatio;
     Decimal.decimal public liquidationFeeRatio;
+    Decimal.decimal public totalOpenPositionNotionalCap;
+
+    Decimal.decimal public totalOpenPositionNotional;
 
     // key by amm address
     mapping(address => AmmMap) internal ammMap;
@@ -240,6 +243,10 @@ contract ClearingHouse is
     function setFeePool(IMultiTokenRewardRecipient _feePool) external onlyOwner {
         feePool = _feePool;
         emit FeePoolSet(address(_feePool));
+    }
+
+    function setTotalOpenPositionNotionalCap(Decimal.decimal memory _totalOpenPositionNotionalCap) external onlyOwner {
+        totalOpenPositionNotionalCap = _totalOpenPositionNotionalCap;
     }
 
     /**
@@ -796,6 +803,7 @@ contract ClearingHouse is
         }
 
         address trader = _msgSender();
+        updateTotalPositionNotional(_openNotional, false);
         // if the trader is not in the whitelist, check max position size
         if (!isInWhitelists(trader)) {
             Decimal.decimal memory maxHoldingBaseAsset = _amm.getMaxHoldingBaseAsset();
@@ -844,6 +852,7 @@ contract ClearingHouse is
         Decimal.decimal memory _baseAssetAmountLimit
     ) internal returns (PositionResp memory) {
         Decimal.decimal memory openNotional = _quoteAssetAmount.mulD(_leverage);
+        updateTotalPositionNotional(openNotional, true);
         (
             Decimal.decimal memory oldPositionNotional,
             SignedDecimal.signedDecimal memory unrealizedPnl
@@ -987,6 +996,7 @@ contract ClearingHouse is
             _skipFluctuationCheck
         );
 
+        updateTotalPositionNotional(positionResp.exchangedQuoteAssetAmount, true);
         clearPosition(_amm, _trader);
     }
 
@@ -1097,6 +1107,15 @@ contract ClearingHouse is
             ? totalTokenBalance
             : _amount;
         _transfer(_token, address(insuranceFund), tokenToInsuranceFund);
+    }
+
+    function updateTotalPositionNotional(Decimal.decimal memory _amount, bool _reduce) internal {
+        if (_reduce) {
+            totalOpenPositionNotional = totalOpenPositionNotional.subD(_amount);
+        } else {
+            totalOpenPositionNotional = totalOpenPositionNotional.addD(_amount);
+            require(totalOpenPositionNotional.toUint() <= totalOpenPositionNotionalCap.toUint(), "over limit");
+        }
     }
 
     //
