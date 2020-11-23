@@ -47,7 +47,7 @@ contract ClearingHouse is
     event PositionSettled(address amm, address trader, uint256 valueTransferred);
     event RestrictionModeEntered(address amm, uint256 blockNumber);
     event FeePoolSet(address feePool);
-    event WhitelistChanged(address addr, bool add);
+    event WhitelistChanged(address whitelist);
 
     /// @notice This event is emitted when position change
     /// @param trader the address which execute this transaction
@@ -171,15 +171,15 @@ contract ClearingHouse is
     // key by amm address
     mapping(address => AmmMap) internal ammMap;
 
-    // designed for arbitragers who can hold unlimited positions
-    mapping(address => bool) private whitelistMap;
-
     // prepaid bad debt balance, key by ERC20 token address
     mapping(address => Decimal.decimal) private prepaidBadDebt;
 
     // contract dependencies
     IInsuranceFund public insuranceFund;
     IMultiTokenRewardRecipient public feePool;
+
+    // designed for arbitragers who can hold unlimited positions
+    address public whitelist;
 
     //**********************************************************//
     //    Can not change the order of above state variables     //
@@ -251,16 +251,11 @@ contract ClearingHouse is
     /**
      * @notice add an address in the whitelist. People in the whitelist can hold unlimited positions.
      * @dev only owner can call
-     * @param _addr an address
+     * @param _whitelist an address
      */
-    function addToWhitelists(address _addr) external onlyOwner {
-        whitelistMap[_addr] = true;
-        emit WhitelistChanged(_addr, true);
-    }
-
-    function removeFromWhitelists(address _addr) external onlyOwner {
-        delete whitelistMap[_addr];
-        emit WhitelistChanged(_addr, false);
+    function setWhitelist(address _whitelist) external onlyOwner {
+        whitelist = _whitelist;
+        emit WhitelistChanged(_whitelist);
     }
 
     /**
@@ -720,10 +715,6 @@ contract ClearingHouse is
         return prepaidBadDebt[_token];
     }
 
-    function isInWhitelists(address _addr) public view returns (bool) {
-        return whitelistMap[_addr];
-    }
-
     //
     // INTERNAL FUNCTIONS
     //
@@ -806,7 +797,7 @@ contract ClearingHouse is
         address trader = _msgSender();
         updateTotalPositionNotional(_openNotional, false);
         // if the trader is not in the whitelist, check max position size
-        if (!isInWhitelists(trader)) {
+        if (trader != whitelist) {
             Decimal.decimal memory maxHoldingBaseAsset = _amm.getMaxHoldingBaseAsset();
             if (maxHoldingBaseAsset.toUint() > 0) {
                 // total position size should be less than `positionUpperBound`
