@@ -36,8 +36,7 @@ contract ClearingHouse is
     //
     event MarginRatioChanged(uint256 marginRatio);
     event LiquidationFeeRatioChanged(uint256 liquidationFeeRatio);
-    event MarginAdded(address sender, address amm, uint256 amount);
-    event MarginRemoved(address sender, address amm, uint256 amount, int256 marginRatio);
+    event MarginChanged(address sender, address amm, int256 amount);
     event PositionAdjusted(
         address amm,
         address trader,
@@ -276,13 +275,14 @@ contract ClearingHouse is
 
         // update margin part in personal position
         address trader = _msgSender();
-        updateMargin(_amm, trader, MixedDecimal.fromDecimal(_addedMargin));
+        SignedDecimal.signedDecimal memory addedMarginAmount = MixedDecimal.fromDecimal(_addedMargin);
+        updateMargin(_amm, trader, addedMarginAmount);
 
         // transfer token from trader
         _transferFrom(_amm.quoteAsset(), trader, address(this), _addedMargin);
 
         // emit event
-        emit MarginAdded(trader, address(_amm), _addedMargin.toUint());
+        emit MarginChanged(trader, address(_amm), addedMarginAmount.toInt());
     }
 
     /**
@@ -297,7 +297,8 @@ contract ClearingHouse is
 
         // update margin part in personal position, and get new margin
         address trader = _msgSender();
-        updateMargin(_amm, trader, MixedDecimal.fromDecimal(_removedMargin).mulScalar(-1));
+        SignedDecimal.signedDecimal memory removedMarginAmount = MixedDecimal.fromDecimal(_removedMargin).mulScalar(-1);
+        updateMargin(_amm, trader, removedMarginAmount);
 
         // check margin ratio
         SignedDecimal.signedDecimal memory marginRatio = getMarginRatio(_amm, trader);
@@ -307,7 +308,7 @@ contract ClearingHouse is
         withdraw(_amm.quoteAsset(), trader, _removedMargin);
 
         // emit event
-        emit MarginRemoved(trader, address(_amm), _removedMargin.toUint(), marginRatio.toInt());
+        emit MarginChanged(trader, address(_amm), removedMarginAmount.toInt());
     }
 
     /**
