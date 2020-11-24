@@ -979,7 +979,7 @@ describe("ClearingHouse - open/close position Test", () => {
 
     describe("position upper bound", () => {
         beforeEach(async () => {
-            await amm.setMaxHoldingBaseAsset(toDecimal(10))
+            await amm.setCap(toDecimal(10), toDecimal(0))
             await approve(alice, clearingHouse.address, 1000)
         })
 
@@ -1090,7 +1090,7 @@ describe("ClearingHouse - open/close position Test", () => {
         })
 
         it("change position size upper bound and open positions", async () => {
-            await amm.setMaxHoldingBaseAsset(toDecimal(20))
+            await amm.setCap(toDecimal(20), toDecimal(0))
 
             // position size is 20
             const r = await clearingHouse.openPosition(
@@ -1284,7 +1284,7 @@ describe("ClearingHouse - open/close position Test", () => {
         beforeEach(async () => {
             await amm.setTollRatio(toDecimal(0.05))
             await amm.setSpreadRatio(toDecimal(0.05))
-            await amm.setMaxHoldingBaseAsset(toDecimal(0))
+            await amm.setCap(toDecimal(0), toDecimal(0))
         })
 
         it("open position when total fee is 10%", async () => {
@@ -1623,7 +1623,7 @@ describe("ClearingHouse - open/close position Test", () => {
             // 10% fee
             await amm.setTollRatio(toDecimal(0.1))
             await amm.setSpreadRatio(toDecimal(0))
-            await amm.setMaxHoldingBaseAsset(toDecimal(0))
+            await amm.setCap(toDecimal(0), toDecimal(0))
         })
 
         describe("open position", () => {

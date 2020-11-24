@@ -81,7 +81,7 @@ describe("ClearingHouse Test", () => {
         await quoteToken.transfer(bob, toFullDigit(5000, +(await quoteToken.decimals())))
         await quoteToken.transfer(insuranceFund.address, toFullDigit(5000, +(await quoteToken.decimals())))
 
-        await amm.setMaxHoldingBaseAsset(toDecimal(0))
+        await amm.setCap(toDecimal(0), toDecimal(0))
     })
 
     async function gotoNextFundingTime(): Promise<void> {
@@ -145,7 +145,7 @@ describe("ClearingHouse Test", () => {
 
     describe("openInterestNotional", () => {
         beforeEach(async () => {
-            await clearingHouse.setOpenInterestNotionalCap(toDecimal(600))
+            await amm.setCap(toDecimal(0), toDecimal(600))
         })
 
         it("increase when increase position", async () => {
@@ -246,7 +246,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
-            await clearingHouse.setOpenInterestNotionalCap(toDecimal(300))
+            await amm.setCap(toDecimal(0), toDecimal(300))
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(300), toDecimal(1), toDecimal(0), {
                 from: alice,
             })

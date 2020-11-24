@@ -165,9 +165,6 @@ contract ClearingHouse is
     // only admin
     Decimal.decimal public liquidationFeeRatio;
 
-    // only admin. there will be a open interest cap during guarded period
-    Decimal.decimal public openInterestNotionalNotionalCap;
-
     // key by amm address. will be deprecated or replaced after guarded period
     mapping(address => Decimal.decimal) public openInterestNotionalMap;
 
@@ -244,13 +241,6 @@ contract ClearingHouse is
 
     function setFeePool(IMultiTokenRewardRecipient _feePool) external onlyOwner {
         feePool = _feePool;
-    }
-
-    /**
-     * @dev assume this will be removes soon once the guarded period has ended. must be set before opening amm
-     */
-    function setOpenInterestNotionalCap(Decimal.decimal memory _openInterestNotionalNotionalCap) external onlyOwner {
-        openInterestNotionalNotionalCap = _openInterestNotionalNotionalCap;
     }
 
     /**
@@ -788,7 +778,7 @@ contract ClearingHouse is
             liquidityHistoryIndex = _amm.getLiquidityHistoryLength().sub(1);
         }
 
-        updateOpenInterestNotional(address(_amm), _openNotional, false);
+        updateOpenInterestNotional(_amm, _openNotional, false);
         // if the trader is not in the whitelist, check max position size
         if (trader != whitelist) {
             Decimal.decimal memory maxHoldingBaseAsset = _amm.getMaxHoldingBaseAsset();
@@ -845,7 +835,7 @@ contract ClearingHouse is
 
         // reduce position if old position is larger
         if (oldPositionNotional.toUint() > openNotional.toUint()) {
-            updateOpenInterestNotional(address(_amm), openNotional, true);
+            updateOpenInterestNotional(_amm, openNotional, true);
             Position memory oldPosition = getUnadjustedPosition(_amm, _msgSender());
             positionResp.exchangedPositionSize = swapInput(_amm, _side, openNotional, _baseAssetAmountLimit);
 
@@ -983,7 +973,7 @@ contract ClearingHouse is
         // the way to calc short position open interest is diff
         // eg. alice opens short for $100 and close at $80, she got $20 profit, open interest notional should - (100 + 20)
         updateOpenInterestNotional(
-            address(_amm),
+            _amm,
             oldPosition.size.toInt() > 0 ? positionResp.exchangedQuoteAssetAmount : unrealizedPnl.toInt() > 0
                 ? oldPosition.openNotional.addD(unrealizedPnl.abs())
                 : oldPosition.openNotional.subD(unrealizedPnl.abs()),
@@ -1107,19 +1097,20 @@ contract ClearingHouse is
      * @dev assume this will be removes soon once the guarded period has ended. caller need to ensure amm exist
      */
     function updateOpenInterestNotional(
-        address _amm,
+        IAmm _amm,
         Decimal.decimal memory _amount,
         bool _reduce
     ) internal {
         // when cap = 0 means no cap
-        uint256 cap = openInterestNotionalNotionalCap.toUint();
+        uint256 cap = _amm.getOpenInterestNotionalCap().toUint();
+        address ammAddr = address(_amm);
         if (cap > 0) {
             if (_reduce) {
-                openInterestNotionalMap[_amm] = openInterestNotionalMap[_amm].subD(_amount);
+                openInterestNotionalMap[ammAddr] = openInterestNotionalMap[ammAddr].subD(_amount);
             } else {
-                openInterestNotionalMap[_amm] = openInterestNotionalMap[_amm].addD(_amount);
+                openInterestNotionalMap[ammAddr] = openInterestNotionalMap[ammAddr].addD(_amount);
                 // whitelist won't be restrict by open interest cap
-                require(openInterestNotionalMap[_amm].toUint() <= cap || _msgSender() == whitelist, "over limit");
+                require(openInterestNotionalMap[ammAddr].toUint() <= cap || _msgSender() == whitelist, "over limit");
             }
         }
     }
