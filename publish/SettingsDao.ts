@@ -96,8 +96,4 @@ export class SettingsDao {
     isLocal(): boolean {
         return this.stage === "test"
     }
-
-    isMainnet(): boolean {
-        return this.stage === "production"
-    }
 }

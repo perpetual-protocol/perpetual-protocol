@@ -38,7 +38,9 @@ export const BTC_USD_AMM: AmmConfig = {
             .mul(DEFAULT_DIGITS)
             .div(100), // 90% trading limit ratio
         fundingPeriod: BigNumber.from(3600), // 1 hour
-        fluctuation: BigNumber.from(12).mul(DEFAULT_DIGITS).div(1000), // 1.2%
+        fluctuation: BigNumber.from(12)
+            .mul(DEFAULT_DIGITS)
+            .div(1000), // 1.2%
         priceFeedKey: PriceFeedKey.BTC,
         tollRatio: BigNumber.from(0)
             .mul(DEFAULT_DIGITS)
@@ -48,7 +50,9 @@ export const BTC_USD_AMM: AmmConfig = {
             .div(10000), // 0.1%
     },
     properties: {
-        maxHoldingBaseAsset: BigNumber.from(DEFAULT_DIGITS).mul(25).div(1000), // 0.25 BTC ~= $5000 USD
+        maxHoldingBaseAsset: BigNumber.from(DEFAULT_DIGITS)
+            .mul(25)
+            .div(1000), // 0.25 BTC ~= $5000 USD
     },
 }
 
@@ -61,7 +65,9 @@ export const ETH_USD_AMM: AmmConfig = {
             .mul(DEFAULT_DIGITS)
             .div(100), // 90% trading limit ratio
         fundingPeriod: BigNumber.from(3600), // 1 hour
-        fluctuation: BigNumber.from(12).mul(DEFAULT_DIGITS).div(1000), // 1.2%
+        fluctuation: BigNumber.from(12)
+            .mul(DEFAULT_DIGITS)
+            .div(1000), // 1.2%
         priceFeedKey: PriceFeedKey.ETH,
         tollRatio: BigNumber.from(0)
             .mul(DEFAULT_DIGITS)
@@ -78,16 +84,6 @@ export const ETH_USD_AMM: AmmConfig = {
 export class DeployConfig {
     // deploy
     readonly confirmations: number
-
-    // token
-    readonly deployFakeERC20: boolean
-    readonly usdtToFaucet: boolean
-    readonly usdtInitSupply: BigNumber = BigNumber.from("10000000000").mul("1000000")
-
-    // perp
-    readonly deployPerp: boolean
-    readonly perpToFaucet: boolean
-    readonly perpInitSupply = BigNumber.from("1500000000").mul(DEFAULT_DIGITS)
 
     // chainlink
     readonly chainlinkMap: Record<string, string>
@@ -113,10 +109,6 @@ export class DeployConfig {
         switch (stage) {
             case "production":
                 this.confirmations = 5
-                this.deployFakeERC20 = false
-                this.deployPerp = false
-                this.usdtToFaucet = false
-                this.perpToFaucet = false
                 this.chainlinkMap = {
                     [PriceFeedKey.BTC]: "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
                     [PriceFeedKey.ETH]: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
@@ -124,10 +116,6 @@ export class DeployConfig {
                 break
             case "staging":
                 this.confirmations = 5
-                this.deployFakeERC20 = false
-                this.deployPerp = true
-                this.usdtToFaucet = false
-                this.perpToFaucet = true
                 this.chainlinkMap = {
                     [PriceFeedKey.BTC]: "0xECe365B379E1dD183B20fc5f022230C044d51404",
                     [PriceFeedKey.ETH]: "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
@@ -135,10 +123,6 @@ export class DeployConfig {
                 break
             case "test":
                 this.confirmations = 1
-                this.deployFakeERC20 = true
-                this.deployPerp = true
-                this.usdtToFaucet = false
-                this.perpToFaucet = false
                 this.chainlinkMap = {
                     // fake address
                     [PriceFeedKey.BTC]: "0xECe365B379E1dD183B20fc5f022230C044d51404",

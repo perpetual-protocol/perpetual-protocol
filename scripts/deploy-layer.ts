@@ -6,8 +6,6 @@ import { SettingsDao } from "../publish/SettingsDao"
 import { SystemMetadataDao } from "../publish/SystemMetadataDao"
 import { AccountMetadata, Layer, Network, Stage } from "./common"
 
-export type DeployTask = () => Promise<void>
-
 export async function deployLayer(
     stage: Stage,
     layerType: Layer,
