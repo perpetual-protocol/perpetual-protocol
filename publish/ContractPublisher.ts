@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { ethers } from "@nomiclabs/buidler"
-import { BigNumber, Signer } from "ethers"
+import { BigNumber } from "ethers"
 import { ExternalContracts, Layer } from "../scripts/common"
 import {
     AmmReader,
@@ -20,7 +20,6 @@ import { ContractWrapperFactory } from "./contract/ContractWrapperFactory"
 import { DeployConfig } from "./contract/DeployConfig"
 import { AmmInstanceName, ContractName } from "./ContractName"
 import { OzContractDeployer } from "./OzContractDeployer"
-import { OzScript } from "./OzScript"
 import { SettingsDao } from "./SettingsDao"
 import { SystemMetadataDao } from "./SystemMetadataDao"
 
@@ -31,8 +30,6 @@ export class ContractPublisher {
     readonly externalContract: ExternalContracts
     readonly factory: ContractWrapperFactory
     readonly deployConfig: DeployConfig
-    private signer!: Signer
-
     readonly taskBatchesMap: Record<Layer, DeployTask[][]> = {
         layer1: [
             // batch 0
@@ -385,7 +382,6 @@ export class ContractPublisher {
         readonly layerType: Layer,
         readonly settingsDao: SettingsDao,
         readonly systemMetadataDao: SystemMetadataDao,
-        readonly ozScript: OzScript,
     ) {
         this.externalContract = settingsDao.getExternalContracts(layerType)
         this.deployConfig = new DeployConfig(settingsDao.stage)

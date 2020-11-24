@@ -2,7 +2,6 @@
 import { ethers } from "@nomiclabs/buidler"
 import { BuidlerRuntimeEnvironment } from "@nomiclabs/buidler/types"
 import { ContractPublisher } from "../publish/ContractPublisher"
-import { OzScript } from "../publish/OzScript"
 import { SettingsDao } from "../publish/SettingsDao"
 import { SystemMetadataDao } from "../publish/SystemMetadataDao"
 import { AccountMetadata, Layer, Network, Stage } from "./common"
@@ -28,8 +27,7 @@ export async function deployLayer(
     const signers = await ethers.getSigners()
     const address = await signers[0].getAddress()
     console.log(`deployer=${address}`)
-    const ozScript = new OzScript(bre.web3.currentProvider, address)
-    const publisher = new ContractPublisher(layerType, settingsDao, systemMetadataDao, ozScript)
+    const publisher = new ContractPublisher(layerType, settingsDao, systemMetadataDao)
 
     await publisher.publishContracts(batch)
 }
