@@ -8,7 +8,6 @@ const DEFAULT_DIGITS = BigNumber.from("1000000000000000000")
 export enum PriceFeedKey {
     BTC = "BTC",
     ETH = "ETH",
-    LINK = "LINK",
 }
 
 // amm
@@ -37,7 +36,7 @@ export const BTC_USD_AMM: AmmConfig = {
             .mul(DEFAULT_DIGITS)
             .div(100), // 90% trading limit ratio
         fundingPeriod: BigNumber.from(3600), // 1 hour
-        fluctuation: BigNumber.from(0),
+        fluctuation: BigNumber.from(12).div(1000), // 1.2%
         priceFeedKey: PriceFeedKey.BTC,
         tollRatio: BigNumber.from(0)
             .mul(DEFAULT_DIGITS)
@@ -47,7 +46,7 @@ export const BTC_USD_AMM: AmmConfig = {
             .div(10000), // 0.1%
     },
     properties: {
-        maxHoldingBaseAsset: BigNumber.from(0),
+        maxHoldingBaseAsset: BigNumber.from(0.5), // ~= $5000 USD
     },
 }
 
@@ -59,7 +58,7 @@ export const ETH_USD_AMM: AmmConfig = {
             .mul(DEFAULT_DIGITS)
             .div(100), // 90% trading limit ratio
         fundingPeriod: BigNumber.from(3600), // 1 hour
-        fluctuation: BigNumber.from(0),
+        fluctuation: BigNumber.from(12).div(1000), // 1.2%
         priceFeedKey: PriceFeedKey.ETH,
         tollRatio: BigNumber.from(0)
             .mul(DEFAULT_DIGITS)
@@ -69,7 +68,7 @@ export const ETH_USD_AMM: AmmConfig = {
             .div(10000), // 0.1%
     },
     properties: {
-        maxHoldingBaseAsset: BigNumber.from(0),
+        maxHoldingBaseAsset: BigNumber.from(10), // ~= $5000 USD
     },
 }
 
@@ -116,7 +115,6 @@ export class DeployConfig {
                 this.chainlinkMap = {
                     [PriceFeedKey.BTC]: "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
                     [PriceFeedKey.ETH]: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
-                    [PriceFeedKey.LINK]: "0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c",
                 }
                 break
             case "staging":
@@ -127,7 +125,6 @@ export class DeployConfig {
                 this.chainlinkMap = {
                     [PriceFeedKey.BTC]: "0xECe365B379E1dD183B20fc5f022230C044d51404",
                     [PriceFeedKey.ETH]: "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
-                    [PriceFeedKey.LINK]: "0xd8bD0a1cB028a31AA859A21A3758685a95dE4623",
                 }
                 break
             case "test":
@@ -139,7 +136,6 @@ export class DeployConfig {
                     // fake address
                     [PriceFeedKey.BTC]: "0xECe365B379E1dD183B20fc5f022230C044d51404",
                     [PriceFeedKey.ETH]: "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
-                    [PriceFeedKey.LINK]: "0xd8bD0a1cB028a31AA859A21A3758685a95dE4623",
                 }
                 break
             default:
