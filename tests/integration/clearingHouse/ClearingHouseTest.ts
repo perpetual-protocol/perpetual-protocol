@@ -172,14 +172,51 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(400), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
+            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
+
+            // expect the result will be almost 0 (with a few rounding error)
+            const openInterestNotional = await clearingHouse.openInterestNotional()
+            expect(openInterestNotional.toNumber()).lte(10)
+        })
+
+        it("increase when traders open positions in different direction", async () => {
+            await approve(alice, clearingHouse.address, 600)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(100), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
             await approve(bob, clearingHouse.address, 600)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(200), toDecimal(1), toDecimal(0), {
                 from: bob,
             })
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(100), toDecimal(1), toDecimal(0), {
+            expect(await clearingHouse.openInterestNotional()).eq(toFullDigitStr(300))
+        })
+
+        it("increase when traders open larger position in reverse direction", async () => {
+            await approve(alice, clearingHouse.address, 600)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(250), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
-            expect(await clearingHouse.openInterestNotional()).eq(toFullDigitStr(500))
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(450), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            expect(await clearingHouse.openInterestNotional()).eq(toFullDigitStr(200))
+        })
+
+        it("is 0 when everyone close position", async () => {
+            await approve(alice, clearingHouse.address, 600)
+            await approve(bob, clearingHouse.address, 600)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(250), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(250), toDecimal(1), toDecimal(0), {
+                from: bob,
+            })
+            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
+            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
+
+            // expect the result will be almost 0 (with a few rounding error)
+            const openInterestNotional = await clearingHouse.openInterestNotional()
+            expect(openInterestNotional.toNumber()).lte(10)
         })
 
         it("stop trading if it's over openInterestCap", async () => {

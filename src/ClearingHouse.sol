@@ -245,6 +245,9 @@ contract ClearingHouse is
         feePool = _feePool;
     }
 
+    /**
+     * @dev assume this will be removes soon once the guarded period has ended. must be set before opening amm
+     */
     function setOpenInterestNotionalCap(Decimal.decimal memory _openInterestNotionalNotionalCap) external onlyOwner {
         openInterestNotionalNotionalCap = _openInterestNotionalNotionalCap;
     }
@@ -980,7 +983,14 @@ contract ClearingHouse is
             _skipFluctuationCheck
         );
 
-        updateOpenInterestNotional(positionResp.exchangedQuoteAssetAmount, true);
+        // the way to calc short position open interest is diff
+        // eg. alice opens short for $100 and close at $80, she got $20 profit, open interest notional should - (100 + 20)
+        updateOpenInterestNotional(
+            oldPosition.size.toInt() > 0 ? positionResp.exchangedQuoteAssetAmount : unrealizedPnl.toInt() > 0
+                ? oldPosition.openNotional.addD(unrealizedPnl.abs())
+                : oldPosition.openNotional.subD(unrealizedPnl.abs()),
+            true
+        );
         clearPosition(_amm, _trader);
     }
 
@@ -1095,6 +1105,9 @@ contract ClearingHouse is
         _transfer(_token, address(insuranceFund), tokenToInsuranceFund);
     }
 
+    /**
+     * @dev assume this will be removes soon once the guarded period has ended
+     */
     function updateOpenInterestNotional(Decimal.decimal memory _amount, bool _reduce) internal {
         // when cap = 0 means no cap
         uint256 cap = openInterestNotionalNotionalCap.toUint();
