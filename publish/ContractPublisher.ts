@@ -62,7 +62,7 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("distribute PERP to faucet...(should only do it on testnets)")
                     const perpToken = await this.factory.create<PerpToken>(ContractName.PerpToken).instance()
-                    if (this.externalContract.testnetFaucet) {
+                    if (this.deployConfig.perpToFaucet) {
                         await perpToken.transfer(
                             this.externalContract.testnetFaucet!,
                             this.deployConfig.perpInitSupply.toString(),
