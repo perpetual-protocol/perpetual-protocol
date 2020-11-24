@@ -153,7 +153,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
-            expect(await clearingHouse.openInterestNotional()).eq(toFullDigitStr(600))
+            expect(await clearingHouse.openInterestNotionalMap(amm.address)).eq(toFullDigitStr(600))
         })
 
         it("reduce when reduce position", async () => {
@@ -164,7 +164,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(300), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
-            expect(await clearingHouse.openInterestNotional()).eq(toFullDigitStr(300))
+            expect(await clearingHouse.openInterestNotionalMap(amm.address)).eq(toFullDigitStr(300))
         })
 
         it("reduce when close position", async () => {
@@ -175,7 +175,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
 
             // expect the result will be almost 0 (with a few rounding error)
-            const openInterestNotional = await clearingHouse.openInterestNotional()
+            const openInterestNotional = await clearingHouse.openInterestNotionalMap(amm.address)
             expect(openInterestNotional.toNumber()).lte(10)
         })
 
@@ -188,7 +188,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(200), toDecimal(1), toDecimal(0), {
                 from: bob,
             })
-            expect(await clearingHouse.openInterestNotional()).eq(toFullDigitStr(300))
+            expect(await clearingHouse.openInterestNotionalMap(amm.address)).eq(toFullDigitStr(300))
         })
 
         it("increase when traders open larger position in reverse direction", async () => {
@@ -199,7 +199,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(450), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
-            expect(await clearingHouse.openInterestNotional()).eq(toFullDigitStr(200))
+            expect(await clearingHouse.openInterestNotionalMap(amm.address)).eq(toFullDigitStr(200))
         })
 
         it("is 0 when everyone close position", async () => {
@@ -215,7 +215,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
 
             // expect the result will be almost 0 (with a few rounding error)
-            const openInterestNotional = await clearingHouse.openInterestNotional()
+            const openInterestNotional = await clearingHouse.openInterestNotionalMap(amm.address)
             expect(openInterestNotional.toNumber()).lte(10)
         })
 
@@ -232,6 +232,15 @@ describe("ClearingHouse Test", () => {
             )
         })
 
+        it("won't be limited by the open interest cap if the trader is the whitelist", async () => {
+            await approve(alice, clearingHouse.address, 700)
+            await clearingHouse.setWhitelist(alice)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(700), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            expect(await clearingHouse.openInterestNotionalMap(amm.address)).eq(toFullDigitStr(700))
+        })
+
         it("won't stop trading if it's reducing position, even it's more than cap", async () => {
             await approve(alice, clearingHouse.address, 600)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
@@ -241,7 +250,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(300), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
-            expect(await clearingHouse.openInterestNotional()).eq(toFullDigitStr(300))
+            expect(await clearingHouse.openInterestNotionalMap(amm.address)).eq(toFullDigitStr(300))
         })
     })
 
