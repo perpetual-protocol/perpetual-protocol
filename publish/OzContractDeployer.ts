@@ -22,7 +22,6 @@ export class OzContractDeployer {
 
     async deploy(contractFileName: string, args: any[]): Promise<string> {
         // deploy contract by open zeppelin upgrade plugin
-        // ozScript won't replace the existing one, we have to manually remove it before deploy new contract first time
         const contract = await ethers.getContractFactory(contractFileName)
         const instance = await upgrades.deployProxy(contract, args, {
             initializer: this.ozInitMethodName,

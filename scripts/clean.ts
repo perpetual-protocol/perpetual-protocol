@@ -4,8 +4,8 @@ import { asyncExec } from "./helper"
 async function cleanContract() {
     await asyncExec("buidler clean")
     rm("-rf", "./types")
-    rm("./ethereum.json")
-    rm("./build/ethereum.json")
+    rm("./system.json")
+    rm("./build/system.json")
 }
 
 cleanContract()
