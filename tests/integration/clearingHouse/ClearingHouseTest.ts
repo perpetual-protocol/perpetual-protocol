@@ -146,10 +146,11 @@ describe("ClearingHouse Test", () => {
     describe("openInterestNotional", () => {
         beforeEach(async () => {
             await amm.setCap(toDecimal(0), toDecimal(600))
+            await approve(alice, clearingHouse.address, 600)
+            await approve(bob, clearingHouse.address, 600)
         })
 
         it("increase when increase position", async () => {
-            await approve(alice, clearingHouse.address, 600)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
@@ -157,7 +158,6 @@ describe("ClearingHouse Test", () => {
         })
 
         it("reduce when reduce position", async () => {
-            await approve(alice, clearingHouse.address, 600)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
@@ -168,7 +168,6 @@ describe("ClearingHouse Test", () => {
         })
 
         it("reduce when close position", async () => {
-            await approve(alice, clearingHouse.address, 600)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(400), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
@@ -203,8 +202,6 @@ describe("ClearingHouse Test", () => {
         })
 
         it("is 0 when everyone close position", async () => {
-            await approve(alice, clearingHouse.address, 600)
-            await approve(bob, clearingHouse.address, 600)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(250), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
@@ -219,8 +216,27 @@ describe("ClearingHouse Test", () => {
             expect(openInterestNotional.toNumber()).lte(10)
         })
 
+        it("is 0 when everyone close position, one of them is bankrupt position", async () => {
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(250), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(250), toDecimal(1), toDecimal(0), {
+                from: bob,
+            })
+
+            // when alice close, it create bad debt (bob's position is bankrupt)
+            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
+
+            // bypass the restrict mode
+            await forwardBlockTimestamp(15)
+            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
+
+            // expect the result will be almost 0 (with a few rounding error)
+            const openInterestNotional = await clearingHouse.openInterestNotionalMap(amm.address)
+            expect(openInterestNotional.toNumber()).lte(10)
+        })
+
         it("stop trading if it's over openInterestCap", async () => {
-            await approve(alice, clearingHouse.address, 600)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
@@ -242,7 +258,6 @@ describe("ClearingHouse Test", () => {
         })
 
         it("won't stop trading if it's reducing position, even it's more than cap", async () => {
-            await approve(alice, clearingHouse.address, 600)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(600), toDecimal(1), toDecimal(0), {
                 from: alice,
             })

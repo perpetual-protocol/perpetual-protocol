@@ -165,7 +165,8 @@ contract ClearingHouse is
     // only admin
     Decimal.decimal public liquidationFeeRatio;
 
-    // key by amm address. will be deprecated or replaced after guarded period
+    // key by amm address. will be deprecated or replaced after guarded period.
+    // it's not an accurate open interest, just a rough way to control the unexpected loss at the beginning
     mapping(address => Decimal.decimal) public openInterestNotionalMap;
 
     // key by amm address
@@ -970,13 +971,12 @@ contract ClearingHouse is
             _skipFluctuationCheck
         );
 
-        // the way to calc short position open interest is diff
-        // eg. alice opens short for $100 and close at $80, she got $20 profit, open interest notional should - (100 + 20)
+        // bankrupt position's bad debt will be also consider as a part of the open interest
         updateOpenInterestNotional(
             _amm,
-            oldPosition.size.toInt() > 0 ? positionResp.exchangedQuoteAssetAmount : unrealizedPnl.toInt() > 0
+            unrealizedPnl.toInt() > 0
                 ? oldPosition.openNotional.addD(unrealizedPnl.abs())
-                : oldPosition.openNotional.subD(unrealizedPnl.abs()),
+                : oldPosition.openNotional.addD(badDebt).subD(unrealizedPnl.abs()),
             true
         );
         clearPosition(_amm, _trader);
@@ -1106,7 +1106,10 @@ contract ClearingHouse is
         address ammAddr = address(_amm);
         if (cap > 0) {
             if (_reduce) {
-                openInterestNotionalMap[ammAddr] = openInterestNotionalMap[ammAddr].subD(_amount);
+                // the reduced open interest can be larger than total when profit is too high and other position are bankrupt
+                openInterestNotionalMap[ammAddr] = openInterestNotionalMap[ammAddr].toUint() >= _amount.toUint()
+                    ? openInterestNotionalMap[ammAddr].subD(_amount)
+                    : Decimal.zero();
             } else {
                 openInterestNotionalMap[ammAddr] = openInterestNotionalMap[ammAddr].addD(_amount);
                 // whitelist won't be restrict by open interest cap
