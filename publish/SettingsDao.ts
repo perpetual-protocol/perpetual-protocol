@@ -38,6 +38,7 @@ export class SettingsDao {
                                     foundationGovernance: "0x44883405Eb9826448d3E8eCC25889C5941E79d9b",
                                     ambBridgeOnXDai: "0xc38D4991c951fE8BCE1a12bEef2046eF36b0FA4A",
                                     multiTokenMediatorOnXDai: "0xA34c65d76b997a824a5E384471bBa73b0013F5DA",
+                                    arbitrageur: "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
                                 },
                             },
                         },

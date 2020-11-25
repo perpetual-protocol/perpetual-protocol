@@ -5,7 +5,8 @@ import { RewardsDistributionInstance } from "../../types/truffle"
 import { deployRewardsDistribution } from "../helper/contract"
 import { toDecimal, toFullDigit } from "../helper/number"
 
-describe("RewardsDistributionSpec", () => {
+// skip, won't be in v1
+describe.skip("RewardsDistributionSpec", () => {
     let accounts: string[]
     let rewardsDistribution: RewardsDistributionInstance
 

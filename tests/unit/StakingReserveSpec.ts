@@ -5,7 +5,8 @@ import { PerpTokenMockInstance, StakingReserveInstance } from "../../types/truff
 import { deployStakingReserve } from "../helper/contract"
 import { deployPerpTokenMock } from "../helper/mockContract"
 
-describe("StakingReserve Spec", () => {
+// skip, won't be in v1
+describe.skip("StakingReserve Spec", () => {
     let admin: string
     let alice: string
     let perpToken: PerpTokenMockInstance

@@ -235,7 +235,9 @@ export class ContractPublisher {
                     )
                 },
                 async (): Promise<void> => {
-                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const clearingHouse = await this.factory
+                        .create<ClearingHouse>(ContractName.ClearingHouse)
+                        .instance()
                     const metaTxGateway = await this.factory
                         .create<MetaTxGateway>(ContractName.MetaTxGateway)
                         .instance()
@@ -244,9 +246,11 @@ export class ContractPublisher {
                         .instance()
 
                     console.log("metaTxGateway.addToWhitelists...")
-                    await (await metaTxGateway.addToWhitelists(clearingHouseContract.address!)).wait(this.confirmations)
+                    await (await metaTxGateway.addToWhitelists(clearingHouse.address)).wait(this.confirmations)
                     console.log("insuranceFundContract.setBeneficiary...")
-                    await (await insuranceFund.setBeneficiary(clearingHouseContract.address!)).wait(this.confirmations)
+                    await (await insuranceFund.setBeneficiary(clearingHouse.address)).wait(this.confirmations)
+                    console.log("clearingHouse.setWhitelist...")
+                    await clearingHouse.setWhitelist(this.settingsDao.getExternalContracts("layer2").arbitrageur!)
                 },
                 async (): Promise<void> => {
                     // deploy amm
@@ -271,13 +275,18 @@ export class ContractPublisher {
                     const ammContract = this.factory.createAmm(AmmInstanceName.ETHUSDT)
                     const amm = await ammContract.instance()
                     const insuranceFund = await insuranceFundContract.instance()
-                    const { maxHoldingBaseAsset } = this.deployConfig.ammConfigMap[AmmInstanceName.ETHUSDT].properties
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
+                        AmmInstanceName.ETHUSDT
+                    ].properties
 
                     if (maxHoldingBaseAsset.gt(0)) {
-                        console.log("setMaxHoldingBaseAsset...")
-                        await (await amm.setMaxHoldingBaseAsset({ d: maxHoldingBaseAsset.toString() })).wait(
-                            this.confirmations,
-                        )
+                        console.log("setCap...")
+                        await (
+                            await amm.setCap(
+                                { d: maxHoldingBaseAsset.toString() },
+                                { d: openInterestNotionalCap.toString() },
+                            )
+                        ).wait(this.confirmations)
                     }
                     console.log("amm.setCounterParty...")
                     await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
@@ -307,13 +316,18 @@ export class ContractPublisher {
                     const ammContract = this.factory.createAmm(AmmInstanceName.BTCUSDT)
                     const amm = await ammContract.instance()
                     const insuranceFund = await insuranceFundContract.instance()
-                    const { maxHoldingBaseAsset } = this.deployConfig.ammConfigMap[AmmInstanceName.BTCUSDT].properties
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
+                        AmmInstanceName.BTCUSDT
+                    ].properties
 
                     if (maxHoldingBaseAsset.gt(0)) {
-                        console.log("setMaxHoldingBaseAsset...")
-                        await (await amm.setMaxHoldingBaseAsset({ d: maxHoldingBaseAsset.toString() })).wait(
-                            this.confirmations,
-                        )
+                        console.log("setCap...")
+                        await (
+                            await amm.setCap(
+                                { d: maxHoldingBaseAsset.toString() },
+                                { d: openInterestNotionalCap.toString() },
+                            )
+                        ).wait(this.confirmations)
                     }
                     console.log("amm.setCounterParty...")
                     await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
