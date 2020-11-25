@@ -779,7 +779,7 @@ contract ClearingHouse is
             liquidityHistoryIndex = _amm.getLiquidityHistoryLength().sub(1);
         }
 
-        updateOpenInterestNotional(_amm, _openNotional, false);
+        updateOpenInterestNotional(_amm, MixedDecimal.fromDecimal(_openNotional));
         // if the trader is not in the whitelist, check max position size
         if (trader != whitelist) {
             Decimal.decimal memory maxHoldingBaseAsset = _amm.getMaxHoldingBaseAsset();
@@ -836,7 +836,7 @@ contract ClearingHouse is
 
         // reduce position if old position is larger
         if (oldPositionNotional.toUint() > openNotional.toUint()) {
-            updateOpenInterestNotional(_amm, openNotional, true);
+            updateOpenInterestNotional(_amm, MixedDecimal.fromDecimal(openNotional).mulScalar(-1));
             Position memory oldPosition = getUnadjustedPosition(_amm, _msgSender());
             positionResp.exchangedPositionSize = swapInput(_amm, _side, openNotional, _baseAssetAmountLimit);
 
@@ -972,13 +972,7 @@ contract ClearingHouse is
         );
 
         // bankrupt position's bad debt will be also consider as a part of the open interest
-        updateOpenInterestNotional(
-            _amm,
-            unrealizedPnl.toInt() > 0
-                ? oldPosition.openNotional.addD(unrealizedPnl.abs())
-                : oldPosition.openNotional.addD(badDebt).subD(unrealizedPnl.abs()),
-            true
-        );
+        updateOpenInterestNotional(_amm, unrealizedPnl.addD(badDebt).addD(oldPosition.openNotional).mulScalar(-1));
         clearPosition(_amm, _trader);
     }
 
@@ -1096,25 +1090,23 @@ contract ClearingHouse is
     /**
      * @dev assume this will be removes soon once the guarded period has ended. caller need to ensure amm exist
      */
-    function updateOpenInterestNotional(
-        IAmm _amm,
-        Decimal.decimal memory _amount,
-        bool _reduce
-    ) internal {
+    function updateOpenInterestNotional(IAmm _amm, SignedDecimal.signedDecimal memory _amount) internal {
         // when cap = 0 means no cap
         uint256 cap = _amm.getOpenInterestNotionalCap().toUint();
         address ammAddr = address(_amm);
         if (cap > 0) {
-            if (_reduce) {
-                // the reduced open interest can be larger than total when profit is too high and other position are bankrupt
-                openInterestNotionalMap[ammAddr] = openInterestNotionalMap[ammAddr].toUint() >= _amount.toUint()
-                    ? openInterestNotionalMap[ammAddr].subD(_amount)
-                    : Decimal.zero();
-            } else {
-                openInterestNotionalMap[ammAddr] = openInterestNotionalMap[ammAddr].addD(_amount);
-                // whitelist won't be restrict by open interest cap
-                require(openInterestNotionalMap[ammAddr].toUint() <= cap || _msgSender() == whitelist, "over limit");
+            SignedDecimal.signedDecimal memory updatedOpenInterestNotional = _amount.addD(
+                openInterestNotionalMap[ammAddr]
+            );
+            // the reduced open interest can be larger than total when profit is too high and other position are bankrupt
+            if (updatedOpenInterestNotional.toInt() < 0) {
+                updatedOpenInterestNotional = SignedDecimal.zero();
             }
+            if (_amount.toInt() > 0) {
+                // whitelist won't be restrict by open interest cap
+                require(updatedOpenInterestNotional.toUint() <= cap || _msgSender() == whitelist, "over limit");
+            }
+            openInterestNotionalMap[ammAddr] = updatedOpenInterestNotional.abs();
         }
     }
 

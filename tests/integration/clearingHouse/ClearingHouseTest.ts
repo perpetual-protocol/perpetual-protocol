@@ -179,15 +179,15 @@ describe("ClearingHouse Test", () => {
         })
 
         it("increase when traders open positions in different direction", async () => {
-            await approve(alice, clearingHouse.address, 600)
-            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(100), toDecimal(1), toDecimal(0), {
+            await approve(alice, clearingHouse.address, 300)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(300), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
-            await approve(bob, clearingHouse.address, 600)
-            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(200), toDecimal(1), toDecimal(0), {
+            await approve(bob, clearingHouse.address, 300)
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(300), toDecimal(1), toDecimal(0), {
                 from: bob,
             })
-            expect(await clearingHouse.openInterestNotionalMap(amm.address)).eq(toFullDigitStr(300))
+            expect(await clearingHouse.openInterestNotionalMap(amm.address)).eq(toFullDigitStr(600))
         })
 
         it("increase when traders open larger position in reverse direction", async () => {
