@@ -40,6 +40,7 @@ export class SettingsDao {
                                     ambBridgeOnXDai: "0xc38D4991c951fE8BCE1a12bEef2046eF36b0FA4A",
                                     multiTokenMediatorOnXDai: "0xA34c65d76b997a824a5E384471bBa73b0013F5DA",
                                     usdc: "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83",
+                                    arbitrageur: "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
                                 },
                             },
                         },

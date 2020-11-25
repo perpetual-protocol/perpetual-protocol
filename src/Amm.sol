@@ -103,6 +103,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     Decimal.decimal public spreadRatio;
     Decimal.decimal public tollAmount;
     Decimal.decimal private maxHoldingBaseAsset;
+    Decimal.decimal private openInterestNotionalCap;
 
     // init cumulativePositionMultiplier is 1, will be updated every time when amm reserve increase/decrease
     Decimal.decimal private cumulativePositionMultiplier;
@@ -430,12 +431,17 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     }
 
     /**
-     * @notice set new maxHoldingBaseAsset, which is max position size that traders can hold
-     * @dev only owner can call
-     * @param _maxHoldingBaseAsset new max base asset that traders can hold in 18 digits
+     * @notice set new cap during guarded period, which is max position size that traders can hold
+     * @dev only owner can call. assume this will be removes soon once the guarded period has ended. must be set before opening amm
+     * @param _maxHoldingBaseAsset max position size that traders can hold in 18 digits
+     * @param _openInterestNotionalCap open interest cap, denominated in quoteToken
      */
-    function setMaxHoldingBaseAsset(Decimal.decimal memory _maxHoldingBaseAsset) public onlyOwner {
+    function setCap(Decimal.decimal memory _maxHoldingBaseAsset, Decimal.decimal memory _openInterestNotionalCap)
+        public
+        onlyOwner
+    {
         maxHoldingBaseAsset = _maxHoldingBaseAsset;
+        openInterestNotionalCap = _openInterestNotionalCap;
     }
 
     //
@@ -577,6 +583,10 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
     function getMaxHoldingBaseAsset() external view override returns (Decimal.decimal memory) {
         return maxHoldingBaseAsset;
+    }
+
+    function getOpenInterestNotionalCap() external view override returns (Decimal.decimal memory) {
+        return openInterestNotionalCap;
     }
 
     /**

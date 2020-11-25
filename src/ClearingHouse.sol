@@ -36,8 +36,7 @@ contract ClearingHouse is
     //
     event MarginRatioChanged(uint256 marginRatio);
     event LiquidationFeeRatioChanged(uint256 liquidationFeeRatio);
-    event MarginAdded(address sender, address amm, uint256 amount);
-    event MarginRemoved(address sender, address amm, uint256 amount, int256 marginRatio);
+    event MarginChanged(address sender, address amm, int256 amount);
     event PositionAdjusted(
         address amm,
         address trader,
@@ -47,8 +46,6 @@ contract ClearingHouse is
     );
     event PositionSettled(address amm, address trader, uint256 valueTransferred);
     event RestrictionModeEntered(address amm, uint256 blockNumber);
-    event FeePoolSet(address feePool);
-    event WhitelistChanged(address addr, bool add);
 
     /// @notice This event is emitted when position change
     /// @param trader the address which execute this transaction
@@ -159,25 +156,31 @@ contract ClearingHouse is
     //**********************************************************//
     string public override versionRecipient;
 
-    /**
-     * Following 3 states are able to be updated by DAO
-     */
+    // only admin
     Decimal.decimal public initMarginRatio;
+
+    // only admin
     Decimal.decimal public maintenanceMarginRatio;
+
+    // only admin
     Decimal.decimal public liquidationFeeRatio;
+
+    // key by amm address. will be deprecated or replaced after guarded period.
+    // it's not an accurate open interest, just a rough way to control the unexpected loss at the beginning
+    mapping(address => Decimal.decimal) public openInterestNotionalMap;
 
     // key by amm address
     mapping(address => AmmMap) internal ammMap;
 
-    // designed for arbitragers who can hold unlimited positions
-    mapping(address => bool) private whitelistMap;
-
     // prepaid bad debt balance, key by ERC20 token address
-    mapping(address => Decimal.decimal) private prepaidBadDebt;
+    mapping(address => Decimal.decimal) internal prepaidBadDebt;
 
     // contract dependencies
     IInsuranceFund public insuranceFund;
     IMultiTokenRewardRecipient public feePool;
+
+    // designed for arbitragers who can hold unlimited positions. will be removed after guarded period
+    address internal whitelist;
 
     //**********************************************************//
     //    Can not change the order of above state variables     //
@@ -239,22 +242,15 @@ contract ClearingHouse is
 
     function setFeePool(IMultiTokenRewardRecipient _feePool) external onlyOwner {
         feePool = _feePool;
-        emit FeePoolSet(address(_feePool));
     }
 
     /**
      * @notice add an address in the whitelist. People in the whitelist can hold unlimited positions.
      * @dev only owner can call
-     * @param _addr an address
+     * @param _whitelist an address
      */
-    function addToWhitelists(address _addr) external onlyOwner {
-        whitelistMap[_addr] = true;
-        emit WhitelistChanged(_addr, true);
-    }
-
-    function removeFromWhitelists(address _addr) external onlyOwner {
-        delete whitelistMap[_addr];
-        emit WhitelistChanged(_addr, false);
+    function setWhitelist(address _whitelist) external onlyOwner {
+        whitelist = _whitelist;
     }
 
     /**
@@ -273,9 +269,6 @@ contract ClearingHouse is
 
         // transfer token from trader
         _transferFrom(_amm.quoteAsset(), trader, address(this), _addedMargin);
-
-        // emit event
-        emit MarginAdded(trader, address(_amm), _addedMargin.toUint());
     }
 
     /**
@@ -298,9 +291,6 @@ contract ClearingHouse is
 
         // transfer token back to trader
         withdraw(_amm.quoteAsset(), trader, _removedMargin);
-
-        // emit event
-        emit MarginRemoved(trader, address(_amm), _removedMargin.toUint(), marginRatio.toInt());
     }
 
     /**
@@ -326,11 +316,12 @@ contract ClearingHouse is
         if (settlementPrice.toUint() == 0) {
             settledValue = pos.margin;
         } else {
-            SignedDecimal.signedDecimal memory signedSettlePrice = MixedDecimal.fromDecimal(settlementPrice);
-            Decimal.decimal memory openPrice = pos.openNotional.divD(pos.size.abs());
-            SignedDecimal.signedDecimal memory returnedFund = pos.size.mulD(signedSettlePrice.subD(openPrice)).addD(
-                pos.margin
-            );
+            // returnedFund = positionSize * (settlementPrice - openPrice) + positionMargin
+            // openPrice = positionOpenNotional / positionSize.abs()
+            SignedDecimal.signedDecimal memory returnedFund = pos
+                .size
+                .mulD(MixedDecimal.fromDecimal(settlementPrice).subD(pos.openNotional.divD(pos.size.abs())))
+                .addD(pos.margin);
             // if `returnedFund` is negative, trader can't get anything back
             if (returnedFund.toInt() > 0) {
                 settledValue = returnedFund.abs();
@@ -397,10 +388,10 @@ contract ClearingHouse is
         requireEnoughMarginRatio(MixedDecimal.fromDecimal(Decimal.one()).divD(_leverage));
         requireNotRestrictionMode(_amm);
 
+        address trader = _msgSender();
         PositionResp memory positionResp;
         {
             // add scope for stack too deep error
-            address trader = _msgSender();
             SignedDecimal.signedDecimal memory oldPosSize = adjustPositionForLiquidityChanged(_amm, trader).size;
             int256 oldPositionSize = oldPosSize.toInt();
 
@@ -436,12 +427,12 @@ contract ClearingHouse is
 
         // calculate fee and transfer token for fees
         //@audit - can optimize by changing amm.swapInput/swapOutput's return type to (exchangedAmount, quoteToll, quoteSpread, quoteReserve, baseReserve) (@wraecca)
-        Decimal.decimal memory transferredFee = transferFee(_msgSender(), _amm, positionResp.exchangedQuoteAssetAmount);
+        Decimal.decimal memory transferredFee = transferFee(trader, _amm, positionResp.exchangedQuoteAssetAmount);
 
         // emit event
         (Decimal.decimal memory quoteAssetReserve, Decimal.decimal memory baseAssetReserve) = _amm.getReserve();
         emit PositionChanged(
-            _msgSender(),
+            trader,
             address(_amm),
             positionResp.position.margin.toUint(),
             positionResp.exchangedQuoteAssetAmount.toUint(),
@@ -708,14 +699,6 @@ contract ClearingHouse is
         return ammMap[address(_amm)].cumulativePremiumFractions[len - 1];
     }
 
-    function getPrepaidBadDebt(address _token) public view returns (Decimal.decimal memory) {
-        return prepaidBadDebt[_token];
-    }
-
-    function isInWhitelists(address _addr) public view returns (bool) {
-        return whitelistMap[_addr];
-    }
-
     //
     // INTERNAL FUNCTIONS
     //
@@ -786,7 +769,8 @@ contract ClearingHouse is
         Decimal.decimal memory _minPositionSize,
         Decimal.decimal memory _leverage
     ) internal returns (PositionResp memory positionResp) {
-        Position memory oldPosition = getUnadjustedPosition(_amm, _msgSender());
+        address trader = _msgSender();
+        Position memory oldPosition = getUnadjustedPosition(_amm, trader);
         positionResp.exchangedPositionSize = swapInput(_amm, _side, _openNotional, _minPositionSize);
         SignedDecimal.signedDecimal memory newSize = oldPosition.size.addD(positionResp.exchangedPositionSize);
         // if size is 0 (means a new position), set the latest liquidity index
@@ -795,9 +779,9 @@ contract ClearingHouse is
             liquidityHistoryIndex = _amm.getLiquidityHistoryLength().sub(1);
         }
 
-        address trader = _msgSender();
+        updateOpenInterestNotional(_amm, MixedDecimal.fromDecimal(_openNotional));
         // if the trader is not in the whitelist, check max position size
-        if (!isInWhitelists(trader)) {
+        if (trader != whitelist) {
             Decimal.decimal memory maxHoldingBaseAsset = _amm.getMaxHoldingBaseAsset();
             if (maxHoldingBaseAsset.toUint() > 0) {
                 // total position size should be less than `positionUpperBound`
@@ -852,6 +836,7 @@ contract ClearingHouse is
 
         // reduce position if old position is larger
         if (oldPositionNotional.toUint() > openNotional.toUint()) {
+            updateOpenInterestNotional(_amm, MixedDecimal.fromDecimal(openNotional).mulScalar(-1));
             Position memory oldPosition = getUnadjustedPosition(_amm, _msgSender());
             positionResp.exchangedPositionSize = swapInput(_amm, _side, openNotional, _baseAssetAmountLimit);
 
@@ -935,16 +920,15 @@ contract ClearingHouse is
                 updatedBaseAssetAmountLimit,
                 _leverage
             );
-            SignedDecimal.signedDecimal memory exchangedPosSize = closePositionResp.exchangedPositionSize.addD(
-                increasePositionResp.exchangedPositionSize
-            );
             positionResp = PositionResp({
                 position: increasePositionResp.position,
                 exchangedQuoteAssetAmount: closePositionResp.exchangedQuoteAssetAmount.addD(
                     increasePositionResp.exchangedQuoteAssetAmount
                 ),
                 badDebt: closePositionResp.badDebt.addD(increasePositionResp.badDebt),
-                exchangedPositionSize: exchangedPosSize,
+                exchangedPositionSize: closePositionResp.exchangedPositionSize.addD(
+                    increasePositionResp.exchangedPositionSize
+                ),
                 realizedPnl: closePositionResp.realizedPnl.addD(increasePositionResp.realizedPnl),
                 unrealizedPnlAfter: SignedDecimal.zero(),
                 marginToVault: closePositionResp.marginToVault.addD(increasePositionResp.marginToVault)
@@ -987,6 +971,8 @@ contract ClearingHouse is
             _skipFluctuationCheck
         );
 
+        // bankrupt position's bad debt will be also consider as a part of the open interest
+        updateOpenInterestNotional(_amm, unrealizedPnl.addD(badDebt).addD(oldPosition.openNotional).mulScalar(-1));
         clearPosition(_amm, _trader);
     }
 
@@ -1025,6 +1011,8 @@ contract ClearingHouse is
         position.margin = remainMargin.abs();
         position.lastUpdatedCumulativePremiumFraction = latestCumulativePremiumFraction;
         setPosition(_amm, _trader, position);
+
+        emit MarginChanged(_trader, address(_amm), _margin.toInt());
         return position.margin;
     }
 
@@ -1044,8 +1032,7 @@ contract ClearingHouse is
 
         // transfer spread to insurance fund
         if (hasSpread) {
-            address insuranceFundAddress = address(insuranceFund);
-            _transferFrom(quoteAsset, _from, insuranceFundAddress, spread);
+            _transferFrom(quoteAsset, _from, address(insuranceFund), spread);
         }
 
         // transfer toll to feePool, it's `stakingReserve` for now.
@@ -1072,7 +1059,7 @@ contract ClearingHouse is
         Decimal.decimal memory totalTokenBalance = _balanceOf(_token, address(this));
         if (totalTokenBalance.toUint() < _amount.toUint()) {
             Decimal.decimal memory balanceShortage = _amount.subD(totalTokenBalance);
-            prepaidBadDebt[address(_token)] = getPrepaidBadDebt(address(_token)).addD(balanceShortage);
+            prepaidBadDebt[address(_token)] = prepaidBadDebt[address(_token)].addD(balanceShortage);
             insuranceFund.withdraw(_token, balanceShortage);
         }
 
@@ -1080,7 +1067,7 @@ contract ClearingHouse is
     }
 
     function realizeBadDebt(IERC20 _token, Decimal.decimal memory _badDebt) internal {
-        Decimal.decimal memory badDebtBalance = getPrepaidBadDebt(address(_token));
+        Decimal.decimal memory badDebtBalance = prepaidBadDebt[address(_token)];
         if (badDebtBalance.toUint() > _badDebt.toUint()) {
             // no need to move extra tokens because vault already prepay bad debt, only need to update the numbers
             prepaidBadDebt[address(_token)] = badDebtBalance.subD(_badDebt);
@@ -1093,10 +1080,34 @@ contract ClearingHouse is
 
     function transferToInsuranceFund(IERC20 _token, Decimal.decimal memory _amount) internal {
         Decimal.decimal memory totalTokenBalance = _balanceOf(_token, address(this));
-        Decimal.decimal memory tokenToInsuranceFund = totalTokenBalance.toUint() < _amount.toUint()
-            ? totalTokenBalance
-            : _amount;
-        _transfer(_token, address(insuranceFund), tokenToInsuranceFund);
+        _transfer(
+            _token,
+            address(insuranceFund),
+            totalTokenBalance.toUint() < _amount.toUint() ? totalTokenBalance : _amount
+        );
+    }
+
+    /**
+     * @dev assume this will be removes soon once the guarded period has ended. caller need to ensure amm exist
+     */
+    function updateOpenInterestNotional(IAmm _amm, SignedDecimal.signedDecimal memory _amount) internal {
+        // when cap = 0 means no cap
+        uint256 cap = _amm.getOpenInterestNotionalCap().toUint();
+        address ammAddr = address(_amm);
+        if (cap > 0) {
+            SignedDecimal.signedDecimal memory updatedOpenInterestNotional = _amount.addD(
+                openInterestNotionalMap[ammAddr]
+            );
+            // the reduced open interest can be larger than total when profit is too high and other position are bankrupt
+            if (updatedOpenInterestNotional.toInt() < 0) {
+                updatedOpenInterestNotional = SignedDecimal.zero();
+            }
+            if (_amount.toInt() > 0) {
+                // whitelist won't be restrict by open interest cap
+                require(updatedOpenInterestNotional.toUint() <= cap || _msgSender() == whitelist, "over limit");
+            }
+            openInterestNotionalMap[ammAddr] = updatedOpenInterestNotional.abs();
+        }
     }
 
     //

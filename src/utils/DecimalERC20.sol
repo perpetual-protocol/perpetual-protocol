@@ -31,7 +31,6 @@ abstract contract DecimalERC20 {
             abi.encodeWithSelector(_token.transfer.selector, _to, roundedDownValue)
         );
 
-        // TODO forward error message
         require(success && (data.length == 0 || abi.decode(data, (bool))), "DecimalERC20: transfer failed");
         _validateBalance(_token, _to, roundedDownValue, balanceBefore);
     }
@@ -51,7 +50,6 @@ abstract contract DecimalERC20 {
             abi.encodeWithSelector(_token.transferFrom.selector, _from, _to, roundedDownValue)
         );
 
-        // TODO forward error message
         require(success && (data.length == 0 || abi.decode(data, (bool))), "DecimalERC20: transferFrom failed");
         _validateBalance(_token, _to, roundedDownValue, balanceBefore);
     }
@@ -132,7 +130,6 @@ abstract contract DecimalERC20 {
         (bool success, bytes memory data) = address(_token).call(
             abi.encodeWithSelector(_token.approve.selector, _spender, _toUint(_token, _value))
         );
-        // TODO forward error message
         require(success && (data.length == 0 || abi.decode(data, (bool))), "DecimalERC20: approve failed");
     }
 

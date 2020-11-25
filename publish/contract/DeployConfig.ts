@@ -25,6 +25,7 @@ interface AmmDeployArgs {
 
 interface AmmProperties {
     maxHoldingBaseAsset: BigNumber
+    openInterestNotionalCap: BigNumber
 }
 
 export type AmmConfig = { deployArgs: AmmDeployArgs; properties: AmmProperties }
@@ -52,7 +53,8 @@ export const BTC_USD_AMM: AmmConfig = {
     properties: {
         maxHoldingBaseAsset: BigNumber.from(DEFAULT_DIGITS)
             .mul(25)
-            .div(1000), // 0.25 BTC ~= $5000 USD
+            .div(1000), // 0.25 BTC ~= $5000 USD,
+        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(500000), // $500K
     },
 }
 
@@ -78,6 +80,7 @@ export const ETH_USD_AMM: AmmConfig = {
     },
     properties: {
         maxHoldingBaseAsset: BigNumber.from(10), // 10 ETH ~= $5000 USD
+        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(500000), // $500K
     },
 }
 

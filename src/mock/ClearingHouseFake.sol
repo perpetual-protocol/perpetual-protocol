@@ -3,8 +3,9 @@ pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
 import "../ClearingHouse.sol";
-import "../Amm.sol";
+import "../interface/IAmm.sol";
 
+// temporary commented unused functions to bypass contract too large error
 contract ClearingHouseFake is ClearingHouse {
     uint256 private timestamp = 1444004400;
     uint256 private number = 10001;
@@ -17,15 +18,15 @@ contract ClearingHouseFake is ClearingHouse {
         number = _number;
     }
 
-    function mock_getCurrentTimestamp() public view returns (uint256) {
-        return _blockTimestamp();
-    }
+    // function mock_getCurrentTimestamp() public view returns (uint256) {
+    //     return _blockTimestamp();
+    // }
 
     function mock_getCurrentBlockNumber() public view returns (uint256) {
         return _blockNumber();
     }
 
-    // Override BlockContext here
+    // // Override BlockContext here
     function _blockTimestamp() internal view override returns (uint256) {
         return timestamp;
     }
@@ -34,11 +35,15 @@ contract ClearingHouseFake is ClearingHouse {
         return number;
     }
 
-    function mockSetRestrictionMode(Amm _amm) external {
+    function mockSetRestrictionMode(IAmm _amm) external {
         enterRestrictionMode(_amm);
     }
 
-    function isInRestrictMode(Amm _amm, uint256 _block) external view returns (bool) {
-        return ammMap[address(_amm)].lastRestrictionBlock == _block;
+    function isInRestrictMode(address _amm, uint256 _block) external view returns (bool) {
+        return ammMap[_amm].lastRestrictionBlock == _block;
+    }
+
+    function getPrepaidBadDebt(address _token) public view returns (Decimal.decimal memory) {
+        return prepaidBadDebt[_token];
     }
 }
