@@ -153,7 +153,9 @@ export class ContractPublisher {
                     console.log("insuranceFundContract.setBeneficiary...")
                     await (await insuranceFund.setBeneficiary(clearingHouse.address)).wait(this.confirmations)
                     console.log("clearingHouse.setWhitelist...")
-                    await clearingHouse.setWhitelist(this.settingsDao.getExternalContracts("layer2").arbitrageur!)
+                    await (
+                        await clearingHouse.setWhitelist(this.settingsDao.getExternalContracts("layer2").arbitrageur!)
+                    ).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     // deploy amm
