@@ -59,6 +59,8 @@ export interface ExternalContracts {
     tether?: string
     usdc?: string
     perp?: string
+
+    proxyAdmin?: string
 }
 
 export interface LayerDeploySettings {
