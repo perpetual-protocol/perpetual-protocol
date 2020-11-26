@@ -51,15 +51,20 @@ export interface ExternalContracts {
     arbitrageur?: string
     testnetFaucet?: string
 
+    // https://docs.tokenbridge.net/eth-xdai-amb-bridge/about-the-eth-xdai-amb
     ambBridgeOnXDai?: string
     ambBridgeOnEth?: string
+
+    // https://docs.tokenbridge.net/eth-xdai-amb-bridge/multi-token-extension#omnibridge-technical-information-and-extension-parameters
     multiTokenMediatorOnXDai?: string
     multiTokenMediatorOnEth?: string
 
+    // https://blockscout.com/poa/xdai/bridged-tokens (if it's in xdai)
     tether?: string
     usdc?: string
     perp?: string
 
+    // https://docs.openzeppelin.com/upgrades/2.8/api#ProxyAdmin
     proxyAdmin?: string
 }
 
