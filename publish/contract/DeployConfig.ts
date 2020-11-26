@@ -34,7 +34,7 @@ export const BTC_USD_AMM: AmmConfig = {
     deployArgs: {
         // base * price
         quoteAssetReserve: BigNumber.from(10000000).mul(DEFAULT_DIGITS),
-        baseAssetReserve: BigNumber.from(500).mul(DEFAULT_DIGITS),
+        baseAssetReserve: BigNumber.from(100).mul(DEFAULT_DIGITS), // 100 BTC
         tradeLimitRatio: BigNumber.from(90)
             .mul(DEFAULT_DIGITS)
             .div(100), // 90% trading limit ratio
@@ -52,9 +52,9 @@ export const BTC_USD_AMM: AmmConfig = {
     },
     properties: {
         maxHoldingBaseAsset: BigNumber.from(DEFAULT_DIGITS)
-            .mul(25)
-            .div(1000), // 0.25 BTC ~= $5000 USD,
-        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(500000), // $500K
+            .mul(5)
+            .div(1000), // 0.05 BTC ~= $1000 USD,
+        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(100000), // $100K
     },
 }
 
@@ -62,7 +62,7 @@ export const ETH_USD_AMM: AmmConfig = {
     deployArgs: {
         // base * price
         quoteAssetReserve: BigNumber.from(5000000).mul(DEFAULT_DIGITS),
-        baseAssetReserve: BigNumber.from(10000).mul(DEFAULT_DIGITS),
+        baseAssetReserve: BigNumber.from(2000).mul(DEFAULT_DIGITS), // 2000 ETH
         tradeLimitRatio: BigNumber.from(90)
             .mul(DEFAULT_DIGITS)
             .div(100), // 90% trading limit ratio
@@ -79,8 +79,8 @@ export const ETH_USD_AMM: AmmConfig = {
             .div(10000), // 0.1%
     },
     properties: {
-        maxHoldingBaseAsset: BigNumber.from(10), // 10 ETH ~= $5000 USD
-        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(500000), // $500K
+        maxHoldingBaseAsset: BigNumber.from(2), // 2 ETH ~= $1000 USD
+        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(100000), // $100K
     },
 }
 
