@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2020-11-26
 ### Added
 - add `ClearingHouse::openInterestNotional` and `Amm::openInterestNotionalCap` #58
 ### Changed

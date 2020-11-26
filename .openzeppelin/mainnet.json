@@ -1,0 +1,221 @@
+{
+  "manifestVersion": "3.1",
+  "impls": {
+    "b6c401908971ed15d2d0f5b961f3741f45eee97ccfed5c61ecdcae5e00c9c583": {
+      "address": "0x30474dd46fd3d5138adb3fBc431DE4e8BF00dEaC",
+      "txHash": "0x59aeb709f077ac632f802abeadc7eaab4fdfa0a64b82c0febafe8f27fefe8778",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
+          },
+          {
+            "contract": "Initializable",
+            "label": "______gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
+          },
+          {
+            "contract": "ContextUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol:37"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:21"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_candidate",
+            "type": "t_address",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:22"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:96"
+          },
+          {
+            "contract": "DecimalERC20",
+            "label": "decimalMap",
+            "type": "t_mapping(t_address,t_uint256)",
+            "src": "src/utils/DecimalERC20.sol:13"
+          },
+          {
+            "contract": "BaseBridge",
+            "label": "ambBridge",
+            "type": "t_contract(IAMB)15867",
+            "src": "src/bridge/BaseBridge.sol:28"
+          },
+          {
+            "contract": "BaseBridge",
+            "label": "multiTokenMediator",
+            "type": "t_contract(IMultiTokenMediator)15879",
+            "src": "src/bridge/BaseBridge.sol:31"
+          },
+          {
+            "contract": "RootBridge",
+            "label": "priceFeed",
+            "type": "t_contract(IPriceFeed)18213",
+            "src": "src/bridge/ethereum/RootBridge.sol:17"
+          }
+        ],
+        "types": {
+          "t_contract(IPriceFeed)18213": {
+            "label": "contract IPriceFeed"
+          },
+          "t_contract(IAMB)15867": {
+            "label": "contract IAMB"
+          },
+          "t_contract(IMultiTokenMediator)15879": {
+            "label": "contract IMultiTokenMediator"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        }
+      }
+    },
+    "f2f138f13395b2cb5d31f3b5d716be05acd3ff35f6fd1ace35796f0f32d969c3": {
+      "address": "0x958dFAC85FFfFC66943df6A9604A6185F29cf47b",
+      "txHash": "0x309fe0f6b9babd97216995caca49502acab05fa9df246ddd80c9ad747ab62cd1",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
+          },
+          {
+            "contract": "Initializable",
+            "label": "______gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
+          },
+          {
+            "contract": "ContextUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol:37"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:21"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_candidate",
+            "type": "t_address",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:22"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:96"
+          },
+          {
+            "contract": "BlockContext",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/utils/BlockContext.sol:15"
+          },
+          {
+            "contract": "ChainlinkL1",
+            "label": "priceFeedMap",
+            "type": "t_mapping(t_bytes32,t_contract(AggregatorV3Interface)45)",
+            "src": "src/ChainlinkL1.sol:27"
+          },
+          {
+            "contract": "ChainlinkL1",
+            "label": "priceFeedKeys",
+            "type": "t_array(t_bytes32)dyn_storage",
+            "src": "src/ChainlinkL1.sol:28"
+          },
+          {
+            "contract": "ChainlinkL1",
+            "label": "rootBridge",
+            "type": "t_contract(RootBridge)15790",
+            "src": "src/ChainlinkL1.sol:29"
+          },
+          {
+            "contract": "ChainlinkL1",
+            "label": "priceFeedL2Address",
+            "type": "t_address",
+            "src": "src/ChainlinkL1.sol:30"
+          },
+          {
+            "contract": "ChainlinkL1",
+            "label": "prevTimestampMap",
+            "type": "t_mapping(t_bytes32,t_uint256)",
+            "src": "src/ChainlinkL1.sol:31"
+          },
+          {
+            "contract": "ChainlinkL1",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/ChainlinkL1.sol:45"
+          }
+        ],
+        "types": {
+          "t_mapping(t_bytes32,t_contract(AggregatorV3Interface)45)": {
+            "label": "mapping(bytes32 => contract AggregatorV3Interface)"
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]"
+          },
+          "t_contract(RootBridge)15790": {
+            "label": "contract RootBridge"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        }
+      }
+    }
+  },
+  "admin": {
+    "address": "0x2CF332a112C9aD46943FF783D761cefFad2E09f3",
+    "txHash": "0xe65ac32395a6431c97987a91700d27777f864d8f8d3d15b17593d540a858d754"
+  }
+}

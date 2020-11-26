@@ -2,79 +2,74 @@
   "layers": {
     "layer1": {
       "contracts": {
-        "PerpToken": {
-          "name": "PerpToken",
-          "address": "0xaFfB148304D38947193785D194972a7d0d9b7F68"
-        },
         "RootBridge": {
           "name": "RootBridge",
-          "address": "0xd9F8a64da87eA0dA27B0bd7CCA619ED48C0e3d19"
+          "address": "0xCF2824225Ef0c6799C78E18305A8654c9f70D5aa"
         },
         "ChainlinkL1": {
           "name": "ChainlinkL1",
-          "address": "0x8112DFD2A9Ff6Fa34f190275823cB8e7BdB5345a"
+          "address": "0x2069fA2972B597C4d3cc3CF581c3551B444118A0"
         }
       },
       "accounts": [],
-      "network": "rinkeby",
+      "network": "homestead",
       "externalContracts": {
-        "foundationGovernance": "0xa230A4f6F38D904C2eA1eE95d8b2b8b7350e3d79",
-        "tether": "0x40D3B2F06f198D2B789B823CdBEcD1DB78090D74",
-        "keeper": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
-        "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
-        "ambBridgeOnEth": "0xD4075FB57fCf038bFc702c915Ef9592534bED5c1",
-        "multiTokenMediatorOnEth": "0x30F693708fc604A57F1958E3CFa059F902e6d4CB"
+        "foundationGovernance": "0x5E4B407eB1253527628bAb875525AaeC0099fFC5",
+        "perp": "0xbc396689893d065f41bc2c6ecbee5e0085233447",
+        "usdc": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "tether": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+        "ambBridgeOnEth": "0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e",
+        "multiTokenMediatorOnEth": "0x88ad09518695c6c3712AC10a214bE5109a655671"
       }
     },
     "layer2": {
       "contracts": {
         "MetaTxGateway": {
           "name": "MetaTxGateway",
-          "address": "0x3Ef797AaBE73bb4747D82850B97283E77a7CC452"
+          "address": "0x958dFAC85FFfFC66943df6A9604A6185F29cf47b"
         },
         "ClientBridge": {
           "name": "ClientBridge",
-          "address": "0x457A42Ee5e05a3e6ec2aD5c6e23E5163da88EE2D"
+          "address": "0x70A747d26f3e12F15B1F964cb557493863e95043"
         },
         "InsuranceFund": {
           "name": "InsuranceFund",
-          "address": "0xbEfbeB2e1c9981771D20412dD072C50Ca2A158a1"
+          "address": "0x0F22d4ab05dDF568A50ed79a187c9780708d81EE"
         },
         "L2PriceFeed": {
           "name": "L2PriceFeed",
-          "address": "0x4CCca659abAf29214501E6800c2737BbFB6e4f2C"
+          "address": "0x155DCaDd81F15B161ccD3079b4CD56806E7E3D41"
         },
         "ClearingHouse": {
           "name": "ClearingHouse",
-          "address": "0x1B54A05488F74984b2825560c6213901fb32B10D"
+          "address": "0x425e0EC09f9Bcdfd20283Bf23251cCB74D118813"
         },
-        "ETHUSDT": {
+        "ETHUSDC": {
           "name": "Amm",
-          "address": "0x9aCb03b0d6b971aF7bBebE6fb98C4eB79ff4D102"
+          "address": "0xC965e232913ba707a3Ad1259E47d94D9f213289c"
         },
-        "BTCUSDT": {
+        "BTCUSDC": {
           "name": "Amm",
-          "address": "0x53B99173D017322676aCA54Ac079549342138256"
+          "address": "0xc086b84839C83444F9ebfdC1e3ce72E558f5476f"
         },
         "ClearingHouseViewer": {
           "name": "ClearingHouseViewer",
-          "address": "0x72238b1e540cE24E0ce36EF3c38d622Da097C8cE"
+          "address": "0x3257DbBBcAdee4A2BD91B6a5039ECf9BE2bCfd6e"
         },
         "AmmReader": {
           "name": "AmmReader",
-          "address": "0x06760Cad3213BE325669938A81b66025452b3737"
+          "address": "0xB388F24560e215Cb00236725Fd677bD7bFCe80Ff"
         }
       },
       "accounts": [],
       "network": "xdai",
       "externalContracts": {
-        "foundationGovernance": "0x44883405Eb9826448d3E8eCC25889C5941E79d9b",
-        "keeper": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
-        "arbitrageur": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
-        "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
-        "ambBridgeOnXDai": "0xc38D4991c951fE8BCE1a12bEef2046eF36b0FA4A",
-        "multiTokenMediatorOnXDai": "0xA34c65d76b997a824a5E384471bBa73b0013F5DA",
-        "tether": "0xe0B887D54e71329318a036CF50f30Dbe4444563c"
+        "foundationGovernance": "0x371D128A0a286800d3A5E830F1D26dFf237A3279",
+        "arbitrageur": "0x1A48776f436bcDAA16845A378666cf4BA131eb0F",
+        "usdc": "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83",
+        "tether": "0x4ECaBa5870353805a9F068101A40E0f32ed605C6",
+        "ambBridgeOnXDai": "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
+        "multiTokenMediatorOnXDai": "0xf6A78083ca3e2a662D6dd1703c939c8aCE2e268d"
       }
     }
   }

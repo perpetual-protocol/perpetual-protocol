@@ -153,7 +153,9 @@ export class ContractPublisher {
                     console.log("insuranceFundContract.setBeneficiary...")
                     await (await insuranceFund.setBeneficiary(clearingHouse.address)).wait(this.confirmations)
                     console.log("clearingHouse.setWhitelist...")
-                    await clearingHouse.setWhitelist(this.settingsDao.getExternalContracts("layer2").arbitrageur!)
+                    await (
+                        await clearingHouse.setWhitelist(this.settingsDao.getExternalContracts("layer2").arbitrageur!)
+                    ).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     // deploy amm
@@ -267,7 +269,7 @@ export class ContractPublisher {
                 },
                 async (): Promise<void> => {
                     // open amm
-                    console.log("opening Amm ETHUSDC...")
+                    console.log("opening Amm BTCUSDC...")
                     const btcUsdc = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
                     await (await btcUsdc.setOpen(true)).wait(this.confirmations)
                 },
@@ -297,12 +299,12 @@ export class ContractPublisher {
                     const ETHUSDC = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
                     const BTCUSDC = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
 
-                    await (await metaTxGateway.setOwner(gov)).wait(this.confirmations)
-                    await (await clientBridge.setOwner(gov)).wait(this.confirmations)
-                    await (await insuranceFund.setOwner(gov)).wait(this.confirmations)
-                    await (await l2PriceFeed.setOwner(gov)).wait(this.confirmations)
-                    await (await clearingHouse.setOwner(gov)).wait(this.confirmations)
-                    await (await ETHUSDC.setOwner(gov)).wait(this.confirmations)
+                    // await (await metaTxGateway.setOwner(gov)).wait(this.confirmations)
+                    // await (await clientBridge.setOwner(gov)).wait(this.confirmations)
+                    // await (await insuranceFund.setOwner(gov)).wait(this.confirmations)
+                    // await (await l2PriceFeed.setOwner(gov)).wait(this.confirmations)
+                    // await (await clearingHouse.setOwner(gov)).wait(this.confirmations)
+                    // await (await ETHUSDC.setOwner(gov)).wait(this.confirmations)
                     await (await BTCUSDC.setOwner(gov)).wait(this.confirmations)
                 },
             ],
