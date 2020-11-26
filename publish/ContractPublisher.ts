@@ -299,12 +299,12 @@ export class ContractPublisher {
                     const ETHUSDC = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
                     const BTCUSDC = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
 
-                    // await (await metaTxGateway.setOwner(gov)).wait(this.confirmations)
-                    // await (await clientBridge.setOwner(gov)).wait(this.confirmations)
-                    // await (await insuranceFund.setOwner(gov)).wait(this.confirmations)
-                    // await (await l2PriceFeed.setOwner(gov)).wait(this.confirmations)
-                    // await (await clearingHouse.setOwner(gov)).wait(this.confirmations)
-                    // await (await ETHUSDC.setOwner(gov)).wait(this.confirmations)
+                    await (await metaTxGateway.setOwner(gov)).wait(this.confirmations)
+                    await (await clientBridge.setOwner(gov)).wait(this.confirmations)
+                    await (await insuranceFund.setOwner(gov)).wait(this.confirmations)
+                    await (await l2PriceFeed.setOwner(gov)).wait(this.confirmations)
+                    await (await clearingHouse.setOwner(gov)).wait(this.confirmations)
+                    await (await ETHUSDC.setOwner(gov)).wait(this.confirmations)
                     await (await BTCUSDC.setOwner(gov)).wait(this.confirmations)
                 },
             ],
