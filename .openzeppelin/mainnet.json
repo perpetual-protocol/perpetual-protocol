@@ -2,8 +2,8 @@
   "manifestVersion": "3.1",
   "impls": {
     "b6c401908971ed15d2d0f5b961f3741f45eee97ccfed5c61ecdcae5e00c9c583": {
-      "address": "0x1584Ef671b899CA5d9222cc7cE667124Ee7Cd4c8",
-      "txHash": "0x8a8b4a9d8173a1a1ab40bcc5ca9bf1f796aef3d5f4f865e82b266e63c14567f6",
+      "address": "0x30474dd46fd3d5138adb3fBc431DE4e8BF00dEaC",
+      "txHash": "0x59aeb709f077ac632f802abeadc7eaab4fdfa0a64b82c0febafe8f27fefe8778",
       "layout": {
         "storage": [
           {
@@ -57,30 +57,30 @@
           {
             "contract": "BaseBridge",
             "label": "ambBridge",
-            "type": "t_contract(IAMB)15853",
+            "type": "t_contract(IAMB)15867",
             "src": "src/bridge/BaseBridge.sol:28"
           },
           {
             "contract": "BaseBridge",
             "label": "multiTokenMediator",
-            "type": "t_contract(IMultiTokenMediator)15865",
+            "type": "t_contract(IMultiTokenMediator)15879",
             "src": "src/bridge/BaseBridge.sol:31"
           },
           {
             "contract": "RootBridge",
             "label": "priceFeed",
-            "type": "t_contract(IPriceFeed)18194",
+            "type": "t_contract(IPriceFeed)18213",
             "src": "src/bridge/ethereum/RootBridge.sol:17"
           }
         ],
         "types": {
-          "t_contract(IPriceFeed)18194": {
+          "t_contract(IPriceFeed)18213": {
             "label": "contract IPriceFeed"
           },
-          "t_contract(IAMB)15853": {
+          "t_contract(IAMB)15867": {
             "label": "contract IAMB"
           },
-          "t_contract(IMultiTokenMediator)15865": {
+          "t_contract(IMultiTokenMediator)15879": {
             "label": "contract IMultiTokenMediator"
           },
           "t_mapping(t_address,t_uint256)": {
@@ -99,8 +99,8 @@
       }
     },
     "f2f138f13395b2cb5d31f3b5d716be05acd3ff35f6fd1ace35796f0f32d969c3": {
-      "address": "0xA1A6A4edd6b00Eee723b895B91358097828f73d9",
-      "txHash": "0x62af22cbe9993e31acfe863b9417e865d531d3e860dc18288d6d92313a33cf40",
+      "address": "0x958dFAC85FFfFC66943df6A9604A6185F29cf47b",
+      "txHash": "0x309fe0f6b9babd97216995caca49502acab05fa9df246ddd80c9ad747ab62cd1",
       "layout": {
         "storage": [
           {
@@ -166,7 +166,7 @@
           {
             "contract": "ChainlinkL1",
             "label": "rootBridge",
-            "type": "t_contract(RootBridge)15776",
+            "type": "t_contract(RootBridge)15790",
             "src": "src/ChainlinkL1.sol:29"
           },
           {
@@ -195,7 +195,7 @@
           "t_array(t_bytes32)dyn_storage": {
             "label": "bytes32[]"
           },
-          "t_contract(RootBridge)15776": {
+          "t_contract(RootBridge)15790": {
             "label": "contract RootBridge"
           },
           "t_address": {
@@ -215,7 +215,7 @@
     }
   },
   "admin": {
-    "address": "0xA32F76D99939d5bF136cC73911B79Ebe6A93B523",
-    "txHash": "0x24aab28ec3bc65ecf2ed06f9425b58287fe0a36de5fffaf3a886d36fd7a0ba2a"
+    "address": "0x2CF332a112C9aD46943FF783D761cefFad2E09f3",
+    "txHash": "0xe65ac32395a6431c97987a91700d27777f864d8f8d3d15b17593d540a858d754"
   }
 }

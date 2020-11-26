@@ -5,7 +5,7 @@ import production from "./settings/production.json"
 import staging from "./settings/staging.json"
 
 export class SettingsDao {
-    private settingsCached!: SystemDeploySettings
+    readonly settingsCached!: SystemDeploySettings
     constructor(readonly stage: Stage) {
         switch (stage) {
             case "production":
@@ -28,6 +28,7 @@ export class SettingsDao {
                                     foundationGovernance: "0xa230A4f6F38D904C2eA1eE95d8b2b8b7350e3d79",
                                     ambBridgeOnEth: "0xD4075FB57fCf038bFc702c915Ef9592534bED5c1",
                                     multiTokenMediatorOnEth: "0x30F693708fc604A57F1958E3CFa059F902e6d4CB",
+                                    usdc: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
                                 },
                             },
                             layer2: {
@@ -38,6 +39,8 @@ export class SettingsDao {
                                     foundationGovernance: "0x44883405Eb9826448d3E8eCC25889C5941E79d9b",
                                     ambBridgeOnXDai: "0xc38D4991c951fE8BCE1a12bEef2046eF36b0FA4A",
                                     multiTokenMediatorOnXDai: "0xA34c65d76b997a824a5E384471bBa73b0013F5DA",
+                                    usdc: "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83",
+                                    arbitrageur: "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
                                 },
                             },
                         },
@@ -93,9 +96,5 @@ export class SettingsDao {
 
     isLocal(): boolean {
         return this.stage === "test"
-    }
-
-    isMainnet(): boolean {
-        return this.stage === "production"
     }
 }

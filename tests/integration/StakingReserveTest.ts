@@ -21,7 +21,8 @@ import { toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 
-describe("StakingReserve Test", () => {
+// skip, won't be in v1
+describe.skip("StakingReserve Test", () => {
     let addresses: string[]
     let admin: string
     let staker: string

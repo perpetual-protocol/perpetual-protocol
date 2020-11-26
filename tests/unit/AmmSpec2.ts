@@ -15,7 +15,6 @@ describe("Amm Unit Test 2 (Waffle)", () => {
     let l2PriceFeed: MockContract
     let quoteToken: MockContract
     let clearingHouse: MockContract
-    const priceFeedKey: string = utils.id("ETH")
 
     beforeEach(async () => {
         quoteToken = await deployMockContract(wallet, IERC20Artifact.abi)
@@ -28,7 +27,7 @@ describe("Amm Unit Test 2 (Waffle)", () => {
             parseEther("0.9"), // tradeLimitRatio
             parseEther("3600"), // fundingPeriod - 1hr
             l2PriceFeed.address,
-            priceFeedKey,
+            utils.formatBytes32String("ETH"),
             quoteToken.address,
             BigNumber.from(0), // fluctuation
             BigNumber.from(0), // toll
@@ -41,7 +40,10 @@ describe("Amm Unit Test 2 (Waffle)", () => {
     describe("price", () => {
         it("getUnderlyingPrice", async () => {
             const price = parseEther("1")
-            await l2PriceFeed.mock.getPrice.withArgs(priceFeedKey).returns(price)
+            const priceFeedKeyBytes32 = await amm.priceFeedKey()
+            const priceFeedKeyStr = utils.parseBytes32String(priceFeedKeyBytes32)
+            expect(priceFeedKeyStr).eq("ETH")
+            await l2PriceFeed.mock.getPrice.withArgs(priceFeedKeyBytes32).returns(price)
             expect((await amm.getUnderlyingPrice()).d).deep.eq(price)
         })
     })

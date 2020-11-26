@@ -5,12 +5,18 @@ import { ethers } from "@nomiclabs/buidler"
 import { Amm } from "../../types/ethers"
 import { ContractWrapper } from "./ContractWrapper"
 import { AmmConfigMap } from "./DeployConfig"
+import { BigNumber, utils } from "ethers"
+import { CoinGeckoService } from "../CoinGeckoService"
+
 
 export class AmmContractWrapper extends ContractWrapper<Amm> {
+    private coinGecko = new CoinGeckoService()
+
     async deployUpgradableContract(
         ammConfigMap: AmmConfigMap,
         priceFeedAddress: string,
         quoteAssetAddress: string,
+        fetchPrice= true
     ): Promise<Amm> {
         const ammConfig = ammConfigMap[this.contractInstanceName]
         const {
@@ -23,9 +29,17 @@ export class AmmContractWrapper extends ContractWrapper<Amm> {
             tollRatio,
             spreadRatio,
         } = ammConfig.deployArgs
-        const priceFeedKeyBytes = ethers.utils.id(priceFeedKey.toString())
+
+        let updatedQuoteAssetReserve: BigNumber = quoteAssetReserve
+        if (fetchPrice) {
+            const price = await this.coinGecko.fetchUsdPrice(priceFeedKey)
+            const priceInWei = utils.parseEther(price)
+            updatedQuoteAssetReserve = baseAssetReserve.mul(priceInWei).div(BigNumber.from(10).pow(18))
+        }
+
+        const priceFeedKeyBytes = ethers.utils.formatBytes32String(priceFeedKey.toString())
         const args = [
-            quoteAssetReserve.toString(),
+            updatedQuoteAssetReserve.toString(),
             baseAssetReserve.toString(),
             tradeLimitRatio.toString(),
             fundingPeriod.toString(),

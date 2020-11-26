@@ -7,7 +7,8 @@ import { deployMinter, deploySupplySchedule } from "../helper/contract"
 import { deployPerpTokenMock } from "../helper/mockContract"
 import { toFullDigit } from "../helper/number"
 
-describe("Supply Schedule Unit Test", () => {
+// skip, won't be in v1
+describe.skip("Supply Schedule Unit Test", () => {
     let admin: string
     let alice: string
     let perpToken: PerpTokenMockInstance

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2020-11-26
+### Added
+- add `ClearingHouse::openInterestNotional` and `Amm::openInterestNotionalCap` #58
+### Changed
+- merged event `ClearingHouse::MarginAdded` and `ClearingHouse::MarginRemoved` into `ClearingHouse::MarginChanged` #58
+- change `ClearingHouse::whitelistMap` to `ClearingHouse::whitelist` #58
+
 ## [0.12.10] - 2020-11-20
 ### Added
 - add event `ClearingHouse::FeePoolSet` #28

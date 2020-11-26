@@ -198,7 +198,7 @@ contract MetaTxGateway is PerpFiOwnableUpgrade, LowLevelErrorMessage {
         bytes32 sigR,
         bytes32 sigS,
         uint8 sigV
-    ) internal view returns (bool) {
+    ) internal pure returns (bool) {
         address signer = ecrecover(toTypedMessageHash(domainSeperator, hashMetaTransaction(metaTx)), sigV, sigR, sigS);
         require(signer != address(0), "invalid signature");
         return signer == user;
