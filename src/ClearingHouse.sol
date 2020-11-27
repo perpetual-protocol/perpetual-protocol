@@ -10,6 +10,7 @@ import { SignedDecimal } from "./utils/SignedDecimal.sol";
 import { MixedDecimal } from "./utils/MixedDecimal.sol";
 import { DecimalERC20 } from "./utils/DecimalERC20.sol";
 import { IAmm } from "./interface/IAmm.sol";
+import { IClearingHouse } from "./interface/IClearingHouse.sol";
 import { IInsuranceFund } from "./interface/IInsuranceFund.sol";
 import { BaseRelayRecipient } from "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 import { ContextUpgradeSafe } from "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
@@ -21,6 +22,7 @@ import { ReentrancyGuardUpgradeSafe } from "@openzeppelin/contracts-ethereum-pac
 // note BaseRelayRecipient must come after OwnerPausableUpgradeSafe so its _msgSender() takes precedence
 // (yes, the ordering is reversed comparing to Python)
 contract ClearingHouse is
+    IClearingHouse,
     DecimalERC20,
     OwnerPausableUpgradeSafe,
     ReentrancyGuardUpgradeSafe,
@@ -99,24 +101,7 @@ contract ClearingHouse is
     // Struct and Enum
     //
 
-    enum Side { BUY, SELL }
     enum PnlCalcOption { SPOT_PRICE, TWAP }
-
-    /// @notice This struct records personal position information
-    /// @param size denominated in amm.baseAsset
-    /// @param margin isolated margin
-    /// @param openNotional the quoteAsset value of position when opening position. the cost of the position
-    /// @param lastUpdatedCumulativePremiumFraction for calculating funding payment, record at the moment every time when trader open/reduce/close position
-    /// @param liquidityHistoryIndex
-    /// @param blockNumber the block number of the last position
-    struct Position {
-        SignedDecimal.signedDecimal size;
-        Decimal.decimal margin;
-        Decimal.decimal openNotional;
-        SignedDecimal.signedDecimal lastUpdatedCumulativePremiumFraction;
-        uint256 liquidityHistoryIndex;
-        uint256 blockNumber;
-    }
 
     /// @notice This struct is used for avoiding stack too deep error when passing too many var between functions
     struct PositionResp {
@@ -258,7 +243,12 @@ contract ClearingHouse is
      * @param _amm IAmm address
      * @param _addedMargin added margin in 18 digits
      */
-    function addMargin(IAmm _amm, Decimal.decimal calldata _addedMargin) external whenNotPaused() nonReentrant() {
+    function addMargin(IAmm _amm, Decimal.decimal calldata _addedMargin)
+        external
+        override
+        whenNotPaused()
+        nonReentrant()
+    {
         // check condition
         requireAmm(_amm, true);
         requireNonZeroInput(_addedMargin);
@@ -276,7 +266,12 @@ contract ClearingHouse is
      * @param _amm IAmm address
      * @param _removedMargin removed margin in 18 digits
      */
-    function removeMargin(IAmm _amm, Decimal.decimal calldata _removedMargin) external whenNotPaused() nonReentrant() {
+    function removeMargin(IAmm _amm, Decimal.decimal calldata _removedMargin)
+        external
+        override
+        whenNotPaused()
+        nonReentrant()
+    {
         // check condition
         requireAmm(_amm, true);
         requireNonZeroInput(_removedMargin);
@@ -297,7 +292,7 @@ contract ClearingHouse is
      * @notice settle all the positions when amm is shutdown. The settlement price is according to IAmm.settlementPrice
      * @param _amm IAmm address
      */
-    function settlePosition(IAmm _amm) external nonReentrant() {
+    function settlePosition(IAmm _amm) external override nonReentrant() {
         // check condition
         requireAmm(_amm, false);
 
@@ -381,7 +376,7 @@ contract ClearingHouse is
         Decimal.decimal calldata _quoteAssetAmount,
         Decimal.decimal calldata _leverage,
         Decimal.decimal calldata _baseAssetAmountLimit
-    ) external whenNotPaused() nonReentrant() {
+    ) external override whenNotPaused() nonReentrant() {
         requireAmm(_amm, true);
         requireNonZeroInput(_quoteAssetAmount);
         requireNonZeroInput(_leverage);
@@ -454,6 +449,7 @@ contract ClearingHouse is
      */
     function closePosition(IAmm _amm, Decimal.decimal calldata _quoteAssetAmountLimit)
         external
+        override
         whenNotPaused()
         nonReentrant()
     {
@@ -505,7 +501,7 @@ contract ClearingHouse is
      * @param _amm IAmm address
      * @param _trader trader address
      */
-    function liquidate(IAmm _amm, address _trader) external nonReentrant() {
+    function liquidate(IAmm _amm, address _trader) external override nonReentrant() {
         // check conditions
         requireAmm(_amm, true);
         require(
@@ -582,7 +578,7 @@ contract ClearingHouse is
      * @notice if funding rate is positive, traders with long position pay traders with short position and vice versa.
      * @param _amm IAmm address
      */
-    function payFunding(IAmm _amm) external {
+    function payFunding(IAmm _amm) external override {
         requireAmm(_amm, true);
 
         // must copy the baseAssetDeltaThisFundingPeriod first
@@ -621,7 +617,12 @@ contract ClearingHouse is
      * @param _trader trader address
      * @return margin ratio in 18 digits
      */
-    function getMarginRatio(IAmm _amm, address _trader) public view returns (SignedDecimal.signedDecimal memory) {
+    function getMarginRatio(IAmm _amm, address _trader)
+        public
+        view
+        override
+        returns (SignedDecimal.signedDecimal memory)
+    {
         Position memory position = getPosition(_amm, _trader);
         requirePositionSize(position.size);
         requireNonZeroInput(position.openNotional);
@@ -644,7 +645,7 @@ contract ClearingHouse is
      * @param _trader trader address
      * @return struct Position
      */
-    function getPosition(IAmm _amm, address _trader) public view returns (Position memory) {
+    function getPosition(IAmm _amm, address _trader) public view override returns (Position memory) {
         Position memory pos = getUnadjustedPosition(_amm, _trader);
         uint256 latestLiquidityIndex = _amm.getLiquidityHistoryLength().sub(1);
         if (pos.liquidityHistoryIndex == latestLiquidityIndex) {
