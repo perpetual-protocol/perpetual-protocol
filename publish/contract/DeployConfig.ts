@@ -108,6 +108,10 @@ export class DeployConfig {
         [AmmInstanceName.ETHUSDC]: ETH_USD_AMM,
     }
 
+    // KeeperReward
+    readonly keeperRewardOnL1 = BigNumber.from(1).mul(DEFAULT_DIGITS) // 1 perp token
+    readonly keeperRewardOnL2 = BigNumber.from(1).mul(DEFAULT_DIGITS) // 1 perp token
+
     constructor(stage: Stage) {
         switch (stage) {
             case "production":

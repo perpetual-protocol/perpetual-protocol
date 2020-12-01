@@ -29,6 +29,7 @@ export class SettingsDao {
                                     ambBridgeOnEth: "0xD4075FB57fCf038bFc702c915Ef9592534bED5c1",
                                     multiTokenMediatorOnEth: "0x30F693708fc604A57F1958E3CFa059F902e6d4CB",
                                     usdc: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                                    perp: "0x0078371BDeDE8aAc7DeBfFf451B74c5EDB385Af7",
                                 },
                             },
                             layer2: {
@@ -41,6 +42,7 @@ export class SettingsDao {
                                     multiTokenMediatorOnXDai: "0xA34c65d76b997a824a5E384471bBa73b0013F5DA",
                                     usdc: "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83",
                                     arbitrageur: "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
+                                    perp: "0x0C6c3C47A1f650809B0D1048FDf9603e09473D7E",
                                 },
                             },
                         },

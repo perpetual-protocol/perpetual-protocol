@@ -8,6 +8,8 @@ import {
     ClearingHouseViewer,
     ClientBridge,
     InsuranceFund,
+    KeeperRewardL1,
+    KeeperRewardL2,
     L2PriceFeed,
     MetaTxGateway,
     RootBridge,
@@ -82,6 +84,26 @@ export class ContractPublisher {
                     const rootBridge = await this.factory.create<RootBridge>(ContractName.RootBridge).instance()
                     await (await chainlinkL1.setOwner(gov)).wait(this.confirmations)
                     await (await rootBridge.setOwner(gov)).wait(this.confirmations)
+                },
+            ],
+            // batch 2
+            [
+                async (): Promise<void> => {
+                    console.log("deploying KeeperReward on layer 1...")
+
+                    const perp = this.externalContract.perp!
+                    const keeperRewardL1 = await this.factory
+                        .create<KeeperRewardL1>(ContractName.KeeperRewardL1)
+                        .deployUpgradableContract(perp!)
+
+                    const chainlinkL1 = await this.factory.create<ChainlinkL1>(ContractName.ChainlinkL1)
+                    await (
+                        await keeperRewardL1.setKeeperFunctions(
+                            ["0xf463e18e"], // bytes4(keccak("updateLatestRoundData(bytes32)"))
+                            [chainlinkL1.address!],
+                            [this.deployConfig.keeperRewardOnL1],
+                        )
+                    ).wait(this.confirmations)
                 },
             ],
         ],
@@ -306,6 +328,26 @@ export class ContractPublisher {
                     // await (await clearingHouse.setOwner(gov)).wait(this.confirmations)
                     // await (await ETHUSDC.setOwner(gov)).wait(this.confirmations)
                     await (await BTCUSDC.setOwner(gov)).wait(this.confirmations)
+                },
+            ],
+            // batch 1
+            [
+                async (): Promise<void> => {
+                    console.log("deploying KeeperRewardL2 on layer 2...")
+
+                    const perp = this.externalContract.perp!
+                    const keeperRewardL2 = await this.factory
+                        .create<KeeperRewardL2>(ContractName.KeeperRewardL2)
+                        .deployUpgradableContract(perp!)
+
+                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    await (
+                        await keeperRewardL2.setKeeperFunctions(
+                            ["0x3e09fa10"], // bytes4(keccak("payFunding(address)"))
+                            [clearingHouseContract.address!],
+                            [this.deployConfig.keeperRewardOnL2],
+                        )
+                    ).wait(this.confirmations)
                 },
             ],
         ],
