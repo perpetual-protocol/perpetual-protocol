@@ -1289,9 +1289,9 @@ describe("ClearingHouse Test", () => {
                     .openPosition(
                         amm.address,
                         Side.SELL,
-                        [toFullDigitStr(20)],
-                        [toFullDigitStr(5)],
-                        [toFullDigitStr(11.12)],
+                        { d: toFullDigitStr(20) },
+                        { d: toFullDigitStr(5) },
+                        { d: toFullDigitStr(11.12) },
                     )
                     .encodeABI(),
                 nonce: 0,
