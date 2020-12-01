@@ -610,6 +610,32 @@ contract ClearingHouse is
         }
     }
 
+    function adjustPositionForLiquidityChanged(IAmm _amm, address _trader) public returns (Position memory) {
+        Position memory unadjustedPosition = getUnadjustedPosition(_amm, _trader);
+        if (unadjustedPosition.size.toInt() == 0) {
+            return unadjustedPosition;
+        }
+        uint256 latestLiquidityIndex = _amm.getLiquidityHistoryLength().sub(1);
+        if (unadjustedPosition.liquidityHistoryIndex == latestLiquidityIndex) {
+            return unadjustedPosition;
+        }
+
+        Position memory adjustedPosition = calcPositionAfterLiquidityMigration(
+            _amm,
+            unadjustedPosition,
+            latestLiquidityIndex
+        );
+        setPosition(_amm, _trader, adjustedPosition);
+        emit PositionAdjusted(
+            address(_amm),
+            _trader,
+            adjustedPosition.size.toUint(),
+            unadjustedPosition.liquidityHistoryIndex,
+            adjustedPosition.liquidityHistoryIndex
+        );
+        return adjustedPosition;
+    }
+
     //
     // VIEW FUNCTIONS
     //
@@ -707,32 +733,6 @@ contract ClearingHouse is
         uint256 blockNumber = _blockNumber();
         ammMap[address(_amm)].lastRestrictionBlock = blockNumber;
         emit RestrictionModeEntered(address(_amm), blockNumber);
-    }
-
-    function adjustPositionForLiquidityChanged(IAmm _amm, address _trader) internal returns (Position memory) {
-        Position memory unadjustedPosition = getUnadjustedPosition(_amm, _trader);
-        if (unadjustedPosition.size.toInt() == 0) {
-            return unadjustedPosition;
-        }
-        uint256 latestLiquidityIndex = _amm.getLiquidityHistoryLength().sub(1);
-        if (unadjustedPosition.liquidityHistoryIndex == latestLiquidityIndex) {
-            return unadjustedPosition;
-        }
-
-        Position memory adjustedPosition = calcPositionAfterLiquidityMigration(
-            _amm,
-            unadjustedPosition,
-            latestLiquidityIndex
-        );
-        setPosition(_amm, _trader, adjustedPosition);
-        emit PositionAdjusted(
-            address(_amm),
-            _trader,
-            adjustedPosition.size.toUint(),
-            unadjustedPosition.liquidityHistoryIndex,
-            adjustedPosition.liquidityHistoryIndex
-        );
-        return adjustedPosition;
     }
 
     function setPosition(
