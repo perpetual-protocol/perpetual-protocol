@@ -40,7 +40,7 @@ contract ClearingHouse is
     event PositionAdjusted(
         address amm,
         address trader,
-        uint256 newPositionSize,
+        int256 newPositionSize,
         uint256 oldLiquidityIndex,
         uint256 newLiquidityIndex
     );
@@ -629,7 +629,7 @@ contract ClearingHouse is
         emit PositionAdjusted(
             address(_amm),
             _trader,
-            adjustedPosition.size.toUint(),
+            adjustedPosition.size.toInt(),
             unadjustedPosition.liquidityHistoryIndex,
             adjustedPosition.liquidityHistoryIndex
         );
