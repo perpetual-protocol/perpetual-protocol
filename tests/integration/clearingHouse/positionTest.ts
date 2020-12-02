@@ -975,6 +975,33 @@ describe("ClearingHouse - open/close position Test", () => {
                 badDebt: "16061946902654867256",
             })
         })
+
+        it("force error, open a long position when position is under collateral", async () => {
+            // deposit to 2000
+            await approve(alice, clearingHouse.address, 2000)
+            await approve(bob, clearingHouse.address, 2000)
+
+            // AMM after 1250 : 80...
+            // position 20
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+
+            // Then Bob short 250,  price will decrease
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(250), toDecimal(1), toDecimal(0), {
+                from: bob,
+            })
+
+            /**
+             * Now Alice's position is {balance: 20, margin: 25}
+             * positionValue of 20 quoteAsset is 166.67 now
+             * marginRatio = (margin(25) + unrealizedPnl(166.67-250)) / openNotionalSize(250) = -23%
+             */
+            await expectRevert(
+                clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0)),
+                "marginRatio not enough",
+            )
+        })
     })
 
     describe("position upper bound", () => {

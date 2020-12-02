@@ -389,6 +389,8 @@ contract ClearingHouse is
         requireNotRestrictionMode(_amm);
 
         address trader = _msgSender();
+        requireEnoughMarginRatio(getMarginRatio(_amm, trader));
+
         PositionResp memory positionResp;
         {
             // add scope for stack too deep error
