@@ -2156,6 +2156,111 @@ describe("ClearingHouse Test", () => {
                 exchangedPositionSize: "1619047619047619047696",
             })
         })
+
+        it("adjust position after adding liquidity with positive position size", async () => {
+            // alice position: 9.090
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+            // bob position: 13.986
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(10), toDecimal(0), {
+                from: bob,
+            })
+            // carol position: -6.41
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: carol,
+            })
+
+            // baseReserve = 83.33...
+            // quoteReserve = 1200
+            // new baseReserve = 166.66
+            // new quoteReserve = 2400
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0), { from: admin })
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).true
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).true
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, carol)).true
+
+            const receiptAlice = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, alice)
+            await expectEvent.inTransaction(receiptAlice.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "8620689655172413793",
+            })
+            const receiptBob = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, bob)
+            await expectEvent.inTransaction(receiptBob.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "12903225806451612904",
+            })
+            const receiptCarol = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, carol)
+            await expectEvent.inTransaction(receiptCarol.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "-6666666666666666667",
+            })
+
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).false
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).false
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, carol)).false
+        })
+
+        it("adjust position after adding liquidity with negative position size", async () => {
+            // alice position: -11.11
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+            // bob position: -31.74
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
+                from: bob,
+            })
+
+            // total position = -42.85
+            // baseReserve = 142.85
+            // quoteReserve = 700
+            // new baseReserve = 285.71
+            // new quoteReserve = 1400
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).true
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).true
+
+            const receiptAlice = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, alice)
+            await expectEvent.inTransaction(receiptAlice.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "-11560693641618497111",
+            })
+            const receiptBob = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, bob)
+            await expectEvent.inTransaction(receiptBob.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "-35714285714285714286",
+            })
+
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).false
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).false
+        })
+
+        it("adjust position after adding liquidity with position size is zero", async () => {
+            // alice position: 9.09
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+            // bob position: -9.09
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: bob,
+            })
+
+            // total position = 0
+            // baseReserve = 100
+            // quoteReserve = 1000
+            // new baseReserve = 200
+            // new quoteReserve = 2000
+            const receipt = await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).true
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).true
+
+            const receiptAlice = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, alice)
+            await expectEvent.inTransaction(receiptAlice.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "8695652173913043479",
+            })
+            const receiptBob = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, bob)
+            await expectEvent.inTransaction(receiptBob.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "-9523809523809523810",
+            })
+
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).false
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).false
+        })
     })
 
     describe("pausable functions", () => {
