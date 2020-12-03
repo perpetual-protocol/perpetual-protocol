@@ -286,8 +286,7 @@ contract ClearingHouse is
         updateMargin(_amm, trader, MixedDecimal.fromDecimal(_removedMargin).mulScalar(-1));
 
         // check margin ratio
-        SignedDecimal.signedDecimal memory marginRatio = getMarginRatio(_amm, trader);
-        requireEnoughMarginRatio(marginRatio);
+        requireMoreMarginRatio(getMarginRatio(_amm, trader), initMarginRatio, true);
 
         // transfer token back to trader
         withdraw(_amm.quoteAsset(), trader, _removedMargin);
@@ -385,15 +384,17 @@ contract ClearingHouse is
         requireAmm(_amm, true);
         requireNonZeroInput(_quoteAssetAmount);
         requireNonZeroInput(_leverage);
-        requireEnoughMarginRatio(MixedDecimal.fromDecimal(Decimal.one()).divD(_leverage));
+        requireMoreMarginRatio(MixedDecimal.fromDecimal(Decimal.one()).divD(_leverage), initMarginRatio, true);
         requireNotRestrictionMode(_amm);
 
         address trader = _msgSender();
         PositionResp memory positionResp;
         {
             // add scope for stack too deep error
-            SignedDecimal.signedDecimal memory oldPosSize = adjustPositionForLiquidityChanged(_amm, trader).size;
-            int256 oldPositionSize = oldPosSize.toInt();
+            int256 oldPositionSize = adjustPositionForLiquidityChanged(_amm, trader).size.toInt();
+            if (oldPositionSize > 0) {
+                requireMoreMarginRatio(getMarginRatio(_amm, trader), maintenanceMarginRatio, true);
+            }
 
             // increase or decrease position depends on old position's side and size
             if (oldPositionSize == 0 || (oldPositionSize > 0 ? Side.BUY : Side.SELL) == _side) {
@@ -508,10 +509,7 @@ contract ClearingHouse is
     function liquidate(IAmm _amm, address _trader) external nonReentrant() {
         // check conditions
         requireAmm(_amm, true);
-        require(
-            getMarginRatio(_amm, _trader).subD(maintenanceMarginRatio).toInt() < 0,
-            "Margin ratio is larger than min requirement"
-        );
+        requireMoreMarginRatio(getMarginRatio(_amm, _trader), maintenanceMarginRatio, false);
 
         // update states
         adjustPositionForLiquidityChanged(_amm, _trader);
@@ -1212,10 +1210,6 @@ contract ClearingHouse is
         require(_open == _amm.open(), _open ? "amm was closed" : "amm is open");
     }
 
-    function requireEnoughMarginRatio(SignedDecimal.signedDecimal memory _marginRatio) private view {
-        require(_marginRatio.subD(initMarginRatio).toInt() > 0, "marginRatio not enough");
-    }
-
     function requireNonZeroInput(Decimal.decimal memory _decimal) private pure {
         require(_decimal.toUint() != 0, "input is 0");
     }
@@ -1229,5 +1223,17 @@ contract ClearingHouse is
         if (currentBlock == ammMap[address(_amm)].lastRestrictionBlock) {
             require(getUnadjustedPosition(_amm, _msgSender()).blockNumber != currentBlock, "only one action allowed");
         }
+    }
+
+    function requireMoreMarginRatio(
+        SignedDecimal.signedDecimal memory _marginRatio,
+        Decimal.decimal memory _baseMarginRatio,
+        bool _largerThanOrEqualTo
+    ) private pure {
+        int256 remainingMarginRatio = _marginRatio.subD(_baseMarginRatio).toInt();
+        require(
+            _largerThanOrEqualTo ? remainingMarginRatio >= 0 : remainingMarginRatio < 0,
+            "Margin ratio not meet criteria"
+        );
     }
 }

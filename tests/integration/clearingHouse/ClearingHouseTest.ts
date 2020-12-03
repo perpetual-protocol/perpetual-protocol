@@ -525,7 +525,7 @@ describe("ClearingHouse Test", () => {
             // margin ratio -> 24 / 600 = 4%
             await expectRevert(
                 clearingHouse.removeMargin(amm.address, toDecimal(removedMargin), { from: alice }),
-                "marginRatio not enough",
+                "Margin ratio not meet criteria",
             )
         })
     })
@@ -843,7 +843,7 @@ describe("ClearingHouse Test", () => {
             // then anyone (eg. carol) calling liquidate() would get an exception
             await expectRevert(
                 clearingHouse.liquidate(amm.address, alice, { from: carol }),
-                "Margin ratio is larger than min requirement",
+                "Margin ratio not meet criteria",
             )
         })
 
@@ -876,7 +876,7 @@ describe("ClearingHouse Test", () => {
             // then anyone (eg. carol) calling liquidate() would get an exception
             await expectRevert(
                 clearingHouse.liquidate(amm.address, alice, { from: carol }),
-                "Margin ratio is larger than min requirement",
+                "Margin ratio not meet criteria",
             )
         })
 
@@ -942,10 +942,12 @@ describe("ClearingHouse Test", () => {
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
             await approve(carol, clearingHouse.address, 100)
-            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.2), { from: admin })
+            // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
 
             // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
             // AMM after: 1100 : 90.9090909091
+            // actual margin ratio is 19.99...9%
             await openSmallPositions(bob, Side.BUY, toDecimal(4), toDecimal(5), 5)
 
             // when carol create a 10 margin * 5x long position when 7.5757575758 quoteAsset = 100 DAI
@@ -981,7 +983,8 @@ describe("ClearingHouse Test", () => {
             await approve(bob, clearingHouse.address, 100)
             await approve(carol, clearingHouse.address, 100)
             await approve(relayer, clearingHouse.address, 100)
-            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.2), { from: admin })
+            // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
 
             // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
             // AMM after: 1100 : 90.9090909091
@@ -1047,7 +1050,8 @@ describe("ClearingHouse Test", () => {
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
             await approve(carol, clearingHouse.address, 100)
-            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.2), { from: admin })
+            // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
 
             // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
             // AMM after: 1100 : 90.9090909091, price: 12.1
@@ -1084,7 +1088,8 @@ describe("ClearingHouse Test", () => {
             await approve(bob, clearingHouse.address, 100)
             await approve(carol, clearingHouse.address, 100)
             await approve(relayer, clearingHouse.address, 100)
-            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.2), { from: admin })
+            // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
 
             // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
             // AMM after: 1100 : 90.9090909091, price: 12.1
@@ -1377,35 +1382,6 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("4998048781")
             expect(await quoteToken.balanceOf(clearingHouse.address)).to.eq(toFullDigit(0))
-        })
-
-        it("force error, open an opposite position but existing margin not enough to pay PnL", async () => {
-            // deposit to 30
-            await approve(bob, clearingHouse.address, 30)
-
-            // AMM after 1250 : 80...
-            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(0), {
-                from: bob,
-            })
-
-            // Then alice short 250,  price will decrease
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(25), toDecimal(10), toDecimal(0), {
-                from: alice,
-            })
-
-            /**
-             * Now Bob's position is {margin: 25}
-             * positionValue of 20 quoteAsset is 166.67 now
-             */
-            // Bob's realizedPnl = 166.67 - 250 = -83.33, he lost all his margin(25)
-            // realizedPnl(58.33) > bob's allowance(5) + margin(25)
-            // which means Bob has no money to pay the loss to close the position
-            await expectRevert(
-                clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(25), toDecimal(10), toDecimal(0), {
-                    from: bob,
-                }),
-                "reduce an underwater position",
-            )
         })
     })
 
