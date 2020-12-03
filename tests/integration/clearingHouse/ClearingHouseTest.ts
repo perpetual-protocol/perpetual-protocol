@@ -450,6 +450,46 @@ describe("ClearingHouse Test", () => {
             const insuranceFundBaseToken = await quoteToken.balanceOf(insuranceFund.address)
             expect(insuranceFundBaseToken).to.eq(toFullDigit(5000, +(await quoteToken.decimals())))
         })
+
+        describe.skip("verify margin ratio when there is funding payments", () => {
+            it("when funding rate is positive", async () => {
+                // given the underlying twap price is 1.59, and current snapShot price is 400B/250Q = $1.6
+                await mockPriceFeed.setTwapPrice(toFullDigit(1.59))
+
+                // when the new fundingRate is 1% which means underlyingPrice < snapshotPrice
+                await gotoNextFundingTime()
+                await clearingHouse.payFunding(amm.address)
+                expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(0.01))
+
+                // marginRatio = (margin + funding payments + unrealized Pnl) / openNotional
+                // then alice need to pay 1% of her position size as fundingPayment
+                // {balance: 37.5, margin: 300} => {balance: 37.5, margin: 299.625 ((margin + funding payments)}
+                const aliceMarginRatio = await clearingHouseViewer.getMarginRatio(amm.address, alice)
+                // const alicePositionNotional = await clearingHouse.getPositionNotionalAndUnrealizedPnl(
+                //     amm.address,
+                //     alice,
+                //     0,
+                // )
+                // console.log("0: ", alicePositionNotional[0].d.toString(), alicePositionNotional[1].d.toString())
+                console.log(toFullDigit(299.625))
+                expect(aliceMarginRatio).to.eq(toFullDigit(299.625))
+
+                // margin:            299.625
+                // unrealizedPnL:    -547.826086956521739131
+                // ----------------------------------------
+                //                   -248.201086956521739131
+                // positionNotional:   52.173913043478260869
+
+                //  52.173913043478260869
+                //   0.413668478260869565
+                // -0.413668478260869565
+
+                // then bob will get 1% of her position size as fundingPayment
+                // {balance: -187.5, margin: 1200} => {balance: -187.5, margin: 1201.875}
+                const bobMarginRatio = await clearingHouseViewer.getMarginRatio(amm.address, bob)
+                expect(bobMarginRatio).to.eq(toFullDigit(1201.875))
+            })
+        })
     })
 
     describe("add/remove margin", () => {
