@@ -25,4 +25,5 @@ openzeppelin-cli-export.json
 package-lock.json
 package.json
 system.json
+system-local.json
 tsconfig.json
