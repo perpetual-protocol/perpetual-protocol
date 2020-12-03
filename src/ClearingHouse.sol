@@ -286,7 +286,7 @@ contract ClearingHouse is
         updateMargin(_amm, trader, MixedDecimal.fromDecimal(_removedMargin).mulScalar(-1));
 
         // check margin ratio
-        requireEnoughMarginRatio(initMarginRatio, getMarginRatio(_amm, trader), true);
+        requireMarginRatioCriteria(getMarginRatio(_amm, trader), initMarginRatio, true);
 
         // transfer token back to trader
         withdraw(_amm.quoteAsset(), trader, _removedMargin);
@@ -384,7 +384,7 @@ contract ClearingHouse is
         requireAmm(_amm, true);
         requireNonZeroInput(_quoteAssetAmount);
         requireNonZeroInput(_leverage);
-        requireEnoughMarginRatio(initMarginRatio, MixedDecimal.fromDecimal(Decimal.one()).divD(_leverage), true);
+        requireMarginRatioCriteria(MixedDecimal.fromDecimal(Decimal.one()).divD(_leverage), initMarginRatio, true);
         requireNotRestrictionMode(_amm);
 
         address trader = _msgSender();
@@ -393,7 +393,7 @@ contract ClearingHouse is
             // add scope for stack too deep error
             int256 oldPositionSize = adjustPositionForLiquidityChanged(_amm, trader).size.toInt();
             if (oldPositionSize > 0) {
-                requireEnoughMarginRatio(maintenanceMarginRatio, getMarginRatio(_amm, trader), true);
+                requireMarginRatioCriteria(getMarginRatio(_amm, trader), maintenanceMarginRatio, true);
             }
 
             // increase or decrease position depends on old position's side and size
@@ -509,7 +509,7 @@ contract ClearingHouse is
     function liquidate(IAmm _amm, address _trader) external nonReentrant() {
         // check conditions
         requireAmm(_amm, true);
-        requireEnoughMarginRatio(maintenanceMarginRatio, getMarginRatio(_amm, _trader), false);
+        requireMarginRatioCriteria(getMarginRatio(_amm, _trader), maintenanceMarginRatio, false);
 
         // update states
         adjustPositionForLiquidityChanged(_amm, _trader);
@@ -1225,12 +1225,15 @@ contract ClearingHouse is
         }
     }
 
-    function requireEnoughMarginRatio(
-        Decimal.decimal memory _baseMarginRatio,
+    function requireMarginRatioCriteria(
         SignedDecimal.signedDecimal memory _marginRatio,
-        bool _require
+        Decimal.decimal memory _baseMarginRatio,
+        bool _largerThanOrEqualTo
     ) private pure {
         int256 remainingMarginRatio = _marginRatio.subD(_baseMarginRatio).toInt();
-        require(_require ? remainingMarginRatio >= 0 : remainingMarginRatio < 0, "Margin ratio not meet criteria");
+        require(
+            _largerThanOrEqualTo ? remainingMarginRatio >= 0 : remainingMarginRatio < 0,
+            "Margin ratio not meet criteria"
+        );
     }
 }
