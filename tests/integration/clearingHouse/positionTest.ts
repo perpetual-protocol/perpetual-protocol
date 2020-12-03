@@ -976,7 +976,7 @@ describe("ClearingHouse - open/close position Test", () => {
             })
         })
 
-        it("force error, open a long position when position is under collateral", async () => {
+        it("force error, can NOT open a long/short position when position is under collateral", async () => {
             // deposit to 2000
             await approve(alice, clearingHouse.address, 2000)
             await approve(bob, clearingHouse.address, 2000)
@@ -998,8 +998,17 @@ describe("ClearingHouse - open/close position Test", () => {
              * marginRatio = (margin(25) + unrealizedPnl(166.67-250)) / openNotionalSize(250) = -23%
              */
             await expectRevert(
-                clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0)),
-                "marginRatio not enough",
+                clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                }),
+                "Margin ratio not meet criteria",
+            )
+
+            await expectRevert(
+                clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                }),
+                "Margin ratio not meet criteria",
             )
         })
     })

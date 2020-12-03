@@ -14,15 +14,14 @@ import {
     PerpTokenInstance,
     StakingReserveFakeInstance,
     SupplyScheduleFakeInstance,
-} from "../../../types/truffle"
-import { assertionHelper } from "../../helper/assertion-plugin"
-import { deployAmm, deployErc20Fake, Dir, Side } from "../../helper/contract"
-import { fullDeploy } from "../../helper/deploy"
-import { fromDecimal, ONE_DAY, toDecimal, toFullDigit } from "../../helper/number"
+} from "../../types/truffle"
+import { assertionHelper } from "../helper/assertion-plugin"
+import { deployAmm, deployErc20Fake, Dir, Side } from "../helper/contract"
+import { fullDeploy } from "../helper/deploy"
+import { fromDecimal, ONE_DAY, toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 
-// TODO move out from clearingHouse folder
 describe("Protocol shutdown test", () => {
     let admin: string
     let alice: string
