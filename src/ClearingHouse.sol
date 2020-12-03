@@ -286,8 +286,7 @@ contract ClearingHouse is
         updateMargin(_amm, trader, MixedDecimal.fromDecimal(_removedMargin).mulScalar(-1));
 
         // check margin ratio
-        SignedDecimal.signedDecimal memory marginRatio = getMarginRatio(_amm, trader);
-        requireEnoughMarginRatio(initMarginRatio, marginRatio, true);
+        requireEnoughMarginRatio(initMarginRatio, getMarginRatio(_amm, trader), true);
 
         // transfer token back to trader
         withdraw(_amm.quoteAsset(), trader, _removedMargin);
@@ -392,8 +391,7 @@ contract ClearingHouse is
         PositionResp memory positionResp;
         {
             // add scope for stack too deep error
-            SignedDecimal.signedDecimal memory oldPosSize = adjustPositionForLiquidityChanged(_amm, trader).size;
-            int256 oldPositionSize = oldPosSize.toInt();
+            int256 oldPositionSize = adjustPositionForLiquidityChanged(_amm, trader).size.toInt();
             if (oldPositionSize > 0) {
                 requireEnoughMarginRatio(maintenanceMarginRatio, getMarginRatio(_amm, trader), true);
             }
