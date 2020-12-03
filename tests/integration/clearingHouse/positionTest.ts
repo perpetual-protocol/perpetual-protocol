@@ -827,7 +827,7 @@ describe("ClearingHouse - open/close position Test", () => {
                 clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(60), toDecimal(21), toDecimal(37.5), {
                     from: alice,
                 }),
-                "marginRatio not enough",
+                "Margin ratio not meet criteria",
             )
         })
 
@@ -1588,31 +1588,6 @@ describe("ClearingHouse - open/close position Test", () => {
                     from: alice,
                 }),
                 "DecimalERC20: transferFrom failed",
-            )
-        })
-
-        it("force error, not enough margin to open a reverse position when fee is 10%", async () => {
-            await approve(alice, clearingHouse.address, 220)
-            await approve(bob, clearingHouse.address, 2000)
-
-            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(10), toDecimal(0), {
-                from: alice,
-            })
-
-            // bob short position to make alice's position underwater
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
-                from: bob,
-            })
-            expect(await clearingHouseViewer.getUnrealizedPnl(amm.address, alice, PnlCalcOption.SPOT_PRICE)).eq(
-                "-29577464788732394374",
-            )
-
-            // then alice cant reduce the position when hers is underwater
-            await expectRevert(
-                clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(19), toDecimal(10), toDecimal(0), {
-                    from: alice,
-                }),
-                "reduce an underwater position",
             )
         })
 
