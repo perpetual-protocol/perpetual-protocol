@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- add `ClearingHouse::adjustPositionForLiquidityChanged()` #68
+### Changed
+- change ClearingHouse's event `PositionAdjusted.newPositionSize` parameter's type from `uint256` to `int256` #68
+- change error message from both "Margin ratio is larger than min requirement" and "marginRatio not enough" to "Margin ratio not meet criteria" #72
 
 ## [0.13.0] - 2020-11-26
 ### Added
