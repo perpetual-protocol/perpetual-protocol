@@ -7,6 +7,7 @@ contract L2PriceFeedMock {
 
     constructor(uint256 _price) public {
         price = _price;
+        twapPrice = _price;
     }
 
     function getTwapPrice(bytes32, uint256) public view returns (uint256) {
