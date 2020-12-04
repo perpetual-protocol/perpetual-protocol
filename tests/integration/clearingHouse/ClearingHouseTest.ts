@@ -429,14 +429,14 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.payFunding(amm.address)
 
             // then bob will get 2000% of her position size as fundingPayment
-            // {balance: -187.5, margin: 1200} => {balance: 37.5, margin: 0 (badDebt=1200-2550=-1350)}
+            // funding payment: -187.5 x 2000% = -3750, margin is 1200 so bad debt = -3750 + 1200 = 2550
             expect((await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, bob)).margin).eq(
                 toFullDigit(0),
             )
 
             const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
-                badDebt: toFullDigitStr(1350),
+                badDebt: toFullDigitStr(2550),
             })
         })
 
@@ -552,7 +552,7 @@ describe("ClearingHouse Test", () => {
 
             await expectRevert(
                 clearingHouse.removeMargin(amm.address, toDecimal(removedMargin), { from: alice }),
-                "Margin is not enough",
+                " Margin ratio not meet criteria",
             )
         })
 
