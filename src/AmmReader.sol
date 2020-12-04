@@ -13,6 +13,7 @@ contract AmmReader {
         uint256 tradeLimitRatio;
         uint256 fundingPeriod;
         string quoteAssetSymbol;
+        string baseAssetSymbol;
         bytes32 priceFeedKey;
         address priceFeed;
     }
@@ -23,6 +24,23 @@ contract AmmReader {
             abi.encodeWithSignature("symbol()")
         );
         (Decimal.decimal memory quoteAssetReserve, Decimal.decimal memory baseAssetReserve) = amm.getReserve();
+
+        bytes32 key = amm.priceFeedKey();
+        bytes memory bytesArray = new bytes(32);
+        uint256 end;
+        for (uint256 i; i < 32; i++) {
+            if (key[i] == 0) {
+                break;
+            }
+
+            bytesArray[i] = key[i];
+            end++;
+        }
+        bytes memory symbol = new bytes(end + 1);
+        for (uint256 i; i < end; i++) {
+            symbol[i] = bytesArray[i];
+        }
+
         return
             AmmStates({
                 quoteAssetReserve: quoteAssetReserve.toUint(),
@@ -31,7 +49,8 @@ contract AmmReader {
                 fundingPeriod: amm.fundingPeriod(),
                 priceFeed: address(amm.priceFeed()),
                 priceFeedKey: amm.priceFeedKey(),
-                quoteAssetSymbol: getSymbolSuccess ? abi.decode(quoteAssetSymbolData, (string)) : ""
+                quoteAssetSymbol: getSymbolSuccess ? abi.decode(quoteAssetSymbolData, (string)) : "",
+                baseAssetSymbol: ""
             });
     }
 }

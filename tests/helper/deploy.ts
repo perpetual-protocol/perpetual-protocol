@@ -1,6 +1,7 @@
 import { default as BN } from "bn.js"
 import {
     AmmFakeInstance,
+    AmmReaderInstance,
     ClearingHouseFakeInstance,
     ClearingHouseViewerInstance,
     ERC20FakeInstance,
@@ -17,6 +18,7 @@ import {
 } from "../../types/truffle"
 import {
     deployAmm,
+    deployAmmReader,
     deployClearingHouse,
     deployClearingHouseViewer,
     deployErc20Fake,
@@ -45,6 +47,7 @@ export interface PerpContracts {
     clearingHouse: ClearingHouseFakeInstance
     rewardsDistribution: RewardsDistributionFakeInstance
     amm: AmmFakeInstance
+    ammReader: AmmReaderInstance
     clearingHouseViewer: ClearingHouseViewerInstance
     inflationMonitor: InflationMonitorFakeInstance
     minter: MinterInstance
@@ -154,6 +157,8 @@ export async function fullDeploy(args: ContractDeployArgs): Promise<PerpContract
         spreadRatio,
     })
 
+    const ammReader = await deployAmmReader()
+
     await amm.setGlobalShutdown(insuranceFund.address)
     await amm.setCounterParty(clearingHouse.address)
     await insuranceFund.addAmm(amm.address)
@@ -183,6 +188,7 @@ export async function fullDeploy(args: ContractDeployArgs): Promise<PerpContract
         clearingHouse,
         rewardsDistribution,
         amm,
+        ammReader,
         clearingHouseViewer,
         inflationMonitor,
         minter,
