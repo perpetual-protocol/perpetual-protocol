@@ -1000,12 +1000,11 @@ contract ClearingHouse is
         Position memory position = adjustPositionForLiquidityChanged(_amm, _trader);
         (
             Decimal.decimal memory remainMargin,
-            Decimal.decimal memory badDebt,
+            ,
             SignedDecimal.signedDecimal memory latestCumulativePremiumFraction
         ) = calcRemainMarginWithFundingPayment(_amm, position, _margin);
 
         // update position
-        require(badDebt.toUint() == 0, "Margin is not enough");
         position.margin = remainMargin;
         position.lastUpdatedCumulativePremiumFraction = latestCumulativePremiumFraction;
         setPosition(_amm, _trader, position);
