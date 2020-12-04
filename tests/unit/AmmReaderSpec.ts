@@ -1,12 +1,16 @@
 import { web3 } from "@nomiclabs/buidler"
 import { default as BN } from "bn.js"
-import { expect } from "chai"
+import { expect, use } from "chai"
 import { AmmFakeInstance, AmmReaderInstance, ERC20FakeInstance, L2PriceFeedMockInstance } from "../../types/truffle"
+import { assertionHelper } from "../helper/assertion-plugin"
 import { deployAmm, deployAmmReader, deployErc20Fake, deployL2MockPriceFeed } from "../helper/contract"
 import { toFullDigit } from "../helper/number"
 
+use(assertionHelper)
+
 describe.only("AmmReader Unit Test", () => {
     const ETH_PRICE = 100
+    const ETH_BYTES32 = "0x4554480000000000000000000000000000000000000000000000000000000000"
 
     let amm: AmmFakeInstance
     let ammReader: AmmReaderInstance
@@ -43,13 +47,13 @@ describe.only("AmmReader Unit Test", () => {
             priceFeedKey,
             priceFeed,
         } = await ammReader.getAmmStates(amm.address)
-        expect(quoteAssetReserve).to.deep.eq(1000)
-        expect(baseAssetReserve).to.deep.eq(toFullDigit(100))
-        expect(tradeLimitRatio).to.eq(toFullDigit(0.9))
+        expect(quoteAssetReserve).to.eq(toFullDigitStr(1000))
+        expect(baseAssetReserve).to.eq(toFullDigitStr(100))
+        expect(tradeLimitRatio).to.eq(toFullDigitStr(0.9))
         expect(fundingPeriod).to.eq("3600")
         expect(quoteAssetSymbol).to.eq("symbol")
-        expect(baseAssetSymbol).to.eq("")
-        expect(priceFeedKey).to.eq("ETH")
+        expect(baseAssetSymbol).to.eq("ETH")
+        expect(priceFeedKey).to.eq(ETH_BYTES32)
         expect(priceFeed).to.eq(l2PriceFeed.address)
     })
 })

@@ -25,20 +25,14 @@ contract AmmReader {
         );
         (Decimal.decimal memory quoteAssetReserve, Decimal.decimal memory baseAssetReserve) = amm.getReserve();
 
-        bytes32 key = amm.priceFeedKey();
-        bytes memory bytesArray = new bytes(32);
-        uint256 end;
-        for (uint256 i; i < 32; i++) {
-            if (key[i] == 0) {
-                break;
-            }
-
-            bytesArray[i] = key[i];
-            end++;
+        bytes32 baseAssetSymbol = amm.priceFeedKey();
+        uint8 length = 0;
+        while (length < 32 && baseAssetSymbol[length] != 0) {
+            length++;
         }
-        bytes memory symbol = new bytes(end + 1);
-        for (uint256 i; i < end; i++) {
-            symbol[i] = bytesArray[i];
+        bytes memory bytesArray = new bytes(length);
+        for (uint256 i = 0; i < 32 && baseAssetSymbol[i] != 0; i++) {
+            bytesArray[i] = baseAssetSymbol[i];
         }
 
         return
@@ -50,7 +44,7 @@ contract AmmReader {
                 priceFeed: address(amm.priceFeed()),
                 priceFeedKey: amm.priceFeedKey(),
                 quoteAssetSymbol: getSymbolSuccess ? abi.decode(quoteAssetSymbolData, (string)) : "",
-                baseAssetSymbol: ""
+                baseAssetSymbol: string(bytesArray)
             });
     }
 }
