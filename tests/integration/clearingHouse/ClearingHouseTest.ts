@@ -434,6 +434,20 @@ describe("ClearingHouse Test", () => {
                 toFullDigit(0),
             )
 
+            const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
+            await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
+                badDebt: toFullDigitStr(1350),
+            })
+        })
+
+        it("has huge funding payment loss that the margin become 0, can add margin but can not remove", async () => {
+            // given the underlying twap price is 21.6, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+
+            // then bob will get 2000% of her position size as fundingPayment
+            // {balance: -187.5, margin: 1200} => {balance: 37.5, margin: 0 (badDebt=1200-2550=-1350)}
             // margin can be added but will still shows 0 until it's larger than bad debt
             // margin can't removed
             await approve(bob, clearingHouse.address, 1)
@@ -445,11 +459,6 @@ describe("ClearingHouse Test", () => {
             expect((await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, bob)).margin).eq(
                 toFullDigit(0),
             )
-
-            const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
-            await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
-                badDebt: toFullDigitStr(1350),
-            })
         })
 
         it("will change nothing if the funding rate is 0", async () => {
