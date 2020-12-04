@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
-
 
 contract AMBBridgeMock {
     address msgSender;
@@ -20,7 +19,11 @@ contract AMBBridgeMock {
 
     // 1st parameter will execute the data of 2nd parameter directly
     // in that way, we could verify our function should be called correctly on the other side.
-    function requireToPassMessage(address _contract, bytes calldata _data, uint256 _gas) external returns (bytes32) {
+    function requireToPassMessage(
+        address _contract,
+        bytes calldata _data,
+        uint256 _gas
+    ) external returns (bytes32) {
         (bool ret, bytes memory _) = _contract.call(_data);
         if (!ret) {
             revert("execute error");

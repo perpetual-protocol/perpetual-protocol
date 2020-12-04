@@ -1,8 +1,7 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
 
 import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-
 
 /// @dev Implements simple fixed point math add, sub, mul and div operations.
 /// @author Alberto Cuesta Cañada
@@ -30,7 +29,11 @@ library DecimalMath {
     }
 
     /// @dev Multiplies x and y, assuming they are both fixed point with `decimals` digits.
-    function muld(uint256 x, uint256 y, uint8 decimals) internal pure returns (uint256) {
+    function muld(
+        uint256 x,
+        uint256 y,
+        uint8 decimals
+    ) internal pure returns (uint256) {
         return x.mul(y).div(unit(decimals));
     }
 
@@ -40,7 +43,11 @@ library DecimalMath {
     }
 
     /// @dev Divides x between y, assuming they are both fixed point with `decimals` digits.
-    function divd(uint256 x, uint256 y, uint8 decimals) internal pure returns (uint256) {
+    function divd(
+        uint256 x,
+        uint256 y,
+        uint8 decimals
+    ) internal pure returns (uint256) {
         return x.mul(unit(decimals)).div(y);
     }
 }
