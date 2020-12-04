@@ -791,9 +791,9 @@ contract ClearingHouse is
             _openNotional.divD(_leverage)
         );
         (
-            SignedDecimal.signedDecimal memory remainMargin,
-            SignedDecimal.signedDecimal memory latestCumulativePremiumFraction,
-            Decimal.decimal memory badDebt
+            Decimal.decimal memory remainMargin,
+            Decimal.decimal memory badDebt,
+            SignedDecimal.signedDecimal memory latestCumulativePremiumFraction
         ) = calcRemainMarginWithFundingPayment(_amm, oldPosition, increaseMarginRequirement);
 
         (, SignedDecimal.signedDecimal memory unrealizedPnl) = getPositionNotionalAndUnrealizedPnl(
@@ -810,7 +810,7 @@ contract ClearingHouse is
         positionResp.marginToVault = increaseMarginRequirement;
         positionResp.position = Position(
             newSize,
-            remainMargin.abs(),
+            remainMargin,
             oldPosition.openNotional.addD(positionResp.exchangedQuoteAssetAmount),
             latestCumulativePremiumFraction,
             liquidityHistoryIndex,
@@ -844,9 +844,9 @@ contract ClearingHouse is
                 ? SignedDecimal.zero()
                 : unrealizedPnl.mulD(positionResp.exchangedPositionSize.abs()).divD(oldPosition.size.abs());
             (
-                SignedDecimal.signedDecimal memory remainMargin,
-                SignedDecimal.signedDecimal memory latestCumulativePremiumFraction,
-                Decimal.decimal memory badDebt
+                Decimal.decimal memory remainMargin,
+                Decimal.decimal memory badDebt,
+                SignedDecimal.signedDecimal memory latestCumulativePremiumFraction
             ) = calcRemainMarginWithFundingPayment(_amm, oldPosition, positionResp.realizedPnl);
 
             positionResp.badDebt = badDebt;
@@ -871,7 +871,7 @@ contract ClearingHouse is
 
             positionResp.position = Position(
                 oldPosition.size.addD(positionResp.exchangedPositionSize),
-                remainMargin.abs(),
+                remainMargin,
                 remainOpenNotional.abs(),
                 latestCumulativePremiumFraction,
                 oldPosition.liquidityHistoryIndex,
@@ -951,17 +951,17 @@ contract ClearingHouse is
             _trader,
             PnlCalcOption.SPOT_PRICE
         );
-        (
-            SignedDecimal.signedDecimal memory remainMargin,
-            ,
-            Decimal.decimal memory badDebt
-        ) = calcRemainMarginWithFundingPayment(_amm, oldPosition, unrealizedPnl);
+        (Decimal.decimal memory remainMargin, Decimal.decimal memory badDebt, ) = calcRemainMarginWithFundingPayment(
+            _amm,
+            oldPosition,
+            unrealizedPnl
+        );
 
         positionResp.exchangedPositionSize = oldPositionSize.mulScalar(-1);
         positionResp.realizedPnl = unrealizedPnl;
         positionResp.unrealizedPnlAfter = SignedDecimal.zero();
         positionResp.badDebt = badDebt;
-        positionResp.marginToVault = remainMargin.mulScalar(-1);
+        positionResp.marginToVault = MixedDecimal.fromDecimal(remainMargin).mulScalar(-1);
         positionResp.exchangedQuoteAssetAmount = _amm.swapOutput(
             oldPositionSize.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
             oldPositionSize.abs(),
@@ -999,14 +999,14 @@ contract ClearingHouse is
         // update margin part in personal position, including funding payment, and get new margin
         Position memory position = adjustPositionForLiquidityChanged(_amm, _trader);
         (
-            SignedDecimal.signedDecimal memory remainMargin,
-            SignedDecimal.signedDecimal memory latestCumulativePremiumFraction,
-            Decimal.decimal memory badDebt
+            Decimal.decimal memory remainMargin,
+            Decimal.decimal memory badDebt,
+            SignedDecimal.signedDecimal memory latestCumulativePremiumFraction
         ) = calcRemainMarginWithFundingPayment(_amm, position, _margin);
 
         // update position
-        require(!remainMargin.isNegative() && badDebt.toUint() == 0, "Margin is not enough");
-        position.margin = remainMargin.abs();
+        require(badDebt.toUint() == 0, "Margin is not enough");
+        position.margin = remainMargin;
         position.lastUpdatedCumulativePremiumFraction = latestCumulativePremiumFraction;
         setPosition(_amm, _trader, position);
 
@@ -1172,25 +1172,31 @@ contract ClearingHouse is
         private
         view
         returns (
-            SignedDecimal.signedDecimal memory remainMargin,
-            SignedDecimal.signedDecimal memory latestCumulativePremiumFraction,
-            Decimal.decimal memory badDebt
+            Decimal.decimal memory remainMargin,
+            Decimal.decimal memory badDebt,
+            SignedDecimal.signedDecimal memory latestCumulativePremiumFraction
         )
     {
         // calculate funding payment
         latestCumulativePremiumFraction = getLatestCumulativePremiumFraction(_amm);
-        SignedDecimal.signedDecimal memory fundingPayment = _oldPosition.size.toInt() == 0
-            ? SignedDecimal.zero()
-            : latestCumulativePremiumFraction
+        SignedDecimal.signedDecimal memory fundingPayment;
+        if (_oldPosition.size.toInt() != 0) {
+            fundingPayment = latestCumulativePremiumFraction
                 .subD(_oldPosition.lastUpdatedCumulativePremiumFraction)
                 .mulD(_oldPosition.size)
                 .mulScalar(-1);
+        }
 
         // calculate remain margin
-        remainMargin = fundingPayment.addD(_oldPosition.margin).addD(_marginDelta);
-        if (remainMargin.toInt() < 0) {
-            badDebt = remainMargin.abs();
-            remainMargin = SignedDecimal.zero();
+        SignedDecimal.signedDecimal memory signedRemainMargin = fundingPayment.addD(_oldPosition.margin).addD(
+            _marginDelta
+        );
+
+        // if remain margin is negative, set to zero and leave the rest to bad debt
+        if (signedRemainMargin.toInt() < 0) {
+            badDebt = signedRemainMargin.abs();
+        } else {
+            remainMargin = signedRemainMargin.abs();
         }
     }
 
