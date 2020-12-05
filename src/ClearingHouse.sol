@@ -264,11 +264,10 @@ contract ClearingHouse is
         requireNonZeroInput(_addedMargin);
 
         // update margin part in personal position
-        address trader = _msgSender();
-        updateMargin(_amm, trader, MixedDecimal.fromDecimal(_addedMargin));
+        updateMargin(_amm, MixedDecimal.fromDecimal(_addedMargin));
 
         // transfer token from trader
-        _transferFrom(_amm.quoteAsset(), trader, address(this), _addedMargin);
+        _transferFrom(_amm.quoteAsset(), _msgSender(), address(this), _addedMargin);
     }
 
     /**
@@ -282,14 +281,13 @@ contract ClearingHouse is
         requireNonZeroInput(_removedMargin);
 
         // update margin part in personal position, and get new margin
-        address trader = _msgSender();
-        updateMargin(_amm, trader, MixedDecimal.fromDecimal(_removedMargin).mulScalar(-1));
+        updateMargin(_amm, MixedDecimal.fromDecimal(_removedMargin).mulScalar(-1));
 
         // check margin ratio
-        requireMoreMarginRatio(getMarginRatio(_amm, trader), initMarginRatio, true);
+        requireMoreMarginRatio(getMarginRatio(_amm, _msgSender()), initMarginRatio, true);
 
         // transfer token back to trader
-        withdraw(_amm.quoteAsset(), trader, _removedMargin);
+        withdraw(_amm.quoteAsset(), _msgSender(), _removedMargin);
     }
 
     /**
@@ -991,26 +989,15 @@ contract ClearingHouse is
     }
 
     // ensure the caller already check the inputs
-    function updateMargin(
-        IAmm _amm,
-        address _trader,
-        SignedDecimal.signedDecimal memory _margin
-    ) private returns (Decimal.decimal memory) {
-        // update margin part in personal position, including funding payment, and get new margin
-        Position memory position = adjustPositionForLiquidityChanged(_amm, _trader);
-        (
-            Decimal.decimal memory remainMargin,
-            ,
-            SignedDecimal.signedDecimal memory latestCumulativePremiumFraction
-        ) = calcRemainMarginWithFundingPayment(_amm, position, _margin);
-
-        // update position
-        position.margin = remainMargin;
-        position.lastUpdatedCumulativePremiumFraction = latestCumulativePremiumFraction;
-        setPosition(_amm, _trader, position);
-
-        emit MarginChanged(_trader, address(_amm), _margin.toInt());
-        return position.margin;
+    function updateMargin(IAmm _amm, SignedDecimal.signedDecimal memory _margin) private {
+        // update margin part in personal position and get new margin, but without realizing the funding payment
+        address trader = _msgSender();
+        Position memory position = adjustPositionForLiquidityChanged(_amm, trader);
+        SignedDecimal.signedDecimal memory sumMargin = _margin.addD(position.margin);
+        require(sumMargin.toInt() > 0, "margin is not enough");
+        position.margin = sumMargin.abs();
+        setPosition(_amm, trader, position);
+        emit MarginChanged(trader, address(_amm), _margin.toInt());
     }
 
     function transferFee(
