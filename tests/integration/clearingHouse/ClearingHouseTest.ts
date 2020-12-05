@@ -467,7 +467,7 @@ describe("ClearingHouse Test", () => {
             // margin can't removed
             await expectRevert(
                 clearingHouse.removeMargin(amm.address, toDecimal(1), { from: bob }),
-                "Margin ratio not meet criteria",
+                "margin is not enough",
             )
         })
 
@@ -582,7 +582,7 @@ describe("ClearingHouse Test", () => {
 
             await expectRevert(
                 clearingHouse.removeMargin(amm.address, toDecimal(removedMargin), { from: alice }),
-                " Margin ratio not meet criteria",
+                "revert margin is not enough",
             )
         })
 
