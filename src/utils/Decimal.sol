@@ -35,7 +35,6 @@ library Decimal {
         } else if (x.d < y.d) {
             return -1;
         }
-        return 0;
     }
 
     /// @dev add two decimals
