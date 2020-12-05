@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
@@ -635,7 +635,7 @@ contract ClearingHouse is
     //
 
     /**
-     * @notice get margin ratio, marginRatio = (unrealized Pnl + margin) / openNotional
+     * @notice get margin ratio, marginRatio = (margin + funding payments + unrealized Pnl) / openNotional
      * use spot and twap price to calculate unrealized Pnl, final unrealized Pnl depends on which one is higher
      * @param _amm IAmm address
      * @param _trader trader address
@@ -655,7 +655,13 @@ contract ClearingHouse is
         SignedDecimal.signedDecimal memory unrealizedPnl = spotPricePnl.toInt() > twapPricePnl.toInt()
             ? spotPricePnl
             : twapPricePnl;
-        return unrealizedPnl.addD(position.margin).divD(position.openNotional);
+
+        (
+            SignedDecimal.signedDecimal memory remainMargin,
+            ,
+            Decimal.decimal memory badDebt
+        ) = calcRemainMarginWithFundingPayment(_amm, position, unrealizedPnl);
+        return remainMargin.subD(badDebt).divD(position.openNotional);
     }
 
     /**

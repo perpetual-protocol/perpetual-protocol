@@ -94,10 +94,10 @@ export class DeployConfig {
     // clearing house
     readonly initMarginRequirement = BigNumber.from(5)
         .mul(DEFAULT_DIGITS)
-        .div(100) // 5%
+        .div(100) // 5% - 20x
     readonly maintenanceMarginRequirement = BigNumber.from(25)
         .mul(DEFAULT_DIGITS)
-        .div(1000) // 2.5%
+        .div(1000) // 2.5% - 40x
     readonly liquidationFeeRatio = BigNumber.from(125)
         .mul(DEFAULT_DIGITS)
         .div(10000) // 1.25%

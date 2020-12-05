@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
 import "../utils/Decimal.sol";
-
 
 contract DecimalFake {
     using Decimal for Decimal.decimal;
