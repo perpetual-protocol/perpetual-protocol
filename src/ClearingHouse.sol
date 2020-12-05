@@ -264,10 +264,15 @@ contract ClearingHouse is
         requireNonZeroInput(_addedMargin);
 
         // update margin part in personal position
-        updateMargin(_amm, MixedDecimal.fromDecimal(_addedMargin));
+        address trader = _msgSender();
+        Position memory position = adjustPositionForLiquidityChanged(_amm, trader);
+        position.margin = position.margin.addD(_addedMargin);
+        setPosition(_amm, trader, position);
 
         // transfer token from trader
-        _transferFrom(_amm.quoteAsset(), _msgSender(), address(this), _addedMargin);
+        _transferFrom(_amm.quoteAsset(), trader, address(this), _addedMargin);
+
+        emit MarginChanged(trader, address(_amm), int256(_addedMargin.toUint()));
     }
 
     /**
@@ -280,14 +285,30 @@ contract ClearingHouse is
         requireAmm(_amm, true);
         requireNonZeroInput(_removedMargin);
 
-        // update margin part in personal position, and get new margin
-        updateMargin(_amm, MixedDecimal.fromDecimal(_removedMargin).mulScalar(-1));
+        // update margin part in personal position
+        address trader = _msgSender();
+        Position memory position = adjustPositionForLiquidityChanged(_amm, trader);
+
+        // realize funding payment if there's no bad debt
+        SignedDecimal.signedDecimal memory marginDelta = MixedDecimal.fromDecimal(_removedMargin).mulScalar(-1);
+        (
+            Decimal.decimal memory remainMargin,
+            Decimal.decimal memory badDebt,
+            SignedDecimal.signedDecimal memory latestCumulativePremiumFraction
+        ) = calcRemainMarginWithFundingPayment(_amm, position, marginDelta);
+        require(badDebt.toUint() == 0, "margin is not enough");
+
+        position.margin = remainMargin;
+        position.lastUpdatedCumulativePremiumFraction = latestCumulativePremiumFraction;
+        setPosition(_amm, trader, position);
 
         // check margin ratio
         requireMoreMarginRatio(getMarginRatio(_amm, _msgSender()), initMarginRatio, true);
 
         // transfer token back to trader
         withdraw(_amm.quoteAsset(), _msgSender(), _removedMargin);
+
+        emit MarginChanged(trader, address(_amm), marginDelta.toInt());
     }
 
     /**
@@ -656,12 +677,12 @@ contract ClearingHouse is
             ? spotPricePnl
             : twapPricePnl;
 
-        (
-            SignedDecimal.signedDecimal memory remainMargin,
-            ,
-            Decimal.decimal memory badDebt
-        ) = calcRemainMarginWithFundingPayment(_amm, position, unrealizedPnl);
-        return remainMargin.subD(badDebt).divD(position.openNotional);
+        (Decimal.decimal memory remainMargin, Decimal.decimal memory badDebt, ) = calcRemainMarginWithFundingPayment(
+            _amm,
+            position,
+            unrealizedPnl
+        );
+        return MixedDecimal.fromDecimal(remainMargin).subD(badDebt).divD(position.openNotional);
     }
 
     /**
@@ -988,18 +1009,6 @@ contract ClearingHouse is
             return outputAmount.mulScalar(-1);
         }
         return outputAmount;
-    }
-
-    // ensure the caller already check the inputs
-    function updateMargin(IAmm _amm, SignedDecimal.signedDecimal memory _margin) private {
-        // update margin part in personal position and get new margin, but without realizing the funding payment
-        address trader = _msgSender();
-        Position memory position = adjustPositionForLiquidityChanged(_amm, trader);
-        SignedDecimal.signedDecimal memory sumMargin = _margin.addD(position.margin);
-        require(sumMargin.toInt() > 0, "margin is not enough");
-        position.margin = sumMargin.abs();
-        setPosition(_amm, trader, position);
-        emit MarginChanged(trader, address(_amm), _margin.toInt());
     }
 
     function transferFee(
