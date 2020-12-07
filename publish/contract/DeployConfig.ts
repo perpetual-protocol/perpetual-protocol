@@ -34,7 +34,7 @@ export const BTC_USD_AMM: AmmConfig = {
     deployArgs: {
         // base * price
         quoteAssetReserve: BigNumber.from(10000000).mul(DEFAULT_DIGITS),
-        baseAssetReserve: BigNumber.from(100).mul(DEFAULT_DIGITS), // 100 BTC
+        baseAssetReserve: BigNumber.from(500).mul(DEFAULT_DIGITS), // 500 BTC
         tradeLimitRatio: BigNumber.from(90)
             .mul(DEFAULT_DIGITS)
             .div(100), // 90% trading limit ratio
@@ -52,17 +52,17 @@ export const BTC_USD_AMM: AmmConfig = {
     },
     properties: {
         maxHoldingBaseAsset: BigNumber.from(DEFAULT_DIGITS)
-            .mul(5)
-            .div(100), // 0.05 BTC ~= $1000 USD,
-        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(100000), // $100K
+            .mul(25)
+            .div(100), // 0.25 BTC ~= $5000 USD,
+        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(500000), // $500K
     },
 }
 
 export const ETH_USD_AMM: AmmConfig = {
     deployArgs: {
         // base * price
-        quoteAssetReserve: BigNumber.from(5000000).mul(DEFAULT_DIGITS),
-        baseAssetReserve: BigNumber.from(2000).mul(DEFAULT_DIGITS), // 2000 ETH
+        quoteAssetReserve: BigNumber.from(10000000).mul(DEFAULT_DIGITS),
+        baseAssetReserve: BigNumber.from(20000).mul(DEFAULT_DIGITS), // 20000 ETH
         tradeLimitRatio: BigNumber.from(90)
             .mul(DEFAULT_DIGITS)
             .div(100), // 90% trading limit ratio
@@ -79,8 +79,8 @@ export const ETH_USD_AMM: AmmConfig = {
             .div(10000), // 0.1%
     },
     properties: {
-        maxHoldingBaseAsset: DEFAULT_DIGITS.mul(2), // 2 ETH ~= $1000 USD
-        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(100000), // $100K
+        maxHoldingBaseAsset: DEFAULT_DIGITS.mul(10), // 10 ETH ~= $5000 USD
+        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(500000), // $500K
     },
 }
 
@@ -92,12 +92,12 @@ export class DeployConfig {
     readonly chainlinkMap: Record<string, string>
 
     // clearing house
-    readonly initMarginRequirement = BigNumber.from(5)
+    readonly initMarginRequirement = BigNumber.from(1)
         .mul(DEFAULT_DIGITS)
-        .div(100) // 5% - 20x
-    readonly maintenanceMarginRequirement = BigNumber.from(25)
+        .div(10) // 10% - 10x
+    readonly maintenanceMarginRequirement = BigNumber.from(625)
         .mul(DEFAULT_DIGITS)
-        .div(1000) // 2.5% - 40x
+        .div(10000) // 6.25% - 16x
     readonly liquidationFeeRatio = BigNumber.from(125)
         .mul(DEFAULT_DIGITS)
         .div(10000) // 1.25%
