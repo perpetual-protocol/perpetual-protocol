@@ -1,10 +1,9 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
 import "../../utils/SignedDecimal.sol";
 import "../../Amm.sol";
-
 
 contract AmmMock {
     using SafeMath for uint256;
@@ -74,10 +73,11 @@ contract AmmMock {
         return (quoteAssetReserve, baseAssetReserve);
     }
 
-    function swapInput(Amm.Dir, Decimal.decimal calldata, Decimal.decimal calldata)
-        external
-        returns (Decimal.decimal memory)
-    {
+    function swapInput(
+        Amm.Dir,
+        Decimal.decimal calldata,
+        Decimal.decimal calldata
+    ) external returns (Decimal.decimal memory) {
         return inputPrice;
     }
 

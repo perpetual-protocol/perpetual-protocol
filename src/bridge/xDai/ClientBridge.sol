@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
@@ -18,6 +18,11 @@ contract ClientBridge is BaseBridge, BaseRelayRecipient {
     //**********************************************************//
     //  The order of above state variables can not be changed   //
     //**********************************************************//
+
+    //◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤ add state variables below ◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤//
+
+    //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
+    uint256[50] private __gap;
 
     //
     // PUBLIC

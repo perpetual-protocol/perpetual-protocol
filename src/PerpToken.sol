@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./utils/PerpFiOwnable.sol";
-
 
 contract PerpToken is ERC20, PerpFiOwnable {
     mapping(address => bool) public minters;

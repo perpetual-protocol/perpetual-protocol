@@ -1,7 +1,6 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
-
 
 interface MultiSigWallet {
     /*
@@ -28,9 +27,11 @@ interface MultiSigWallet {
 
     function changeRequirement(uint256 _required) external;
 
-    function submitTransaction(address destination, uint256 value, bytes calldata data)
-        external
-        returns (uint256 transactionId);
+    function submitTransaction(
+        address destination,
+        uint256 value,
+        bytes calldata data
+    ) external returns (uint256 transactionId);
 
     function confirmTransaction(uint256 transactionId) external;
 
@@ -51,7 +52,10 @@ interface MultiSigWallet {
 
     function getConfirmations(uint256 transactionId) external returns (address[] memory _confirmations);
 
-    function getTransactionIds(uint256 from, uint256 to, bool pending, bool executed)
-        external
-        returns (uint256[] memory _transactionIds);
+    function getTransactionIds(
+        uint256 from,
+        uint256 to,
+        bool pending,
+        bool executed
+    ) external returns (uint256[] memory _transactionIds);
 }
