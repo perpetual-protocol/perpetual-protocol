@@ -8,7 +8,7 @@ import { toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 
-describe.only("AmmReader Unit Test", () => {
+describe("AmmReader Unit Test", () => {
     const ETH_PRICE = 100
     const ETH_BYTES32 = "0x4554480000000000000000000000000000000000000000000000000000000000"
 
