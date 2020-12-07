@@ -11,6 +11,7 @@ import { SignedDecimal } from "./utils/SignedDecimal.sol";
 import { MixedDecimal } from "./utils/MixedDecimal.sol";
 import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 import { IAmm } from "./interface/IAmm.sol";
+import "@nomiclabs/buidler/console.sol";
 
 contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     using SafeMath for uint256;
@@ -295,9 +296,17 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         quoteAssetReserve = quoteAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
         baseAssetReserve = baseAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
 
+        console.log("\n\n## migrateLiquidity");
+        console.log("quoteAssetBeforeAddingLiquidity");
+        console.log(quoteAssetBeforeAddingLiquidity.toUint());
+        console.log("baseAssetBeforeAddingLiquidity");
+        console.log(baseAssetBeforeAddingLiquidity.toUint());
+
         // MUST be called after liquidity migrated
         // baseAssetDeltaThisFundingPeriod is total position size(of a funding period) owned by Amm
         // That's why need to mulScalar(-1) when calculating the migrated size.
+        console.log("baseAssetDeltaThisFundingPeriod");
+        console.log(baseAssetDeltaThisFundingPeriod.toUint());
         baseAssetDeltaThisFundingPeriod = calcBaseAssetAfterLiquidityMigration(
             baseAssetDeltaThisFundingPeriod.mulScalar(-1),
             quoteAssetBeforeAddingLiquidity,
@@ -305,11 +314,15 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         )
             .mulScalar(-1);
 
+        console.log("totalPositionSizeBefore");
+        console.log(totalPositionSizeBefore.toUint());
         totalPositionSize = calcBaseAssetAfterLiquidityMigration(
             totalPositionSizeBefore,
             quoteAssetBeforeAddingLiquidity,
             baseAssetBeforeAddingLiquidity
         );
+        console.log("totalPositionSize");
+        console.log(totalPositionSize.toUint());
 
         // update snapshot
         liquidityChangedSnapshots.push(
@@ -344,10 +357,18 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             _fromBaseReserve
         );
 
-        // calculate and apply the required size on the new curve
+        // calculate and apply the required size on the new
+        console.log("\n\n## calcBaseAssetAfterLiquidityMigration");
+        console.log("isPositiveValue");
+        console.log(isPositiveValue);
+        console.log("calcBaseAssetAfterLiquidityMigration: posNotional");
+        console.log(posNotional.toUint());
+
         SignedDecimal.signedDecimal memory newBaseAsset = MixedDecimal.fromDecimal(
             getInputPrice(isPositiveValue ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM, posNotional)
         );
+        console.log("newBaseAsset");
+        console.log(posNotional.toUint());
         return newBaseAsset.mulScalar(isPositiveValue ? 1 : int256(-1));
     }
 
@@ -492,6 +513,15 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         override
         returns (Decimal.decimal memory)
     {
+        console.log("\n\n## getInputPrice");
+        console.log("_dir");
+        console.log(_dir == Dir.ADD_TO_AMM ? "ADD_TO_AMM" : "REMOVE_FROM_AMM");
+        console.log("quoteAssetReserve");
+        console.log(_quoteAssetAmount.toUint());
+        console.log("_quoteAssetPoolAmount");
+        console.log(quoteAssetReserve.toUint());
+        console.log("baseAssetReserve");
+        console.log(baseAssetReserve.toUint());
         return getInputPriceWithReserves(_dir, _quoteAssetAmount, quoteAssetReserve, baseAssetReserve);
     }
 

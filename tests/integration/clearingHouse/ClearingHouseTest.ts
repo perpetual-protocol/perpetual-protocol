@@ -2426,6 +2426,24 @@ describe("ClearingHouse Test", () => {
             expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).false
             expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).false
         })
+
+        it.only("can't reduce liquidity to smaller than net position notional (long)", async () => {
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            await amm.migrateLiquidity(toDecimal("0.0001"), toDecimal(0))
+        })
+
+        it.only("can't reduce liquidity to smaller than a ? criteria (short)", async () => {
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            await amm.migrateLiquidity(toDecimal("0.000000000001"), toDecimal(0))
+            await clearingHouse.openPosition(amm.address, Side.SELL, { d: "1" }, toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
+        })
     })
 
     describe("pausable functions", () => {
