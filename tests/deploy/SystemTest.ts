@@ -30,8 +30,9 @@ const XDAI_NAME = "xdai"
 const XDAI_CHAINID = 100
 const STAGE = "production"
 
-// TODO move to another repo and executing in a regular basis
-describe("SystemTest Spec", () => {
+// TODO: activate this after deployment
+// for current production.json, we already shut down the amm and remove token from insurance fund
+describe.skip("SystemTest Spec", () => {
     const l1Provider = ethers.getDefaultProvider(LAYER_1)
     const l2Provider = new ethers.providers.JsonRpcProvider(XDAI_URL, { name: XDAI_NAME, chainId: XDAI_CHAINID })
     const settingsDao: SettingsDao = new SettingsDao(STAGE)
