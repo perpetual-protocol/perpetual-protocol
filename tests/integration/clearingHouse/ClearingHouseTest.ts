@@ -403,7 +403,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("has huge funding payment profit that doesn't need margin anymore", async () => {
-            // given the underlying twap price is 11.6, and current snapShot price is 400B/250Q = $1.6
+            // given the underlying twap price is 21.6, and current snapShot price is 400B/250Q = $1.6
             await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
             await gotoNextFundingTime()
             await clearingHouse.payFunding(amm.address)
@@ -420,6 +420,75 @@ describe("ClearingHouse Test", () => {
             expect(await clearingHouseViewer.getPersonalBalanceWithFundingPayment(quoteToken.address, alice)).eq(
                 toFullDigit(650),
             )
+        })
+
+        it("has huge funding payment loss that the margin become 0 with bad debt of long position", async () => {
+            // given the underlying twap price is 21.6, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+
+            // then bob will get 2000% of her position size as fundingPayment
+            // funding payment: -187.5 x 2000% = -3750, margin is 1200 so bad debt = -3750 + 1200 = 2550
+            expect((await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, bob)).margin).eq(
+                toFullDigit(0),
+            )
+
+            const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
+            await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
+                badDebt: toFullDigitStr(2550),
+            })
+        })
+
+        it("has huge funding payment loss that the margin become 0, can add margin", async () => {
+            // given the underlying twap price is 21.6, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+
+            // then bob will get 2000% of her position size as fundingPayment
+            // funding payment: -187.5 x 2000% = -3750, margin is 1200 so bad debt = -3750 + 1200 = 2550
+            // margin can be added but will still shows 0 until it's larger than bad debt
+            await approve(bob, clearingHouse.address, 1)
+            await clearingHouse.addMargin(amm.address, toDecimal(1), { from: bob })
+            expect((await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, bob)).margin).eq(
+                toFullDigit(0),
+            )
+        })
+
+        it("has huge funding payment loss that the margin become 0, can not remove margin", async () => {
+            // given the underlying twap price is 21.6, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+
+            // then bob will get 2000% of her position size as fundingPayment
+            // funding payment: -187.5 x 2000% = -3750, margin is 1200 so bad debt = -3750 + 1200 = 2550
+            // margin can't removed
+            await expectRevert(
+                clearingHouse.removeMargin(amm.address, toDecimal(1), { from: bob }),
+                "margin is not enough",
+            )
+        })
+
+        it("reduce bad debt after adding margin to a underwater position", async () => {
+            // given the underlying twap price is 21.6, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+
+            // then bob will get 2000% of her position size as fundingPayment
+            // funding payment: -187.5 x 2000% = -3750, margin is 1200 so bad debt = -3750 + 1200 = 2550
+            // margin can be added but will still shows 0 until it's larger than bad debt
+            // margin can't removed
+            await approve(bob, clearingHouse.address, 10)
+            await clearingHouse.addMargin(amm.address, toDecimal(10), { from: bob })
+
+            // badDebt 2550 - 10 margin = 2540
+            const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
+            await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
+                badDebt: toFullDigitStr(2540),
+            })
         })
 
         it("will change nothing if the funding rate is 0", async () => {
@@ -513,7 +582,7 @@ describe("ClearingHouse Test", () => {
 
             await expectRevert(
                 clearingHouse.removeMargin(amm.address, toDecimal(removedMargin), { from: alice }),
-                "Margin is not enough",
+                "revert margin is not enough",
             )
         })
 
