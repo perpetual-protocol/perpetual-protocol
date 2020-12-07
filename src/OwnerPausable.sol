@@ -19,5 +19,5 @@ contract OwnerPausableUpgradeSafe is PerpFiOwnableUpgrade, PausableUpgradeSafe {
         _unpause();
     }
 
-    uint256[49] private __gap;
+    uint256[50] private __gap;
 }
