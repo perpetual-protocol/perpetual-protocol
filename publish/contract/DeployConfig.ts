@@ -79,7 +79,7 @@ export const ETH_USD_AMM: AmmConfig = {
             .div(10000), // 0.1%
     },
     properties: {
-        maxHoldingBaseAsset: DEFAULT_DIGITS.mul(2), // 10 ETH ~= $5000 USD
+        maxHoldingBaseAsset: DEFAULT_DIGITS.mul(10), // 10 ETH ~= $5000 USD
         openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(500000), // $500K
     },
 }
