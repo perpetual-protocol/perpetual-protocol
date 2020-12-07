@@ -263,6 +263,15 @@ describe.skip("SystemTest Spec", () => {
             it("own by gov", async () => {
                 expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
             })
+
+            it("has correct config", async () => {
+                expect(await instance.tradeLimitRatio()).eq(ethers.utils.parseEther("0.9").toString())
+                expect(await instance.fluctuationLimitRatio()).eq(ethers.utils.parseEther("1.2").toString())
+                expect(await instance.tollRatio()).eq(ethers.utils.parseEther("0").toString())
+                expect(await instance.spreadRatio()).eq(ethers.utils.parseEther("0.1").toString())
+                expect(await instance.getMaxHoldingBaseAsset()).eq(ethers.utils.parseEther("10").toString())
+                expect(await instance.getOpenInterestNotionalCap()).eq(ethers.utils.parseEther("500000").toString())
+            })
         })
 
         describe("BTCUSDC", async () => {
@@ -285,6 +294,15 @@ describe.skip("SystemTest Spec", () => {
 
             it("own by gov", async () => {
                 expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+            })
+
+            it("has correct config", async () => {
+                expect(await instance.tradeLimitRatio()).eq(ethers.utils.parseEther("0.9").toString())
+                expect(await instance.fluctuationLimitRatio()).eq(ethers.utils.parseEther("1.2").toString())
+                expect(await instance.tollRatio()).eq(ethers.utils.parseEther("0").toString())
+                expect(await instance.spreadRatio()).eq(ethers.utils.parseEther("0.1").toString())
+                expect(await instance.getMaxHoldingBaseAsset()).eq(ethers.utils.parseEther("0.25").toString())
+                expect(await instance.getOpenInterestNotionalCap()).eq(ethers.utils.parseEther("500000").toString())
             })
         })
     })
