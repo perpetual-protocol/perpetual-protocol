@@ -303,10 +303,10 @@ contract ClearingHouse is
         setPosition(_amm, trader, position);
 
         // check margin ratio
-        requireMoreMarginRatio(getMarginRatio(_amm, _msgSender()), initMarginRatio, true);
+        requireMoreMarginRatio(getMarginRatio(_amm, trader), initMarginRatio, true);
 
         // transfer token back to trader
-        withdraw(_amm.quoteAsset(), _msgSender(), _removedMargin);
+        withdraw(_amm.quoteAsset(), trader, _removedMargin);
 
         emit MarginChanged(trader, address(_amm), marginDelta.toInt());
     }
@@ -347,7 +347,9 @@ contract ClearingHouse is
         }
 
         // transfer token based on settledValue. no insurance fund support
-        _transfer(_amm.quoteAsset(), trader, settledValue);
+        if (settledValue.toUint() > 0) {
+            _transfer(_amm.quoteAsset(), trader, settledValue);
+        }
 
         // emit event
         emit PositionSettled(address(_amm), trader, settledValue.toUint());
