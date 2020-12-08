@@ -2490,6 +2490,17 @@ describe("ClearingHouse Test", () => {
                 const r = await amm.migrateLiquidity(toDecimal("100"), toDecimal(0))
                 await expectEvent.inTransaction(r.tx, amm, "LiquidityChanged")
             })
+
+            it("can't reduce liquidity to smaller than a ? criteria (short)", async () => {
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                })
+                await amm.migrateLiquidity({ d: "1" }, toDecimal(0))
+                await clearingHouse.openPosition(amm.address, Side.SELL, { d: "1" }, toDecimal(1), toDecimal(0), {
+                    from: alice,
+                })
+                await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
+            })
         })
     })
 
