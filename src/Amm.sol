@@ -11,7 +11,6 @@ import { SignedDecimal } from "./utils/SignedDecimal.sol";
 import { MixedDecimal } from "./utils/MixedDecimal.sol";
 import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 import { IAmm } from "./interface/IAmm.sol";
-import "@nomiclabs/buidler/console.sol";
 
 contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     using SafeMath for uint256;
@@ -25,6 +24,9 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     // because position decimal rounding error,
     // if the position size is less than IGNORABLE_DIGIT_FOR_SHUTDOWN, it's equal size is 0
     uint256 private constant IGNORABLE_DIGIT_FOR_SHUTDOWN = 100;
+
+    // a margin to prevent from rounding when calc liquidity multiplier limit
+    uint256 private constant MARGIN_FOR_LIQUIDITY_MIGRATION_ROUNDING = 1e9;
 
     //
     // EVENTS
@@ -284,6 +286,9 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     ) external override onlyOwner {
         require(_liquidityMultiplier.toUint() != Decimal.one().toUint(), "multiplier can't be 1");
 
+        // check liquidity multiplier limit, have lower bound for total long position for now.
+        checkLiquidityMultiplierLimit(_liquidityMultiplier);
+
         // #53 fix sandwich attack during liquidity migration
         checkFluctuationLimit(_fluctuationLimitRatio);
 
@@ -296,18 +301,9 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         quoteAssetReserve = quoteAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
         baseAssetReserve = baseAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
 
-        console.log("\n\n## migrateLiquidity");
-        console.log("quoteAssetBeforeAddingLiquidity");
-        console.log(quoteAssetBeforeAddingLiquidity.toUint());
-        console.log("baseAssetBeforeAddingLiquidity");
-        console.log(baseAssetBeforeAddingLiquidity.toUint());
-
         // MUST be called after liquidity migrated
         // baseAssetDeltaThisFundingPeriod is total position size(of a funding period) owned by Amm
         // That's why need to mulScalar(-1) when calculating the migrated size.
-        console.log("baseAssetDeltaThisFundingPeriod");
-        console.log(baseAssetDeltaThisFundingPeriod.toInt() > 0 ? "+" : "-");
-        console.log(baseAssetDeltaThisFundingPeriod.toUint());
         baseAssetDeltaThisFundingPeriod = calcBaseAssetAfterLiquidityMigration(
             baseAssetDeltaThisFundingPeriod.mulScalar(-1),
             quoteAssetBeforeAddingLiquidity,
@@ -315,15 +311,11 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         )
             .mulScalar(-1);
 
-        console.log("totalPositionSizeBefore");
-        console.log(totalPositionSizeBefore.toUint());
         totalPositionSize = calcBaseAssetAfterLiquidityMigration(
             totalPositionSizeBefore,
             quoteAssetBeforeAddingLiquidity,
             baseAssetBeforeAddingLiquidity
         );
-        console.log("totalPositionSize");
-        console.log(totalPositionSize.toUint());
 
         // update snapshot
         liquidityChangedSnapshots.push(
@@ -347,27 +339,22 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             return _baseAssetAmount;
         }
 
-        // bool isPositiveValue = _baseAssetAmount.toInt() > 0 ? true : false;
-        Dir dir = _baseAssetAmount.toInt() > 0 ? Dir.ADD_TO_AMM : Dir.REMOVE_FROM_AMM;
+        bool isPositiveValue = _baseAssetAmount.toInt() > 0 ? true : false;
 
         // measure the trader position's notional value on the old curve
         // (by simulating closing the position)
         Decimal.decimal memory posNotional = getOutputPriceWithReserves(
-            dir,
+            isPositiveValue ? Dir.ADD_TO_AMM : Dir.REMOVE_FROM_AMM,
             _baseAssetAmount.abs(),
             _fromQuoteReserve,
             _fromBaseReserve
         );
 
-        // calculate and apply the required size on the new
-        console.log("\n\n## calcBaseAssetAfterLiquidityMigration");
-        console.log("posNotional");
-        console.log(posNotional.toUint());
-
-        SignedDecimal.signedDecimal memory newBaseAsset = MixedDecimal.fromDecimal(getInputPrice(dir, posNotional));
-        console.log("newBaseAsset");
-        console.log(newBaseAsset.toUint());
-        return newBaseAsset.mulScalar(dir ? 1 : int256(-1));
+        // calculate and apply the required size on the new curve
+        SignedDecimal.signedDecimal memory newBaseAsset = MixedDecimal.fromDecimal(
+            getInputPrice(isPositiveValue ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM, posNotional)
+        );
+        return newBaseAsset.mulScalar(isPositiveValue ? 1 : int256(-1));
     }
 
     /**
@@ -511,15 +498,6 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         override
         returns (Decimal.decimal memory)
     {
-        console.log("\n\n## getInputPrice");
-        console.log("_dir");
-        console.log(_dir == Dir.ADD_TO_AMM ? "ADD_TO_AMM" : "REMOVE_FROM_AMM");
-        console.log("_quoteAssetAmount");
-        console.log(_quoteAssetAmount.toUint());
-        console.log("quoteAssetReserve");
-        console.log(quoteAssetReserve.toUint());
-        console.log("baseAssetReserve");
-        console.log(baseAssetReserve.toUint());
         return getInputPriceWithReserves(_dir, _quoteAssetAmount, quoteAssetReserve, baseAssetReserve);
     }
 
@@ -970,6 +948,17 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
                 ),
                 "price is over fluctuation limit"
             );
+        }
+    }
+
+    function checkLiquidityMultiplierLimit(Decimal.decimal memory _liquidityMultiplier) internal view {
+        // have lower bound when totalPositionSize is long
+        if (totalPositionSize.toInt() > 0) {
+            Decimal.decimal memory liquidityMultiplierLowerBound = totalPositionSize
+                .addD(Decimal.decimal(MARGIN_FOR_LIQUIDITY_MIGRATION_ROUNDING))
+                .divD(baseAssetReserve)
+                .abs();
+            require(_liquidityMultiplier.cmp(liquidityMultiplierLowerBound) >= 0, "illegal liquidity multiplier");
         }
     }
 
