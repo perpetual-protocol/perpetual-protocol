@@ -1681,7 +1681,7 @@ describe("ClearingHouse Test", () => {
         })
     })
 
-    describe.only("migrate liquidity", () => {
+    describe("migrate liquidity", () => {
         beforeEach(async () => {
             await transfer(admin, carol, 5000)
 
