@@ -306,6 +306,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         // baseAssetDeltaThisFundingPeriod is total position size(of a funding period) owned by Amm
         // That's why need to mulScalar(-1) when calculating the migrated size.
         console.log("baseAssetDeltaThisFundingPeriod");
+        console.log(baseAssetDeltaThisFundingPeriod.toInt() > 0 ? "+" : "-");
         console.log(baseAssetDeltaThisFundingPeriod.toUint());
         baseAssetDeltaThisFundingPeriod = calcBaseAssetAfterLiquidityMigration(
             baseAssetDeltaThisFundingPeriod.mulScalar(-1),
@@ -346,12 +347,13 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             return _baseAssetAmount;
         }
 
-        bool isPositiveValue = _baseAssetAmount.toInt() > 0 ? true : false;
+        // bool isPositiveValue = _baseAssetAmount.toInt() > 0 ? true : false;
+        Dir dir = _baseAssetAmount.toInt() > 0 ? Dir.ADD_TO_AMM : Dir.REMOVE_FROM_AMM;
 
         // measure the trader position's notional value on the old curve
         // (by simulating closing the position)
         Decimal.decimal memory posNotional = getOutputPriceWithReserves(
-            isPositiveValue ? Dir.ADD_TO_AMM : Dir.REMOVE_FROM_AMM,
+            dir,
             _baseAssetAmount.abs(),
             _fromQuoteReserve,
             _fromBaseReserve
@@ -359,17 +361,13 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
         // calculate and apply the required size on the new
         console.log("\n\n## calcBaseAssetAfterLiquidityMigration");
-        console.log("isPositiveValue");
-        console.log(isPositiveValue);
-        console.log("calcBaseAssetAfterLiquidityMigration: posNotional");
+        console.log("posNotional");
         console.log(posNotional.toUint());
 
-        SignedDecimal.signedDecimal memory newBaseAsset = MixedDecimal.fromDecimal(
-            getInputPrice(isPositiveValue ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM, posNotional)
-        );
+        SignedDecimal.signedDecimal memory newBaseAsset = MixedDecimal.fromDecimal(getInputPrice(dir, posNotional));
         console.log("newBaseAsset");
-        console.log(posNotional.toUint());
-        return newBaseAsset.mulScalar(isPositiveValue ? 1 : int256(-1));
+        console.log(newBaseAsset.toUint());
+        return newBaseAsset.mulScalar(dir ? 1 : int256(-1));
     }
 
     /**
@@ -516,9 +514,9 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         console.log("\n\n## getInputPrice");
         console.log("_dir");
         console.log(_dir == Dir.ADD_TO_AMM ? "ADD_TO_AMM" : "REMOVE_FROM_AMM");
-        console.log("quoteAssetReserve");
+        console.log("_quoteAssetAmount");
         console.log(_quoteAssetAmount.toUint());
-        console.log("_quoteAssetPoolAmount");
+        console.log("quoteAssetReserve");
         console.log(quoteAssetReserve.toUint());
         console.log("baseAssetReserve");
         console.log(baseAssetReserve.toUint());
