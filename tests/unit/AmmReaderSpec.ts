@@ -4,7 +4,7 @@ import { expect, use } from "chai"
 import { AmmFakeInstance, AmmReaderInstance, ERC20FakeInstance, L2PriceFeedMockInstance } from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { deployAmm, deployAmmReader, deployErc20Fake, deployL2MockPriceFeed } from "../helper/contract"
-import { toFullDigit } from "../helper/number"
+import { toFullDigit, toFullDigitStr } from "../helper/number"
 
 use(assertionHelper)
 
