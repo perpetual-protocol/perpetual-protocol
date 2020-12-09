@@ -17,7 +17,7 @@ import {
     StakingReserveInstance,
     SupplyScheduleFakeInstance,
     TraderWalletContract,
-    TraderWalletInstance,
+    TraderWalletInstance
 } from "../../../types/truffle"
 import { ClearingHouse } from "../../../types/web3/ClearingHouse"
 import { assertionHelper } from "../../helper/assertion-plugin"
@@ -2428,7 +2428,7 @@ describe("ClearingHouse Test", () => {
         })
 
         // AMM quote : base = 1000 : 100
-        describe("reduce liquidity limitation", () => {
+        describe("limitation of reducing liquidity", () => {
             it("(short) can reduce liquidity when above the limit", async () => {
                 await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(200), toDecimal(1), toDecimal(0), {
                     from: alice,
@@ -2440,7 +2440,7 @@ describe("ClearingHouse Test", () => {
                 await expectEvent.inTransaction(r.tx, amm, "LiquidityChanged")
 
                 // Amm reserves are around 168 : 26.25
-                await clearingHouse.openPosition(amm.address, Side.SELL, { d: "1" }, toDecimal(1), toDecimal(0), {
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
                     from: alice,
                 })
 
