@@ -1205,6 +1205,10 @@ contract ClearingHouse is
         return super._msgSender();
     }
 
+    function _msgData() internal view override(BaseRelayRecipient, ContextUpgradeSafe) returns (bytes memory ret) {
+        return super._msgData();
+    }
+
     //
     // REQUIRE FUNCTIONS
     //
