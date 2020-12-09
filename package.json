@@ -15,6 +15,7 @@
         "pull-metadata": "ts-node --files scripts/pull-metadata.ts",
         "push-metadata": "ts-node --files scripts/push-metadata.ts",
         "dev": "ts-node --files scripts/dev.ts",
+        "status": "ts-node --files scripts/healthCheck.ts",
         "clean": "ts-node --files scripts/clean.ts",
         "lint": "solhint src/**/*.sol"
     },

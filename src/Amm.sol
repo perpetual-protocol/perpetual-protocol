@@ -25,6 +25,9 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     // if the position size is less than IGNORABLE_DIGIT_FOR_SHUTDOWN, it's equal size is 0
     uint256 private constant IGNORABLE_DIGIT_FOR_SHUTDOWN = 100;
 
+    // a margin to prevent from rounding when calc liquidity multiplier limit
+    uint256 private constant MARGIN_FOR_LIQUIDITY_MIGRATION_ROUNDING = 1e9;
+
     //
     // EVENTS
     //
@@ -282,6 +285,10 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         Decimal.decimal calldata _fluctuationLimitRatio
     ) external override onlyOwner {
         require(_liquidityMultiplier.toUint() != Decimal.one().toUint(), "multiplier can't be 1");
+
+        // check liquidity multiplier limit, have lower bound if position size is positive for now.
+        checkLiquidityMultiplierLimit(totalPositionSize, _liquidityMultiplier);
+        checkLiquidityMultiplierLimit(baseAssetDeltaThisFundingPeriod, _liquidityMultiplier);
 
         // #53 fix sandwich attack during liquidity migration
         checkFluctuationLimit(_fluctuationLimitRatio);
@@ -942,6 +949,20 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
                 ),
                 "price is over fluctuation limit"
             );
+        }
+    }
+
+    function checkLiquidityMultiplierLimit(
+        SignedDecimal.signedDecimal memory _positionSize,
+        Decimal.decimal memory _liquidityMultiplier
+    ) internal view {
+        // have lower bound when position size is long
+        if (_positionSize.toInt() > 0) {
+            Decimal.decimal memory liquidityMultiplierLowerBound = _positionSize
+                .addD(Decimal.decimal(MARGIN_FOR_LIQUIDITY_MIGRATION_ROUNDING))
+                .divD(baseAssetReserve)
+                .abs();
+            require(_liquidityMultiplier.cmp(liquidityMultiplierLowerBound) >= 0, "illegal liquidity multiplier");
         }
     }
 

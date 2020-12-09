@@ -627,30 +627,12 @@ contract ClearingHouse is
         }
     }
 
-    function adjustPositionForLiquidityChanged(IAmm _amm, address _trader) public returns (Position memory) {
-        Position memory unadjustedPosition = getUnadjustedPosition(_amm, _trader);
-        if (unadjustedPosition.size.toInt() == 0) {
-            return unadjustedPosition;
-        }
-        uint256 latestLiquidityIndex = _amm.getLiquidityHistoryLength().sub(1);
-        if (unadjustedPosition.liquidityHistoryIndex == latestLiquidityIndex) {
-            return unadjustedPosition;
-        }
-
-        Position memory adjustedPosition = calcPositionAfterLiquidityMigration(
-            _amm,
-            unadjustedPosition,
-            latestLiquidityIndex
-        );
-        setPosition(_amm, _trader, adjustedPosition);
-        emit PositionAdjusted(
-            address(_amm),
-            _trader,
-            adjustedPosition.size.toInt(),
-            unadjustedPosition.liquidityHistoryIndex,
-            adjustedPosition.liquidityHistoryIndex
-        );
-        return adjustedPosition;
+    /**
+     * @notice adjust msg.sender's position when liquidity migration happened
+     * @param _amm Amm address
+     */
+    function adjustPosition(IAmm _amm) external {
+        adjustPositionForLiquidityChanged(_amm, _msgSender());
     }
 
     //
@@ -1108,6 +1090,32 @@ contract ClearingHouse is
     //
     // INTERNAL VIEW FUNCTIONS
     //
+
+    function adjustPositionForLiquidityChanged(IAmm _amm, address _trader) internal returns (Position memory) {
+        Position memory unadjustedPosition = getUnadjustedPosition(_amm, _trader);
+        if (unadjustedPosition.size.toInt() == 0) {
+            return unadjustedPosition;
+        }
+        uint256 latestLiquidityIndex = _amm.getLiquidityHistoryLength().sub(1);
+        if (unadjustedPosition.liquidityHistoryIndex == latestLiquidityIndex) {
+            return unadjustedPosition;
+        }
+
+        Position memory adjustedPosition = calcPositionAfterLiquidityMigration(
+            _amm,
+            unadjustedPosition,
+            latestLiquidityIndex
+        );
+        setPosition(_amm, _trader, adjustedPosition);
+        emit PositionAdjusted(
+            address(_amm),
+            _trader,
+            adjustedPosition.size.toInt(),
+            unadjustedPosition.liquidityHistoryIndex,
+            adjustedPosition.liquidityHistoryIndex
+        );
+        return adjustedPosition;
+    }
 
     function calcPositionAfterLiquidityMigration(
         IAmm _amm,
