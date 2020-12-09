@@ -3,7 +3,7 @@ pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
 import { Decimal } from "../utils/Decimal.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "./IERC20.sol";
 
 interface IExchangeWrapper {
     function swapInput(

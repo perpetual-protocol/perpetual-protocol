@@ -3,7 +3,7 @@ pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
 // solhint-disable
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../interface/IERC20.sol";
 import { DecimalERC20 } from "../utils/DecimalERC20.sol";
 import { Decimal } from "../utils/Decimal.sol";
 

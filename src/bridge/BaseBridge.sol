@@ -2,7 +2,7 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "../interface/IERC20.sol";
 import { IAMB } from "./external/IAMB.sol";
 import { IBaseBridge } from "./IBaseBridge.sol";
 import { IMultiTokenMediator } from "./external/IMultiTokenMediator.sol";
