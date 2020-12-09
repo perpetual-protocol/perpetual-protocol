@@ -38,7 +38,7 @@ describe.skip("SystemTest Spec", () => {
     const settingsDao: SettingsDao = new SettingsDao(STAGE)
     const systemMetadataDao: SystemMetadataDao = new SystemMetadataDao(settingsDao)
 
-    const perpToken = systemMetadataDao.getContractMetadata("layer1", ContractName.PerpToken)
+    const perpToken = settingsDao.getExternalContracts("layer1").perp!
     const chainLinkL1 = systemMetadataDao.getContractMetadata("layer1", ContractName.ChainlinkL1)
     const rootBridge = systemMetadataDao.getContractMetadata("layer1", ContractName.RootBridge)
     const multiTokenMediatorL1 = settingsDao.getExternalContracts("layer1").multiTokenMediatorOnEth
@@ -176,7 +176,7 @@ describe.skip("SystemTest Spec", () => {
 
         // there is no perp token on rinkeby?
         it.skip("has perpToken", async () => {
-            expect(await instance.perpToken()).to.eq(perpToken.address)
+            expect(await instance.perpToken()).to.eq(perpToken)
         })
 
         // not yet implemented
