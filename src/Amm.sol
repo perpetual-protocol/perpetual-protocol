@@ -286,8 +286,9 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     ) external override onlyOwner {
         require(_liquidityMultiplier.toUint() != Decimal.one().toUint(), "multiplier can't be 1");
 
-        // check liquidity multiplier limit, have lower bound for total long position for now.
-        checkLiquidityMultiplierLimit(_liquidityMultiplier);
+        // check liquidity multiplier limit, have lower bound if position size is positive for now.
+        checkLiquidityMultiplierLimit(totalPositionSize, _liquidityMultiplier);
+        checkLiquidityMultiplierLimit(baseAssetDeltaThisFundingPeriod, _liquidityMultiplier);
 
         // #53 fix sandwich attack during liquidity migration
         checkFluctuationLimit(_fluctuationLimitRatio);
@@ -951,10 +952,13 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         }
     }
 
-    function checkLiquidityMultiplierLimit(Decimal.decimal memory _liquidityMultiplier) internal view {
-        // have lower bound when totalPositionSize is long
-        if (totalPositionSize.toInt() > 0) {
-            Decimal.decimal memory liquidityMultiplierLowerBound = totalPositionSize
+    function checkLiquidityMultiplierLimit(
+        SignedDecimal.signedDecimal memory _positionSize,
+        Decimal.decimal memory _liquidityMultiplier
+    ) internal view {
+        // have lower bound when position size is long
+        if (_positionSize.toInt() > 0) {
+            Decimal.decimal memory liquidityMultiplierLowerBound = _positionSize
                 .addD(Decimal.decimal(MARGIN_FOR_LIQUIDITY_MIGRATION_ROUNDING))
                 .divD(baseAssetReserve)
                 .abs();

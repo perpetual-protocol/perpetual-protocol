@@ -2429,34 +2429,33 @@ describe("ClearingHouse Test", () => {
 
         // AMM quote : base = 1000 : 100
         describe("reduce liquidity limitation", () => {
-            it("(short) can reduce liquidity no matter the size of total position", async () => {
-                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(300), toDecimal(1), toDecimal(0), {
+            it("(short) can reduce liquidity when above the limit", async () => {
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(200), toDecimal(1), toDecimal(0), {
                     from: alice,
                 })
-                // Amm reserve : 700 : 142.86
-                // total position size = -300
-                const r1 = await amm.migrateLiquidity(toDecimal("0.01"), toDecimal(0))
-                await expectEvent.inTransaction(r1.tx, amm, "LiquidityChanged")
+                // Amm reserve : 800 : 125
+                // total position size = -25, baseAssetDelta = 25
+                // limit should be (25 + 1g wei) / 125 ~= 0.20+
+                const r = await amm.migrateLiquidity(toDecimal("0.21"), toDecimal(0))
+                await expectEvent.inTransaction(r.tx, amm, "LiquidityChanged")
 
-                const r2 = await amm.migrateLiquidity(toDecimal("0.0001"), toDecimal(0))
-                await expectEvent.inTransaction(r2.tx, amm, "LiquidityChanged")
-            })
-
-            it("(short) can open position after reduce liquidity to small reverses", async () => {
-                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
-                    from: alice,
-                })
-
-                const r1 = await amm.migrateLiquidity(toDecimal("0.001"), toDecimal(0))
-                await expectEvent.inTransaction(r1.tx, amm, "LiquidityChanged")
-
-                // Amm reserves are around 1 : 0.1
+                // Amm reserves are around 168 : 26.25
                 await clearingHouse.openPosition(amm.address, Side.SELL, { d: "1" }, toDecimal(1), toDecimal(0), {
                     from: alice,
                 })
 
                 const r2 = await amm.migrateLiquidity(toDecimal(10), toDecimal(0))
                 await expectEvent.inTransaction(r2.tx, amm, "LiquidityChanged")
+            })
+
+            it("(short) can not reduce liquidity when under the limit", async () => {
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(200), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                })
+                // Amm reserve : 800 : 125
+                // total position size = -25, baseAssetDelta = 25
+                // limit should be (25 + 1g wei) / 125 ~= 0.20+
+                await expectRevert(amm.migrateLiquidity(toDecimal("0.2"), toDecimal(0)), "illegal liquidity multiplier")
             })
 
             it("(long) can reduce liquidity when above the limit", async () => {
@@ -2470,7 +2469,7 @@ describe("ClearingHouse Test", () => {
                 await expectEvent.inTransaction(r.tx, amm, "LiquidityChanged")
             })
 
-            it("(long) can not reduce liquidity when below the limit", async () => {
+            it("(long) can not reduce liquidity when under the limit", async () => {
                 await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(250), toDecimal(1), toDecimal(0), {
                     from: alice,
                 })
@@ -2489,17 +2488,6 @@ describe("ClearingHouse Test", () => {
                 })
                 const r = await amm.migrateLiquidity(toDecimal("100"), toDecimal(0))
                 await expectEvent.inTransaction(r.tx, amm, "LiquidityChanged")
-            })
-
-            it("can't reduce liquidity to smaller than a ? criteria (short)", async () => {
-                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
-                    from: alice,
-                })
-                await amm.migrateLiquidity({ d: "1" }, toDecimal(0))
-                await clearingHouse.openPosition(amm.address, Side.SELL, { d: "1" }, toDecimal(1), toDecimal(0), {
-                    from: alice,
-                })
-                await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
             })
         })
     })
