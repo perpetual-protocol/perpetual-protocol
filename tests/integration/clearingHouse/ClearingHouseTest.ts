@@ -17,7 +17,7 @@ import {
     StakingReserveInstance,
     SupplyScheduleFakeInstance,
     TraderWalletContract,
-    TraderWalletInstance
+    TraderWalletInstance,
 } from "../../../types/truffle"
 import { ClearingHouse } from "../../../types/web3/ClearingHouse"
 import { assertionHelper } from "../../helper/assertion-plugin"
@@ -2345,15 +2345,15 @@ describe("ClearingHouse Test", () => {
             expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).true
             expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, carol)).true
 
-            const receiptAlice = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, alice)
+            const receiptAlice = await clearingHouse.adjustPosition(amm.address, { from: alice })
             await expectEvent.inTransaction(receiptAlice.tx, clearingHouse, "PositionAdjusted", {
                 newPositionSize: "8620689655172413793",
             })
-            const receiptBob = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, bob)
+            const receiptBob = await clearingHouse.adjustPosition(amm.address, { from: bob })
             await expectEvent.inTransaction(receiptBob.tx, clearingHouse, "PositionAdjusted", {
                 newPositionSize: "12903225806451612904",
             })
-            const receiptCarol = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, carol)
+            const receiptCarol = await clearingHouse.adjustPosition(amm.address, { from: carol })
             await expectEvent.inTransaction(receiptCarol.tx, clearingHouse, "PositionAdjusted", {
                 newPositionSize: "-6666666666666666667",
             })
@@ -2382,11 +2382,11 @@ describe("ClearingHouse Test", () => {
             expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).true
             expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).true
 
-            const receiptAlice = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, alice)
+            const receiptAlice = await clearingHouse.adjustPosition(amm.address, { from: alice })
             await expectEvent.inTransaction(receiptAlice.tx, clearingHouse, "PositionAdjusted", {
                 newPositionSize: "-11560693641618497111",
             })
-            const receiptBob = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, bob)
+            const receiptBob = await clearingHouse.adjustPosition(amm.address, { from: bob })
             await expectEvent.inTransaction(receiptBob.tx, clearingHouse, "PositionAdjusted", {
                 newPositionSize: "-35714285714285714286",
             })
@@ -2414,11 +2414,11 @@ describe("ClearingHouse Test", () => {
             expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).true
             expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).true
 
-            const receiptAlice = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, alice)
+            const receiptAlice = await clearingHouse.adjustPosition(amm.address, { from: alice })
             await expectEvent.inTransaction(receiptAlice.tx, clearingHouse, "PositionAdjusted", {
                 newPositionSize: "8695652173913043479",
             })
-            const receiptBob = await clearingHouse.adjustPositionForLiquidityChanged(amm.address, bob)
+            const receiptBob = await clearingHouse.adjustPosition(amm.address, { from: bob })
             await expectEvent.inTransaction(receiptBob.tx, clearingHouse, "PositionAdjusted", {
                 newPositionSize: "-9523809523809523810",
             })
