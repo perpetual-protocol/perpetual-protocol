@@ -3,7 +3,7 @@ pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
 import { BlockContext } from "./utils/BlockContext.sol";
-import { IERC20 } from "./interface/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import { IMultiTokenRewardRecipient } from "./interface/IMultiTokenRewardRecipient.sol";
 import { Decimal } from "./utils/Decimal.sol";
 import { SignedDecimal } from "./utils/SignedDecimal.sol";
