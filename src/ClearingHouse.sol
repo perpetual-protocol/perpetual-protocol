@@ -1205,10 +1205,9 @@ contract ClearingHouse is
         }
 
         // calculate remain margin
-        SignedDecimal.signedDecimal memory signedRemainMargin = fundingPayment
-            .mulScalar(-1)
-            .addD(_oldPosition.margin)
-            .addD(_marginDelta);
+        SignedDecimal.signedDecimal memory signedRemainMargin = _marginDelta.subD(fundingPayment).addD(
+            _oldPosition.margin
+        );
 
         // if remain margin is negative, set to zero and leave the rest to bad debt
         if (signedRemainMargin.toInt() < 0) {
