@@ -184,7 +184,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             })
         );
         reserveSnapshots.push(ReserveSnapshot(quoteAssetReserve, baseAssetReserve, _blockTimestamp(), _blockNumber()));
-        emit ReserveSnapshotted(quoteAssetReserve.toUint(), baseAssetReserve.toUint(), _blockTimestamp());
+        emit ReserveSnapshotted(quoteAssetReserve.toUint(), baseAssetReserve.toUint(), _blockNumber());
     }
 
     /**
