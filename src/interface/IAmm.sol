@@ -95,9 +95,6 @@ interface IAmm {
 
     function getSpotPrice() external view returns (Decimal.decimal memory);
 
-    // TODO check if anyone is using this
-    function getReserve() external view returns (Decimal.decimal memory, Decimal.decimal memory);
-
     function getLiquidityHistoryLength() external view returns (uint256);
 
     // overridden by state variable

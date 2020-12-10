@@ -552,7 +552,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
      * @notice get current quote/base asset reserve.
      * @return (quote asset reserve, base asset reserve)
      */
-    function getReserve() external view override returns (Decimal.decimal memory, Decimal.decimal memory) {
+    function getReserve() external view returns (Decimal.decimal memory, Decimal.decimal memory) {
         return (quoteAssetReserve, baseAssetReserve);
     }
 

@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add `fundingPayment` to `ClearingHouse::PositionChanged` and `ClearingHouse::MarginChanged` #87
 - index `trader` and `amm` in position-related events
 
+## Removed
+- `IAmm::getReserve`
+
 ## [0.13.3] - 2020-12-03
 ### Added
 - add `ClearingHouse::adjustPositionForLiquidityChanged()` #68
