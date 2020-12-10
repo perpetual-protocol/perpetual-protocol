@@ -527,8 +527,8 @@ describe("ClearingHouse Test", () => {
                 from: alice,
             })
 
-            const clearingHouseBaseTokenBalance = await quoteToken.balanceOf(clearingHouse.address)
-            expect(clearingHouseBaseTokenBalance).eq(toFullDigit(60, +(await quoteToken.decimals())))
+            const clearingHouseQuoteTokenBalance = await quoteToken.balanceOf(clearingHouse.address)
+            expect(clearingHouseQuoteTokenBalance).eq(toFullDigit(60, +(await quoteToken.decimals())))
             const allowance = await quoteToken.allowance(alice, clearingHouse.address)
             expect(allowance).to.eq(toFullDigit(2000 - 60, +(await quoteToken.decimals())))
         })
@@ -539,6 +539,7 @@ describe("ClearingHouse Test", () => {
                 sender: alice,
                 amm: amm.address,
                 amount: toFullDigit(80),
+                fundingPayment: "0",
             })
             await expectEvent.inTransaction(receipt.tx, quoteToken, "Transfer", {
                 from: alice,
@@ -560,6 +561,7 @@ describe("ClearingHouse Test", () => {
                 sender: alice,
                 amm: amm.address,
                 amount: toFullDigit(-20),
+                fundingPayment: "0",
             })
             await expectEvent.inTransaction(receipt.tx, quoteToken, "Transfer", {
                 from: clearingHouse.address,
@@ -573,6 +575,27 @@ describe("ClearingHouse Test", () => {
             expect(await clearingHouseViewer.getPersonalBalanceWithFundingPayment(quoteToken.address, alice)).to.eq(
                 toFullDigit(40),
             )
+        })
+
+        it("remove margin after pay funding", async () => {
+            // given the underlying twap price is 25.5, and current snapShot price is 1600 / 62.5 = 25.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(25.5))
+
+            // when the new fundingRate is 10% which means underlyingPrice < snapshotPrice
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+            expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(0.1))
+
+            // remove margin 20
+            const receipt = await clearingHouse.removeMargin(amm.address, toDecimal(20), {
+                from: alice,
+            })
+            await expectEvent.inTransaction(receipt.tx, clearingHouse, "MarginChanged", {
+                sender: alice,
+                amm: amm.address,
+                amount: toFullDigit(-20),
+                fundingPayment: toFullDigit(3.75),
+            })
         })
 
         it("Force error, remove margin - not enough position margin", async () => {

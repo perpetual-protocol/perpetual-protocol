@@ -36,16 +36,15 @@ contract ClearingHouse is
     //
     event MarginRatioChanged(uint256 marginRatio);
     event LiquidationFeeRatioChanged(uint256 liquidationFeeRatio);
-    // TODO use position id
-    event MarginChanged(address sender, address amm, int256 amount, int256 fundingPayment);
+    event MarginChanged(address indexed sender, address indexed amm, int256 amount, int256 fundingPayment);
     event PositionAdjusted(
-        address amm,
-        address trader,
+        address indexed amm,
+        address indexed trader,
         int256 newPositionSize,
         uint256 oldLiquidityIndex,
         uint256 newLiquidityIndex
     );
-    event PositionSettled(address amm, address trader, uint256 valueTransferred);
+    event PositionSettled(address indexed amm, address indexed trader, uint256 valueTransferred);
     event RestrictionModeEntered(address amm, uint256 blockNumber);
 
     /// @notice This event is emitted when position change
@@ -63,8 +62,8 @@ contract ClearingHouse is
     /// @param spotPrice quote asset reserve / base asset reserve
     /// @param fundingPayment funding payment (+: trader paid, -: trader received)
     event PositionChanged(
-        address trader,
-        address amm,
+        address indexed trader,
+        address indexed amm,
         uint256 margin,
         uint256 positionNotional,
         int256 exchangedPositionSize,
@@ -87,8 +86,8 @@ contract ClearingHouse is
     /// @param liquidator the address which execute this transaction
     /// @param badDebt liquidation fee amount cleared by insurance funds
     event PositionLiquidated(
-        address trader,
-        address amm,
+        address indexed trader,
+        address indexed amm,
         uint256 positionNotional,
         uint256 positionSize,
         uint256 liquidationFee,
