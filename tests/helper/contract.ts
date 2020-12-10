@@ -19,8 +19,6 @@ import {
     CUsdtMockInstance,
     ERC20FakeContract,
     ERC20FakeInstance,
-    ERC20TokenContract,
-    ERC20TokenInstance,
     ExchangeWrapperContract,
     ExchangeWrapperInstance,
     ExchangeWrapperMockContract,
@@ -75,7 +73,6 @@ const RootBridge = artifacts.require("RootBridge") as RootBridgeContract
 const MultiTokenMediatorMock = artifacts.require("MultiTokenMediatorMock") as MultiTokenMediatorMockContract
 const AMBBridgeMock = artifacts.require("AMBBridgeMock") as AMBBridgeMockContract
 const MetaTxGateway = artifacts.require("MetaTxGateway") as MetaTxGatewayContract
-const ERC20Token = artifacts.require("ERC20Token") as ERC20TokenContract
 
 export enum Side {
     BUY = 0,
@@ -200,14 +197,6 @@ export async function deployErc20Fake(
     const instance = await ERC20Fake.new()
     await instance.initializeERC20Fake(initSupply, name, symbol, decimal)
     return instance
-}
-
-export async function deployErc20Token(
-    initSupply: BN = new BN(0),
-    name = "name",
-    symbol = "symbol",
-): Promise<ERC20TokenInstance> {
-    return await ERC20Token.new(name, symbol, initSupply)
 }
 
 export async function deployPerpToken(initSupply: BN): Promise<PerpTokenInstance> {

@@ -6,7 +6,7 @@ import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 import {
     ReentrancyGuardUpgradeSafe
 } from "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import { Decimal } from "./utils/Decimal.sol";
 import { IExchangeWrapper } from "./interface/IExchangeWrapper.sol";
 import { IInsuranceFund } from "./interface/IInsuranceFund.sol";

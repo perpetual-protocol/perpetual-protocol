@@ -17,7 +17,7 @@ function printByteCodeSize(contractName: string, artifactPath: string): number {
     if (size >= 24576) {
         console.log("\x1b[31m", message)
         console.log("\x1b[0m") // reset color
-    } else {
+    } else if (size > 0) {
         console.log(message)
     }
     return size

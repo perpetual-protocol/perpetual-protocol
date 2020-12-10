@@ -2,7 +2,6 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-// solhint-disable
 import {
     ERC20PresetMinterPauserUpgradeSafe
 } from "@openzeppelin/contracts-ethereum-package/contracts/presets/ERC20PresetMinterPauser.sol";

@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import { BlockContext } from "./utils/BlockContext.sol";
 import { IPriceFeed } from "./interface/IPriceFeed.sol";
 import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import { Decimal } from "./utils/Decimal.sol";
 import { SignedDecimal } from "./utils/SignedDecimal.sol";
 import { MixedDecimal } from "./utils/MixedDecimal.sol";

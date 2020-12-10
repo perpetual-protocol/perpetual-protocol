@@ -12,7 +12,6 @@ import {
     L2PriceFeedMockInstance,
     MetaTxGatewayInstance,
     MinterInstance,
-    PerpTokenInstance,
     RewardsDistributionFakeInstance,
     StakingReserveInstance,
     SupplyScheduleFakeInstance,
@@ -48,7 +47,6 @@ describe("ClearingHouse Test", () => {
     let clearingHouse: ClearingHouseFakeInstance
     let clearingHouseViewer: ClearingHouseViewerInstance
     let supplySchedule: SupplyScheduleFakeInstance
-    let perpToken: PerpTokenInstance
     let minter: MinterInstance
 
     let traderWallet1: TraderWalletInstance
@@ -73,7 +71,6 @@ describe("ClearingHouse Test", () => {
         clearingHouse = contracts.clearingHouse
         clearingHouseViewer = contracts.clearingHouseViewer
         supplySchedule = contracts.supplySchedule
-        perpToken = contracts.perpToken
         clearingHouse = contracts.clearingHouse
 
         // Each of Alice & Bob have 5000 DAI

@@ -3,7 +3,6 @@ pragma solidity 0.6.9;
 
 // wrap block.xxx functions for testing
 // only support timestamp and number so far
-// solhint-disable
 abstract contract BlockContext {
     //◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤ add state variables below ◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤//
 
