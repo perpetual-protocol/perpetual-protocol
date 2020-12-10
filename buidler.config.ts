@@ -14,6 +14,7 @@ import {
     ROPSTEN_URL,
     SOKOL_MNEMONIC,
     SOKOL_URL,
+    SRC_DIR,
     XDAI_MNEMONIC,
     XDAI_URL,
 } from "./constants"
@@ -107,7 +108,7 @@ const config = {
     },
     paths: {
         // source & artifacts does not work since we use openzeppelin-sdk for upgradable contract
-        sources: "./src",
+        sources: SRC_DIR,
         artifacts: ARTIFACTS_DIR,
         tests: "./tests",
         cache: "./cache",

@@ -15,3 +15,6 @@ export declare const XDAI_MNEMONIC: string
 export declare const GAS: number
 export declare const GAS_PRICE: number
 export declare const ARTIFACTS_DIR: string
+export declare const ROOT_DIR: string
+export declare const SRC_DIR: string
+export declare const SRC_DIR_NAME: string

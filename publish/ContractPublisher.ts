@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { ethers } from "@nomiclabs/buidler"
+import bre, { ethers } from "@nomiclabs/buidler"
+import { SRC_DIR } from "../constants"
 import { ExternalContracts, Layer } from "../scripts/common"
+import { flatten } from "../scripts/flatten"
 import {
     AmmReader,
     ChainlinkL1,
@@ -123,7 +125,13 @@ export class ContractPublisher {
                         .create<L2PriceFeed>(ContractName.L2PriceFeed)
                         .deployUpgradableContract(ambBridgeOnXDaiAddr, rootBridgeOnEthAddr)
                 },
+            ],
+            // batch 1
+            [
                 async (): Promise<void> => {
+                    const filename = `${ContractName.ClearingHouse}.sol`
+                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
+
                     // deploy clearing house
                     const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
                     const metaTxGatewayContract = this.factory.create<MetaTxGateway>(ContractName.MetaTxGateway)
@@ -137,6 +145,9 @@ export class ContractPublisher {
                             metaTxGatewayContract.address!,
                         )
                 },
+            ],
+            // batch 2
+            [
                 async (): Promise<void> => {
                     const clearingHouse = await this.factory
                         .create<ClearingHouse>(ContractName.ClearingHouse)
