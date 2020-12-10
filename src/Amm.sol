@@ -36,6 +36,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     event FundingRateUpdated(int256 rate, uint256 underlyingPrice);
     event ReserveSnapshotted(uint256 quoteAssetReserve, uint256 baseAssetReserve, uint256 timestamp);
     event LiquidityChanged(uint256 quoteReserve, uint256 baseReserve, int256 cumulativeNotional);
+    event CapChanged(uint256 maxHoldingBaseAsset, uint256 openInterestNotionalCap);
     event Shutdown(uint256 settlementPrice);
 
     //
@@ -183,6 +184,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             })
         );
         reserveSnapshots.push(ReserveSnapshot(quoteAssetReserve, baseAssetReserve, _blockTimestamp(), _blockNumber()));
+        emit ReserveSnapshotted(quoteAssetReserve.toUint(), baseAssetReserve.toUint(), _blockTimestamp());
     }
 
     /**
@@ -449,6 +451,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     {
         maxHoldingBaseAsset = _maxHoldingBaseAsset;
         openInterestNotionalCap = _openInterestNotionalCap;
+        emit CapChanged(maxHoldingBaseAsset.toUint(), openInterestNotionalCap.toUint());
     }
 
     //
@@ -731,6 +734,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
                 ReserveSnapshot(quoteAssetReserve, baseAssetReserve, _blockTimestamp(), currentBlock)
             );
         }
+        emit ReserveSnapshotted(quoteAssetReserve.toUint(), baseAssetReserve.toUint(), _blockTimestamp());
     }
 
     function implSwapOutput(
