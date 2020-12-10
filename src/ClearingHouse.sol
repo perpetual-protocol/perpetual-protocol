@@ -411,12 +411,13 @@ contract ClearingHouse is
         {
             // add scope for stack too deep error
             int256 oldPositionSize = adjustPositionForLiquidityChanged(_amm, trader).size.toInt();
-            if (oldPositionSize > 0) {
+            bool isNewPosition = oldPositionSize == 0 ? true : false;
+            if (!isNewPosition) {
                 requireMoreMarginRatio(getMarginRatio(_amm, trader), maintenanceMarginRatio, true);
             }
 
             // increase or decrease position depends on old position's side and size
-            if (oldPositionSize == 0 || (oldPositionSize > 0 ? Side.BUY : Side.SELL) == _side) {
+            if (isNewPosition || (oldPositionSize > 0 ? Side.BUY : Side.SELL) == _side) {
                 positionResp = internalIncreasePosition(
                     _amm,
                     _side,
