@@ -976,7 +976,7 @@ describe("ClearingHouse - open/close position Test", () => {
             })
         })
 
-        it("force error, can NOT open a long/short position when position is under collateral", async () => {
+        it("force error, can NOT open a long/short position when position(long) is under collateral", async () => {
             // deposit to 2000
             await approve(alice, clearingHouse.address, 2000)
             await approve(bob, clearingHouse.address, 2000)
@@ -1004,6 +1004,29 @@ describe("ClearingHouse - open/close position Test", () => {
                 "Margin ratio not meet criteria",
             )
 
+            await expectRevert(
+                clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                }),
+                "Margin ratio not meet criteria",
+            )
+        })
+
+        it("force error, can NOT open a long/short position when position(short) is under collateral", async () => {
+            // deposit to 2000
+            await approve(alice, clearingHouse.address, 2000)
+            await approve(bob, clearingHouse.address, 2000)
+
+            // AMM after 125 : 80...
+            // position 25
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(10), toDecimal(0), {
+                from: bob,
+            })
+
+            // Now Alice's position is underwater, cant increase position
             await expectRevert(
                 clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
                     from: alice,
@@ -1910,9 +1933,9 @@ describe("ClearingHouse - open/close position Test", () => {
             })
 
             it("open short, price up, then short again", async () => {
-                // alice opens short position with 100 margin, 2x leverage
+                // alice opens short position with 200 margin, 1x leverage
                 // (1000 - 200) * (100 + baseAssetDelta) = 100k, baseAssetDelta = 25
-                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(100), toDecimal(2), toDecimal(25), {
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(200), toDecimal(1), toDecimal(25), {
                     from: alice,
                 })
                 const aliceBalance1 = await quoteToken.balanceOf(alice)
@@ -1945,8 +1968,8 @@ describe("ClearingHouse - open/close position Test", () => {
                 expect(position.size).to.eq(toFullDigit(-50))
                 // open notional = 200 + 200 = 400
                 expect(position.openNotional).to.eq(toFullDigit(400))
-                // total position margin = oldMargin + newMargin + realizedPnl = 100 + 50 + 0 = 150
-                expect(position.margin).to.eq(toFullDigit(150))
+                // total position margin = oldMargin + newMargin + realizedPnl = 200 + 50 + 0 = 250
+                expect(position.margin).to.eq(toFullDigit(250))
             })
         })
 
