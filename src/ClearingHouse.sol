@@ -455,6 +455,7 @@ contract ClearingHouse is
 
         // emit event
         uint256 spotPrice = _amm.getSpotPrice().toUint();
+        int256 fundingPayment = positionResp.fundingPayment.toInt(); // pre-fetch for stack too deep error
         emit PositionChanged(
             trader,
             address(_amm),
@@ -468,7 +469,7 @@ contract ClearingHouse is
             positionResp.badDebt.toUint(),
             0,
             spotPrice,
-            positionResp.fundingPayment.toInt()
+            fundingPayment
         );
     }
 
@@ -506,6 +507,7 @@ contract ClearingHouse is
 
         // prepare event
         uint256 spotPrice = _amm.getSpotPrice().toUint();
+        int256 fundingPayment = positionResp.fundingPayment.toInt();
         emit PositionChanged(
             trader,
             address(_amm),
@@ -519,7 +521,7 @@ contract ClearingHouse is
             positionResp.badDebt.toUint(),
             0,
             spotPrice,
-            positionResp.fundingPayment.toInt()
+            fundingPayment
         );
     }
 
@@ -582,6 +584,7 @@ contract ClearingHouse is
 
         // emit event
         uint256 spotPrice = _amm.getSpotPrice().toUint();
+        int256 fundingPayment = positionResp.fundingPayment.toInt();
         emit PositionChanged(
             _trader,
             address(_amm),
@@ -595,7 +598,7 @@ contract ClearingHouse is
             positionResp.badDebt.toUint(),
             remainMargin.toUint(),
             spotPrice,
-            positionResp.fundingPayment.toInt()
+            fundingPayment
         );
     }
 
