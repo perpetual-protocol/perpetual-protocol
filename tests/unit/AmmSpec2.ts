@@ -47,4 +47,14 @@ describe("Amm Unit Test 2 (Waffle)", () => {
             expect((await amm.getUnderlyingPrice()).d).deep.eq(price)
         })
     })
+
+    describe("setCap", () => {
+        it("change maxHoldingBaseAsset and openInterestNotionalCap", async () => {
+            await expect(amm.setCap({ d: 100 }, { d: 200 }))
+                .to.emit(amm, "CapChanged")
+                .withArgs("100", "200")
+            expect((await amm.getMaxHoldingBaseAsset()).d).deep.eq(BigNumber.from(100))
+            expect((await amm.getOpenInterestNotionalCap()).d).deep.eq(BigNumber.from(200))
+        })
+    })
 })
