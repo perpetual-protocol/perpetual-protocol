@@ -93,7 +93,7 @@ interface IAmm {
         Decimal.decimal memory _baseAssetPoolAmount
     ) external pure returns (Decimal.decimal memory);
 
-    function getReserve() external view returns (Decimal.decimal memory, Decimal.decimal memory);
+    function getSpotPrice() external view returns (Decimal.decimal memory);
 
     function getLiquidityHistoryLength() external view returns (uint256);
 

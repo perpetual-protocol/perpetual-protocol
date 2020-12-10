@@ -540,7 +540,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
      * @notice get spot price based on current quote/base asset reserve.
      * @return spot price
      */
-    function getSpotPrice() public view returns (Decimal.decimal memory) {
+    function getSpotPrice() public view override returns (Decimal.decimal memory) {
         return quoteAssetReserve.divD(baseAssetReserve);
     }
 
@@ -555,7 +555,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
      * @notice get current quote/base asset reserve.
      * @return (quote asset reserve, base asset reserve)
      */
-    function getReserve() external view override returns (Decimal.decimal memory, Decimal.decimal memory) {
+    function getReserve() external view returns (Decimal.decimal memory, Decimal.decimal memory) {
         return (quoteAssetReserve, baseAssetReserve);
     }
 
