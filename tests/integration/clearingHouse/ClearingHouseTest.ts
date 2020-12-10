@@ -434,6 +434,7 @@ describe("ClearingHouse Test", () => {
             const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 badDebt: toFullDigitStr(2550),
+                fundingPayment: toFullDigitStr(3750),
             })
         })
 
@@ -485,6 +486,7 @@ describe("ClearingHouse Test", () => {
             const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 badDebt: toFullDigitStr(2540),
+                fundingPayment: toFullDigitStr(3750),
             })
         })
 
@@ -901,6 +903,7 @@ describe("ClearingHouse Test", () => {
                 fee: "0",
                 positionSizeAfter: "0",
                 realizedPnl: "-15384615384615384623",
+                fundingPayment: "0",
             })
 
             // verify carol get her reward
