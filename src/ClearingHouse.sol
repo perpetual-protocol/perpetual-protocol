@@ -60,8 +60,8 @@ contract ClearingHouse is
     /// @param unrealizedPnlAfter unrealized pnl after this position changed
     /// @param badDebt position change amount cleared by insurance funds
     /// @param liquidationPenalty amount of remaining margin lost due to liquidation
-    /// @param quoteAssetReserve quote asset reserve after this event, e.g. USDC
-    /// @param baseAssetReserve base asset reserve after this event, e.g. ETHUSDC, LINKUSDC
+    /// @param spotPrice quote asset reserve / base asset reserve
+    /// @param fundingPayment funding payment (+: trader paid, -: trader received)
     event PositionChanged(
         address trader,
         address amm,
@@ -74,8 +74,7 @@ contract ClearingHouse is
         int256 unrealizedPnlAfter,
         uint256 badDebt,
         uint256 liquidationPenalty,
-        uint256 quoteAssetReserve,
-        uint256 baseAssetReserve,
+        uint256 spotPrice,
         int256 fundingPayment
     );
 
@@ -455,7 +454,7 @@ contract ClearingHouse is
         Decimal.decimal memory transferredFee = transferFee(trader, _amm, positionResp.exchangedQuoteAssetAmount);
 
         // emit event
-        (Decimal.decimal memory quoteAssetReserve, Decimal.decimal memory baseAssetReserve) = _amm.getReserve();
+        uint256 spotPrice = _amm.getSpotPrice().toUint();
         emit PositionChanged(
             trader,
             address(_amm),
@@ -468,8 +467,7 @@ contract ClearingHouse is
             positionResp.unrealizedPnlAfter.toInt(),
             positionResp.badDebt.toUint(),
             0,
-            quoteAssetReserve.toUint(),
-            baseAssetReserve.toUint(),
+            spotPrice,
             positionResp.fundingPayment.toInt()
         );
     }
@@ -507,7 +505,7 @@ contract ClearingHouse is
         Decimal.decimal memory transferredFee = transferFee(trader, _amm, positionResp.exchangedQuoteAssetAmount);
 
         // prepare event
-        (Decimal.decimal memory quoteAssetReserve, Decimal.decimal memory baseAssetReserve) = _amm.getReserve();
+        uint256 spotPrice = _amm.getSpotPrice().toUint();
         emit PositionChanged(
             trader,
             address(_amm),
@@ -520,8 +518,7 @@ contract ClearingHouse is
             0, // unrealizedPnl
             positionResp.badDebt.toUint(),
             0,
-            quoteAssetReserve.toUint(),
-            baseAssetReserve.toUint(),
+            spotPrice,
             positionResp.fundingPayment.toInt()
         );
     }
@@ -584,7 +581,7 @@ contract ClearingHouse is
         }
 
         // emit event
-        (Decimal.decimal memory quoteAssetReserve, Decimal.decimal memory baseAssetReserve) = _amm.getReserve();
+        uint256 spotPrice = _amm.getSpotPrice().toUint();
         emit PositionChanged(
             _trader,
             address(_amm),
@@ -597,8 +594,7 @@ contract ClearingHouse is
             0,
             positionResp.badDebt.toUint(),
             remainMargin.toUint(),
-            quoteAssetReserve.toUint(),
-            baseAssetReserve.toUint(),
+            spotPrice,
             positionResp.fundingPayment.toInt()
         );
     }
