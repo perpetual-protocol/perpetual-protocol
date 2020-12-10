@@ -2,13 +2,13 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 import { Decimal } from "./utils/Decimal.sol";
 import { SupplySchedule } from "./SupplySchedule.sol";
 import { RewardsDistribution } from "./RewardsDistribution.sol";
 import { IInflationMonitor } from "./interface/IInflationMonitor.sol";
-import { PerpToken } from "./PerpToken.sol";
+import { IPerpToken } from "./interface/IPerpToken.sol";
 import { IMinter } from "./interface/IMinter.sol";
 
 contract Minter is IMinter, PerpFiOwnableUpgrade {
@@ -23,7 +23,7 @@ contract Minter is IMinter, PerpFiOwnableUpgrade {
     //    Can not change the order of below state variables     //
     //**********************************************************//
 
-    PerpToken private perpToken;
+    address private perpToken;
     SupplySchedule public supplySchedule;
     RewardsDistribution public rewardsDistribution;
     IInflationMonitor public inflationMonitor;
@@ -49,7 +49,7 @@ contract Minter is IMinter, PerpFiOwnableUpgrade {
      * @notice openzeppelin doesn't support struct input
      * https://github.com/OpenZeppelin/openzeppelin-sdk/issues/1523
      */
-    function initialize(PerpToken _perpToken) public initializer {
+    function initialize(address _perpToken) public initializer {
         __Ownable_init();
 
         perpToken = _perpToken;
@@ -65,8 +65,8 @@ contract Minter is IMinter, PerpFiOwnableUpgrade {
         uint256 mintableSupply = supplySchedule.mintableSupply().toUint();
         require(mintableSupply > 0, "no supply is mintable");
 
-        perpToken.mint(address(rewardsDistribution), mintableSupply);
-        rewardsDistribution.distributeRewards(perpToken, Decimal.decimal(mintableSupply));
+        IPerpToken(perpToken).mint(address(rewardsDistribution), mintableSupply);
+        rewardsDistribution.distributeRewards(IERC20(perpToken), Decimal.decimal(mintableSupply));
 
         // record minting event before mutation to token supply
         supplySchedule.recordMintEvent();
@@ -81,7 +81,7 @@ contract Minter is IMinter, PerpFiOwnableUpgrade {
 
         // minter role checking is inside `mint`
         // mint to insuranceFund
-        perpToken.mint(insuranceFund, _amount.toUint());
+        IPerpToken(perpToken).mint(insuranceFund, _amount.toUint());
         inflationMonitor.appendMintedTokenHistory(_amount);
 
         emit PerpMinted(_amount.toUint());
@@ -104,6 +104,6 @@ contract Minter is IMinter, PerpFiOwnableUpgrade {
     }
 
     function getPerpToken() external view override returns (IERC20) {
-        return perpToken;
+        return IERC20(perpToken);
     }
 }

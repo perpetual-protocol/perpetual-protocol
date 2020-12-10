@@ -3,20 +3,20 @@ pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
 import { BlockContext } from "./utils/BlockContext.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IMultiTokenRewardRecipient } from "./interface/IMultiTokenRewardRecipient.sol";
+import { BaseRelayRecipient } from "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
+import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import { Decimal } from "./utils/Decimal.sol";
 import { SignedDecimal } from "./utils/SignedDecimal.sol";
 import { MixedDecimal } from "./utils/MixedDecimal.sol";
 import { DecimalERC20 } from "./utils/DecimalERC20.sol";
-import { IAmm } from "./interface/IAmm.sol";
-import { IInsuranceFund } from "./interface/IInsuranceFund.sol";
-import { BaseRelayRecipient } from "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 import { ContextUpgradeSafe } from "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
-import { OwnerPausableUpgradeSafe } from "./OwnerPausable.sol";
 // prettier-ignore
 // solhint-disable-next-line
 import { ReentrancyGuardUpgradeSafe } from "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
+import { OwnerPausableUpgradeSafe } from "./OwnerPausable.sol";
+import { IMultiTokenRewardRecipient } from "./interface/IMultiTokenRewardRecipient.sol";
+import { IAmm } from "./interface/IAmm.sol";
+import { IInsuranceFund } from "./interface/IInsuranceFund.sol";
 
 // note BaseRelayRecipient must come after OwnerPausableUpgradeSafe so its _msgSender() takes precedence
 // (yes, the ordering is reversed comparing to Python)
@@ -627,30 +627,12 @@ contract ClearingHouse is
         }
     }
 
-    function adjustPositionForLiquidityChanged(IAmm _amm, address _trader) public returns (Position memory) {
-        Position memory unadjustedPosition = getUnadjustedPosition(_amm, _trader);
-        if (unadjustedPosition.size.toInt() == 0) {
-            return unadjustedPosition;
-        }
-        uint256 latestLiquidityIndex = _amm.getLiquidityHistoryLength().sub(1);
-        if (unadjustedPosition.liquidityHistoryIndex == latestLiquidityIndex) {
-            return unadjustedPosition;
-        }
-
-        Position memory adjustedPosition = calcPositionAfterLiquidityMigration(
-            _amm,
-            unadjustedPosition,
-            latestLiquidityIndex
-        );
-        setPosition(_amm, _trader, adjustedPosition);
-        emit PositionAdjusted(
-            address(_amm),
-            _trader,
-            adjustedPosition.size.toInt(),
-            unadjustedPosition.liquidityHistoryIndex,
-            adjustedPosition.liquidityHistoryIndex
-        );
-        return adjustedPosition;
+    /**
+     * @notice adjust msg.sender's position when liquidity migration happened
+     * @param _amm Amm address
+     */
+    function adjustPosition(IAmm _amm) external {
+        adjustPositionForLiquidityChanged(_amm, _msgSender());
     }
 
     //
@@ -1109,6 +1091,32 @@ contract ClearingHouse is
     // INTERNAL VIEW FUNCTIONS
     //
 
+    function adjustPositionForLiquidityChanged(IAmm _amm, address _trader) internal returns (Position memory) {
+        Position memory unadjustedPosition = getUnadjustedPosition(_amm, _trader);
+        if (unadjustedPosition.size.toInt() == 0) {
+            return unadjustedPosition;
+        }
+        uint256 latestLiquidityIndex = _amm.getLiquidityHistoryLength().sub(1);
+        if (unadjustedPosition.liquidityHistoryIndex == latestLiquidityIndex) {
+            return unadjustedPosition;
+        }
+
+        Position memory adjustedPosition = calcPositionAfterLiquidityMigration(
+            _amm,
+            unadjustedPosition,
+            latestLiquidityIndex
+        );
+        setPosition(_amm, _trader, adjustedPosition);
+        emit PositionAdjusted(
+            address(_amm),
+            _trader,
+            adjustedPosition.size.toInt(),
+            unadjustedPosition.liquidityHistoryIndex,
+            adjustedPosition.liquidityHistoryIndex
+        );
+        return adjustedPosition;
+    }
+
     function calcPositionAfterLiquidityMigration(
         IAmm _amm,
         Position memory _position,
@@ -1203,6 +1211,10 @@ contract ClearingHouse is
 
     function _msgSender() internal view override(BaseRelayRecipient, ContextUpgradeSafe) returns (address payable) {
         return super._msgSender();
+    }
+
+    function _msgData() internal view override(BaseRelayRecipient, ContextUpgradeSafe) returns (bytes memory ret) {
+        return super._msgData();
     }
 
     //

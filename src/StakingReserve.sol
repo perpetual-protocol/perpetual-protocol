@@ -2,7 +2,7 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import {
     ReentrancyGuardUpgradeSafe
 } from "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
@@ -11,7 +11,6 @@ import { SignedDecimal, MixedDecimal } from "./utils/MixedDecimal.sol";
 import { RewardsDistributionRecipient } from "./RewardsDistributionRecipient.sol";
 import { DecimalERC20 } from "./utils/DecimalERC20.sol";
 import { BlockContext } from "./utils/BlockContext.sol";
-import { PerpToken } from "./PerpToken.sol";
 import { SupplySchedule } from "./SupplySchedule.sol";
 import { IMultiTokenRewardRecipient } from "./interface/IMultiTokenRewardRecipient.sol";
 
@@ -85,7 +84,7 @@ contract StakingReserve is
 
     address[] public stakers;
 
-    PerpToken public perpToken;
+    address public perpToken;
     SupplySchedule private supplySchedule;
 
     /* @dev
@@ -112,7 +111,7 @@ contract StakingReserve is
     //
 
     function initialize(
-        PerpToken _perpToken,
+        address _perpToken,
         SupplySchedule _supplySchedule,
         address _feeNotifier,
         uint256 _vestingPeriod
@@ -204,7 +203,7 @@ contract StakingReserve is
         address sender = _msgSender();
         require(_amount.toUint() <= getUnlockedBalance(sender).toUint(), "Not enough balance");
         stakeBalanceMap[sender].totalBalance = stakeBalanceMap[sender].totalBalance.subD(_amount);
-        _transfer(perpToken, sender, _amount);
+        _transfer(IERC20(perpToken), sender, _amount);
     }
 
     /**
@@ -268,7 +267,7 @@ contract StakingReserve is
         if (hasReward && epochRewardHistory.length >= vestingPeriod) {
             // solhint-disable reentrancy
             stakeBalanceMap[staker].rewardEpochCursor = epochRewardHistory.length.sub(vestingPeriod);
-            _transfer(perpToken, staker, reward);
+            _transfer(IERC20(perpToken), staker, reward);
             emit RewardWithdrawn(staker, reward.toUint());
         }
     }
@@ -434,6 +433,6 @@ contract StakingReserve is
             balance.rewardEpochCursor = nextEpochIndex();
         }
         balance.totalBalance = balance.totalBalance.addD(_amount);
-        _transferFrom(perpToken, _sender, address(this), _amount);
+        _transferFrom(IERC20(perpToken), _sender, address(this), _amount);
     }
 }

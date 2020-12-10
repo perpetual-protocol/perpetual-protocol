@@ -44,4 +44,8 @@ contract ClientBridge is BaseBridge, BaseRelayRecipient {
     function _msgSender() internal view override(BaseRelayRecipient, ContextUpgradeSafe) returns (address payable) {
         return super._msgSender();
     }
+
+    function _msgData() internal view override(BaseRelayRecipient, ContextUpgradeSafe) returns (bytes memory ret) {
+        return super._msgData();
+    }
 }

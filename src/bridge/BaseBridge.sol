@@ -2,14 +2,13 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import { IAMB } from "./external/IAMB.sol";
 import { IBaseBridge } from "./IBaseBridge.sol";
 import { IMultiTokenMediator } from "./external/IMultiTokenMediator.sol";
 import { DecimalERC20, Decimal } from "../utils/DecimalERC20.sol";
 import { PerpFiOwnableUpgrade } from "../utils/PerpFiOwnableUpgrade.sol";
 
-// solhint-disable-next-line
 abstract contract BaseBridge is PerpFiOwnableUpgrade, IBaseBridge, DecimalERC20 {
     using Decimal for Decimal.decimal;
 
