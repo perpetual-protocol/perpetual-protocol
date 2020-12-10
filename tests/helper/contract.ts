@@ -5,6 +5,8 @@ import {
     AMBBridgeMockInstance,
     AmmFakeContract,
     AmmFakeInstance,
+    AmmReaderContract,
+    AmmReaderInstance,
     BalancerMockContract,
     BalancerMockInstance,
     ChainlinkL1FakeContract,
@@ -53,6 +55,7 @@ import { Decimal, toFullDigit } from "./number"
 const L2PriceFeedMock = artifacts.require("L2PriceFeedMock") as L2PriceFeedMockContract
 const ERC20Fake = artifacts.require("ERC20Fake") as ERC20FakeContract
 const AmmFake = artifacts.require("AmmFake") as AmmFakeContract
+const AmmReader = artifacts.require("AmmReader") as AmmReaderContract
 const ClearingHouseViewer = artifacts.require("ClearingHouseViewer") as ClearingHouseViewerContract
 const ClearingHouseFake = artifacts.require("ClearingHouseFake") as ClearingHouseFakeContract
 const InsuranceFund = artifacts.require("InsuranceFundFake") as InsuranceFundFakeContract
@@ -159,6 +162,10 @@ export async function deployAmm(params: {
         spreadRatio,
         { from: deployer },
     )
+}
+
+export async function deployAmmReader(): Promise<AmmReaderInstance> {
+    return await AmmReader.new()
 }
 
 export async function deployClearingHouse(
