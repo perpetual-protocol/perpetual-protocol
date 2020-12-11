@@ -3,6 +3,7 @@ import { task, usePlugin } from "@nomiclabs/buidler/config"
 import {
     ARTIFACTS_DIR,
     COVERAGE_URL,
+    ETHERSCAN_API_KEY,
     GAS_PRICE,
     HOMESTEAD_MNEMONIC,
     HOMESTEAD_URL,
@@ -23,6 +24,7 @@ import { TASK_DEPLOY_LAYER } from "./scripts/common"
 usePlugin("@nomiclabs/buidler-truffle5")
 usePlugin("@nomiclabs/buidler-ethers")
 usePlugin("@nomiclabs/buidler-waffle")
+usePlugin("@nomiclabs/buidler-etherscan")
 usePlugin("@openzeppelin/buidler-upgrades")
 usePlugin("solidity-coverage")
 
@@ -120,6 +122,11 @@ const config = {
         src: "src", // Folder in root directory to begin search for .sol file
         currency: "USD", // gasPrice based on current ethGasStation API
         coinmarketcap: process.env.CMC_API_KEY, // optional
+    },
+    etherscan: {
+        // Your API key for Etherscan
+        // Obtain one at https://etherscan.io/
+        apiKey: ETHERSCAN_API_KEY,
     },
 }
 
