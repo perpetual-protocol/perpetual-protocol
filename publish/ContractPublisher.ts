@@ -86,6 +86,13 @@ export class ContractPublisher {
                     await (await chainlinkL1.setOwner(gov)).wait(this.confirmations)
                     await (await rootBridge.setOwner(gov)).wait(this.confirmations)
                 },
+                async (): Promise<void> => {
+                    // LAYER 1 DEPLOY FINISHED
+                    const governance = this.externalContract.foundationGovernance!
+                    console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
+                    await OzContractDeployer.transferProxyAdminOwnership(governance)
+                    console.log(`${this.layerType} contract deployment finished.`)
+                },
             ],
         ],
         layer2: [
@@ -126,16 +133,7 @@ export class ContractPublisher {
                         .create<L2PriceFeed>(ContractName.L2PriceFeed)
                         .deployUpgradableContract(ambBridgeOnXDaiAddr, rootBridgeOnEthAddr)
                 },
-            ],
-            // batch 1
-            [
                 async (): Promise<void> => {
-                    const filename = `${ContractName.ClearingHouse}.sol`
-
-                    // after flatten sol file we must re-compile again
-                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
-                    await bre.run(TASK_COMPILE)
-
                     // deploy clearing house
                     const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
                     const metaTxGatewayContract = this.factory.create<MetaTxGateway>(ContractName.MetaTxGateway)
@@ -149,9 +147,6 @@ export class ContractPublisher {
                             metaTxGatewayContract.address!,
                         )
                 },
-            ],
-            // batch 2
-            [
                 async (): Promise<void> => {
                     const clearingHouse = await this.factory
                         .create<ClearingHouse>(ContractName.ClearingHouse)
@@ -322,6 +317,47 @@ export class ContractPublisher {
                     await (await ETHUSDC.setOwner(gov)).wait(this.confirmations)
                     await (await BTCUSDC.setOwner(gov)).wait(this.confirmations)
                 },
+                async (): Promise<void> => {
+                    // LAYER 2 DEPLOY FINISHED\
+                    const governance = this.externalContract.foundationGovernance!
+                    console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
+                    await OzContractDeployer.transferProxyAdminOwnership(governance)
+                },
+            ],
+            // batch 1 (optional)
+            // deploy a new implementation of ClearingHouse, in order to make xdai blockscout verification works,
+            // we'll deploy a flatten one in an isolated build env. then PROXY_ADMIN should upgrade proxy to the new implementation
+            [
+                async (): Promise<void> => {
+                    const filename = `${ContractName.ClearingHouse}.sol`
+
+                    // after flatten sol file we must re-compile again
+                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                    await bre.run(TASK_COMPILE)
+
+                    // deploy clearing house implementation
+                    const contract = await this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    await contract.prepareUpgradeContract()
+                },
+            ],
+            // batch 2 (optional)
+            // deploy a new implementation of Amm, in order to make xdai blockscout verification works,
+            // we'll deploy a flatten one in an isolated build env. then PROXY_ADMIN should upgrade proxy to the new implementation
+            [
+                async (): Promise<void> => {
+                    const filename = `${ContractName.Amm}.sol`
+
+                    // after flatten sol file we must re-compile again
+                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                    await bre.run(TASK_COMPILE)
+
+                    // deploy amm implementation
+                    const ETHUSDC = this.factory.createAmm(AmmInstanceName.ETHUSDC)
+                    await ETHUSDC.prepareUpgradeContract()
+
+                    const BTCUSDC = this.factory.createAmm(AmmInstanceName.BTCUSDC)
+                    await BTCUSDC.prepareUpgradeContract()
+                },
             ],
         ],
     }
@@ -387,6 +423,6 @@ export class ContractPublisher {
         const governance = this.externalContract.foundationGovernance!
         console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
         await OzContractDeployer.transferProxyAdminOwnership(governance)
-        console.log("contract deployment finished.")
+        console.log("entire contract deployment finished.")
     }
 }
