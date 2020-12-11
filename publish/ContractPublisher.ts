@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import bre, { ethers } from "@nomiclabs/buidler"
+import { TASK_COMPILE } from "@nomiclabs/buidler/builtin-tasks/task-names"
 import { SRC_DIR } from "../constants"
 import { ExternalContracts, Layer } from "../scripts/common"
 import { flatten } from "../scripts/flatten"
@@ -130,7 +131,10 @@ export class ContractPublisher {
             [
                 async (): Promise<void> => {
                     const filename = `${ContractName.ClearingHouse}.sol`
+
+                    // after flatten sol file we must re-compile again
                     await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                    await bre.run(TASK_COMPILE)
 
                     // deploy clearing house
                     const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
