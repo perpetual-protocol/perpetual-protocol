@@ -37,8 +37,6 @@ export class OzContractDeployer {
             unsafeAllowCustomTypes: true,
         })
         console.log(`prepareUpgrade proxy=${proxy}, contractFileName=${contractFileName}, address=${address}`)
-        const contract = await ethers.getContractAt(contractFileName, address)
-        await this.syncNonce(contract.deployTransaction.hash)
         return address
     }
 

@@ -23,3 +23,5 @@ coverage.json
 .openzeppelin/*-31337.json
 
 .env.*
+
+flattened
