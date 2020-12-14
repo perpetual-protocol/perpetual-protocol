@@ -32,7 +32,7 @@ const STAGE = "production"
 
 // TODO: activate this after deployment
 // for current production.json, we already shut down the amm and remove token from insurance fund
-describe.skip("SystemTest Spec", () => {
+describe("SystemTest Spec", () => {
     const l1Provider = ethers.getDefaultProvider(LAYER_1)
     const l2Provider = new ethers.providers.JsonRpcProvider(XDAI_URL, { name: XDAI_NAME, chainId: XDAI_CHAINID })
     const settingsDao: SettingsDao = new SettingsDao(STAGE)
@@ -263,6 +263,19 @@ describe.skip("SystemTest Spec", () => {
             it("own by gov", async () => {
                 expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
             })
+
+            it("has correct config", async () => {
+                expect(await instance.tradeLimitRatio()).eq(ethers.utils.parseEther("0.9").toString())
+                expect(await instance.fluctuationLimitRatio()).eq(ethers.utils.parseEther("0.012").toString())
+                expect(await instance.tollRatio()).eq(ethers.utils.parseEther("0").toString())
+                expect(await instance.spreadRatio()).eq(ethers.utils.parseEther("0.001").toString())
+                expect((await instance.getMaxHoldingBaseAsset()).d.toString()).eq(
+                    ethers.utils.parseEther("10").toString(),
+                )
+                expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
+                    ethers.utils.parseEther("500000").toString(),
+                )
+            })
         })
 
         describe("BTCUSDC", async () => {
@@ -285,6 +298,19 @@ describe.skip("SystemTest Spec", () => {
 
             it("own by gov", async () => {
                 expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+            })
+
+            it("has correct config", async () => {
+                expect(await instance.tradeLimitRatio()).eq(ethers.utils.parseEther("0.9").toString())
+                expect(await instance.fluctuationLimitRatio()).eq(ethers.utils.parseEther("0.012").toString())
+                expect(await instance.tollRatio()).eq(ethers.utils.parseEther("0").toString())
+                expect(await instance.spreadRatio()).eq(ethers.utils.parseEther("0.001").toString())
+                expect((await instance.getMaxHoldingBaseAsset()).d.toString()).eq(
+                    ethers.utils.parseEther("0.25").toString(),
+                )
+                expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
+                    ethers.utils.parseEther("500000").toString(),
+                )
             })
         })
     })
