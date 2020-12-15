@@ -827,7 +827,7 @@ describe("ClearingHouse - open/close position Test", () => {
                 clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(60), toDecimal(21), toDecimal(37.5), {
                     from: alice,
                 }),
-                "marginRatio not enough",
+                "Margin ratio not meet criteria",
             )
         })
 
@@ -974,6 +974,65 @@ describe("ClearingHouse - open/close position Test", () => {
                 liquidationFee: "16061946902654867256",
                 badDebt: "16061946902654867256",
             })
+        })
+
+        it("force error, can NOT open a long/short position when position(long) is under collateral", async () => {
+            // deposit to 2000
+            await approve(alice, clearingHouse.address, 2000)
+            await approve(bob, clearingHouse.address, 2000)
+
+            // AMM after 1250 : 80...
+            // position 20
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+
+            // Then Bob short 250,  price will decrease
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(250), toDecimal(1), toDecimal(0), {
+                from: bob,
+            })
+
+            /**
+             * Now Alice's position is {balance: 20, margin: 25}
+             * positionValue of 20 quoteAsset is 166.67 now
+             * marginRatio = (margin(25) + unrealizedPnl(166.67-250)) / openNotionalSize(250) = -23%
+             */
+            await expectRevert(
+                clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                }),
+                "Margin ratio not meet criteria",
+            )
+
+            await expectRevert(
+                clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                }),
+                "Margin ratio not meet criteria",
+            )
+        })
+
+        it("force error, can NOT open a long/short position when position(short) is under collateral", async () => {
+            // deposit to 2000
+            await approve(alice, clearingHouse.address, 2000)
+            await approve(bob, clearingHouse.address, 2000)
+
+            // AMM after 125 : 80...
+            // position 25
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(10), toDecimal(0), {
+                from: bob,
+            })
+
+            // Now Alice's position is underwater, cant increase position
+            await expectRevert(
+                clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                }),
+                "Margin ratio not meet criteria",
+            )
         })
     })
 
@@ -1555,31 +1614,6 @@ describe("ClearingHouse - open/close position Test", () => {
             )
         })
 
-        it("force error, not enough margin to open a reverse position when fee is 10%", async () => {
-            await approve(alice, clearingHouse.address, 220)
-            await approve(bob, clearingHouse.address, 2000)
-
-            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(10), toDecimal(0), {
-                from: alice,
-            })
-
-            // bob short position to make alice's position underwater
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
-                from: bob,
-            })
-            expect(await clearingHouseViewer.getUnrealizedPnl(amm.address, alice, PnlCalcOption.SPOT_PRICE)).eq(
-                "-29577464788732394374",
-            )
-
-            // then alice cant reduce the position when hers is underwater
-            await expectRevert(
-                clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(19), toDecimal(10), toDecimal(0), {
-                    from: alice,
-                }),
-                "reduce an underwater position",
-            )
-        })
-
         it("has spread but no toll", async () => {
             await amm.setSpreadRatio(toDecimal(0.1))
             await amm.setTollRatio(toDecimal(0))
@@ -1899,9 +1933,9 @@ describe("ClearingHouse - open/close position Test", () => {
             })
 
             it("open short, price up, then short again", async () => {
-                // alice opens short position with 100 margin, 2x leverage
+                // alice opens short position with 200 margin, 1x leverage
                 // (1000 - 200) * (100 + baseAssetDelta) = 100k, baseAssetDelta = 25
-                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(100), toDecimal(2), toDecimal(25), {
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(200), toDecimal(1), toDecimal(25), {
                     from: alice,
                 })
                 const aliceBalance1 = await quoteToken.balanceOf(alice)
@@ -1934,8 +1968,8 @@ describe("ClearingHouse - open/close position Test", () => {
                 expect(position.size).to.eq(toFullDigit(-50))
                 // open notional = 200 + 200 = 400
                 expect(position.openNotional).to.eq(toFullDigit(400))
-                // total position margin = oldMargin + newMargin + realizedPnl = 100 + 50 + 0 = 150
-                expect(position.margin).to.eq(toFullDigit(150))
+                // total position margin = oldMargin + newMargin + realizedPnl = 200 + 50 + 0 = 250
+                expect(position.margin).to.eq(toFullDigit(250))
             })
         })
 

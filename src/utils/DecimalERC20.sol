@@ -1,8 +1,7 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
-pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import { Decimal } from "./Decimal.sol";
 
@@ -11,6 +10,11 @@ abstract contract DecimalERC20 {
     using Decimal for Decimal.decimal;
 
     mapping(address => uint256) private decimalMap;
+
+    //◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤ add state variables below ◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤//
+
+    //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
+    uint256[50] private __gap;
 
     //
     // INTERNAL functions
@@ -27,9 +31,8 @@ abstract contract DecimalERC20 {
         uint256 roundedDownValue = _toUint(_token, _value);
 
         // solhint-disable avoid-low-level-calls
-        (bool success, bytes memory data) = address(_token).call(
-            abi.encodeWithSelector(_token.transfer.selector, _to, roundedDownValue)
-        );
+        (bool success, bytes memory data) =
+            address(_token).call(abi.encodeWithSelector(_token.transfer.selector, _to, roundedDownValue));
 
         require(success && (data.length == 0 || abi.decode(data, (bool))), "DecimalERC20: transfer failed");
         _validateBalance(_token, _to, roundedDownValue, balanceBefore);
@@ -46,9 +49,8 @@ abstract contract DecimalERC20 {
         uint256 roundedDownValue = _toUint(_token, _value);
 
         // solhint-disable avoid-low-level-calls
-        (bool success, bytes memory data) = address(_token).call(
-            abi.encodeWithSelector(_token.transferFrom.selector, _from, _to, roundedDownValue)
-        );
+        (bool success, bytes memory data) =
+            address(_token).call(abi.encodeWithSelector(_token.transferFrom.selector, _from, _to, roundedDownValue));
 
         require(success && (data.length == 0 || abi.decode(data, (bool))), "DecimalERC20: transferFrom failed");
         _validateBalance(_token, _to, roundedDownValue, balanceBefore);
@@ -127,9 +129,8 @@ abstract contract DecimalERC20 {
         Decimal.decimal memory _value
     ) private {
         // solhint-disable avoid-low-level-calls
-        (bool success, bytes memory data) = address(_token).call(
-            abi.encodeWithSelector(_token.approve.selector, _spender, _toUint(_token, _value))
-        );
+        (bool success, bytes memory data) =
+            address(_token).call(abi.encodeWithSelector(_token.approve.selector, _spender, _toUint(_token, _value)));
         require(success && (data.length == 0 || abi.decode(data, (bool))), "DecimalERC20: approve failed");
     }
 

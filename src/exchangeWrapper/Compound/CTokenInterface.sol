@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
-
 
 // copy from https://github.com/compound-finance/compound-protocol/blob/master/contracts/CTokenInterfaces.sol#L250
 
@@ -27,12 +26,15 @@ interface CErc20Interface {
     function repayBorrowBehalf(address borrower, uint256 repayAmount) external returns (uint256);
 }
 
-
 // https://github.com/compound-finance/compound-protocol/blob/master/contracts/CTokenInterfaces.sol#L119
 interface CTokenInterface {
     function transfer(address dst, uint256 amount) external returns (bool);
 
-    function transferFrom(address src, address dst, uint256 amount) external returns (bool);
+    function transferFrom(
+        address src,
+        address dst,
+        uint256 amount
+    ) external returns (bool);
 
     function approve(address spender, uint256 amount) external returns (bool);
 
@@ -42,7 +44,15 @@ interface CTokenInterface {
 
     function balanceOfUnderlying(address owner) external returns (uint256);
 
-    function getAccountSnapshot(address account) external view returns (uint256, uint256, uint256, uint256);
+    function getAccountSnapshot(address account)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        );
 
     function borrowRatePerBlock() external view returns (uint256);
 
@@ -62,8 +72,11 @@ interface CTokenInterface {
 
     function accrueInterest() external returns (uint256);
 
-    function seize(address liquidator, address borrower, uint256 seizeTokens) external returns (uint256);
+    function seize(
+        address liquidator,
+        address borrower,
+        uint256 seizeTokens
+    ) external returns (uint256);
 }
-
 
 interface CErc20 is CErc20Interface, CTokenInterface {}

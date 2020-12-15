@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
+import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import { Decimal } from "../utils/Decimal.sol";
 import { SignedDecimal } from "../utils/SignedDecimal.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IAmm {
     /**
@@ -93,7 +93,7 @@ interface IAmm {
         Decimal.decimal memory _baseAssetPoolAmount
     ) external pure returns (Decimal.decimal memory);
 
-    function getReserve() external view returns (Decimal.decimal memory, Decimal.decimal memory);
+    function getSpotPrice() external view returns (Decimal.decimal memory);
 
     function getLiquidityHistoryLength() external view returns (uint256);
 

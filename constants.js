@@ -1,6 +1,9 @@
 const dotenv = require("dotenv")
-const { resolve } = require("path")
+const { resolve, join } = require("path")
 dotenv.config({ path: resolve(__dirname, "..", "..", ".env") })
+
+const ROOT_DIR = __dirname
+const SRC_DIR_NAME = "src"
 
 module.exports = {
     COVERAGE_URL: "http://127.0.0.1:8555",
@@ -19,5 +22,9 @@ module.exports = {
     XDAI_MNEMONIC: process.env["XDAI_MNEMONIC"] || "",
     ARTIFACTS_DIR: "./build/contracts",
     GAS: 8000000,
-    GAS_PRICE: 100000000000,
+    GAS_PRICE: 70000000000,
+    ROOT_DIR,
+    SRC_DIR_NAME,
+    SRC_DIR: join(ROOT_DIR, SRC_DIR_NAME),
+    ETHERSCAN_API_KEY: process.env["ETHERSCAN_API_KEY"] || "",
 }

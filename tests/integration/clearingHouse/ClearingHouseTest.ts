@@ -12,7 +12,6 @@ import {
     L2PriceFeedMockInstance,
     MetaTxGatewayInstance,
     MinterInstance,
-    PerpTokenInstance,
     RewardsDistributionFakeInstance,
     StakingReserveInstance,
     SupplyScheduleFakeInstance,
@@ -48,7 +47,6 @@ describe("ClearingHouse Test", () => {
     let clearingHouse: ClearingHouseFakeInstance
     let clearingHouseViewer: ClearingHouseViewerInstance
     let supplySchedule: SupplyScheduleFakeInstance
-    let perpToken: PerpTokenInstance
     let minter: MinterInstance
 
     let traderWallet1: TraderWalletInstance
@@ -73,7 +71,6 @@ describe("ClearingHouse Test", () => {
         clearingHouse = contracts.clearingHouse
         clearingHouseViewer = contracts.clearingHouseViewer
         supplySchedule = contracts.supplySchedule
-        perpToken = contracts.perpToken
         clearingHouse = contracts.clearingHouse
 
         // Each of Alice & Bob have 5000 DAI
@@ -403,7 +400,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("has huge funding payment profit that doesn't need margin anymore", async () => {
-            // given the underlying twap price is 11.6, and current snapShot price is 400B/250Q = $1.6
+            // given the underlying twap price is 21.6, and current snapShot price is 400B/250Q = $1.6
             await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
             await gotoNextFundingTime()
             await clearingHouse.payFunding(amm.address)
@@ -420,6 +417,77 @@ describe("ClearingHouse Test", () => {
             expect(await clearingHouseViewer.getPersonalBalanceWithFundingPayment(quoteToken.address, alice)).eq(
                 toFullDigit(650),
             )
+        })
+
+        it("has huge funding payment loss that the margin become 0 with bad debt of long position", async () => {
+            // given the underlying twap price is 21.6, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+
+            // then bob will get 2000% of her position size as fundingPayment
+            // funding payment: -187.5 x 2000% = -3750, margin is 1200 so bad debt = -3750 + 1200 = 2550
+            expect((await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, bob)).margin).eq(
+                toFullDigit(0),
+            )
+
+            const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
+            await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
+                badDebt: toFullDigitStr(2550),
+                fundingPayment: toFullDigitStr(3750),
+            })
+        })
+
+        it("has huge funding payment loss that the margin become 0, can add margin", async () => {
+            // given the underlying twap price is 21.6, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+
+            // then bob will get 2000% of her position size as fundingPayment
+            // funding payment: -187.5 x 2000% = -3750, margin is 1200 so bad debt = -3750 + 1200 = 2550
+            // margin can be added but will still shows 0 until it's larger than bad debt
+            await approve(bob, clearingHouse.address, 1)
+            await clearingHouse.addMargin(amm.address, toDecimal(1), { from: bob })
+            expect((await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, bob)).margin).eq(
+                toFullDigit(0),
+            )
+        })
+
+        it("has huge funding payment loss that the margin become 0, can not remove margin", async () => {
+            // given the underlying twap price is 21.6, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+
+            // then bob will get 2000% of her position size as fundingPayment
+            // funding payment: -187.5 x 2000% = -3750, margin is 1200 so bad debt = -3750 + 1200 = 2550
+            // margin can't removed
+            await expectRevert(
+                clearingHouse.removeMargin(amm.address, toDecimal(1), { from: bob }),
+                "margin is not enough",
+            )
+        })
+
+        it("reduce bad debt after adding margin to a underwater position", async () => {
+            // given the underlying twap price is 21.6, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+
+            // then bob will get 2000% of her position size as fundingPayment
+            // funding payment: -187.5 x 2000% = -3750, margin is 1200 so bad debt = -3750 + 1200 = 2550
+            // margin can be added but will still shows 0 until it's larger than bad debt
+            // margin can't removed
+            await approve(bob, clearingHouse.address, 10)
+            await clearingHouse.addMargin(amm.address, toDecimal(10), { from: bob })
+
+            // badDebt 2550 - 10 margin = 2540
+            const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
+            await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
+                badDebt: toFullDigitStr(2540),
+                fundingPayment: toFullDigitStr(3750),
+            })
         })
 
         it("will change nothing if the funding rate is 0", async () => {
@@ -459,8 +527,8 @@ describe("ClearingHouse Test", () => {
                 from: alice,
             })
 
-            const clearingHouseBaseTokenBalance = await quoteToken.balanceOf(clearingHouse.address)
-            expect(clearingHouseBaseTokenBalance).eq(toFullDigit(60, +(await quoteToken.decimals())))
+            const clearingHouseQuoteTokenBalance = await quoteToken.balanceOf(clearingHouse.address)
+            expect(clearingHouseQuoteTokenBalance).eq(toFullDigit(60, +(await quoteToken.decimals())))
             const allowance = await quoteToken.allowance(alice, clearingHouse.address)
             expect(allowance).to.eq(toFullDigit(2000 - 60, +(await quoteToken.decimals())))
         })
@@ -471,6 +539,7 @@ describe("ClearingHouse Test", () => {
                 sender: alice,
                 amm: amm.address,
                 amount: toFullDigit(80),
+                fundingPayment: "0",
             })
             await expectEvent.inTransaction(receipt.tx, quoteToken, "Transfer", {
                 from: alice,
@@ -492,6 +561,7 @@ describe("ClearingHouse Test", () => {
                 sender: alice,
                 amm: amm.address,
                 amount: toFullDigit(-20),
+                fundingPayment: "0",
             })
             await expectEvent.inTransaction(receipt.tx, quoteToken, "Transfer", {
                 from: clearingHouse.address,
@@ -507,13 +577,34 @@ describe("ClearingHouse Test", () => {
             )
         })
 
+        it("remove margin after pay funding", async () => {
+            // given the underlying twap price is 25.5, and current snapShot price is 1600 / 62.5 = 25.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(25.5))
+
+            // when the new fundingRate is 10% which means underlyingPrice < snapshotPrice
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+            expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(0.1))
+
+            // remove margin 20
+            const receipt = await clearingHouse.removeMargin(amm.address, toDecimal(20), {
+                from: alice,
+            })
+            await expectEvent.inTransaction(receipt.tx, clearingHouse, "MarginChanged", {
+                sender: alice,
+                amm: amm.address,
+                amount: toFullDigit(-20),
+                fundingPayment: toFullDigit(3.75),
+            })
+        })
+
         it("Force error, remove margin - not enough position margin", async () => {
             // margin is 60, try to remove more than 60
             const removedMargin = 61
 
             await expectRevert(
                 clearingHouse.removeMargin(amm.address, toDecimal(removedMargin), { from: alice }),
-                "Margin is not enough",
+                "revert margin is not enough",
             )
         })
 
@@ -525,7 +616,7 @@ describe("ClearingHouse Test", () => {
             // margin ratio -> 24 / 600 = 4%
             await expectRevert(
                 clearingHouse.removeMargin(amm.address, toDecimal(removedMargin), { from: alice }),
-                "marginRatio not enough",
+                "Margin ratio not meet criteria",
             )
         })
     })
@@ -650,6 +741,126 @@ describe("ClearingHouse Test", () => {
             const marginRatio = await clearingHouse.getMarginRatio(amm.address, alice)
             expect(marginRatio.d).to.eq("96557377049180327")
         })
+
+        describe("verify margin ratio when there is funding payments", () => {
+            it("when funding rate is positive", async () => {
+                await approve(alice, clearingHouse.address, 2000)
+
+                // now price is 1250 / 80 = 15.625
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(20), {
+                    from: alice,
+                })
+
+                // given the underlying twap price is 15.5
+                await mockPriceFeed.setTwapPrice(toFullDigit(15.5))
+
+                await gotoNextFundingTime()
+                await clearingHouse.payFunding(amm.address)
+                expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(0.125))
+
+                // marginRatio = (margin + funding payments + unrealized Pnl) / openNotional
+                // then alice need to pay 12.5% of her position size as fundingPayment which is 20 * 12.5% = 2.5
+                // margin 25 --> 22.5 (margin + funding payment)
+                // pnl is 0, then open notional = 250, margin ratio = 22.5 / 250 = 0.09
+                const aliceMarginRatio = await clearingHouseViewer.getMarginRatio(amm.address, alice)
+                expect(aliceMarginRatio).to.eq(toFullDigit(0.09))
+            })
+
+            it("when funding rate is negative", async () => {
+                await approve(alice, clearingHouse.address, 2000)
+
+                // now price is 1250 / 80 = 15.625
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(20), {
+                    from: alice,
+                })
+
+                // given the underlying twap price is 15.7
+                await mockPriceFeed.setTwapPrice(toFullDigit(15.7))
+
+                await gotoNextFundingTime()
+                await clearingHouse.payFunding(amm.address)
+                expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(-0.075))
+
+                // marginRatio = (margin + funding payments + unrealized Pnl) / openNotional
+                // then alice need to pay -7.5% of her position size as fundingPayment which is 20 * -7.5% = -1.5
+                // margin 25 --> 26.5 (margin + funding payment)
+                // pnl is 0, then open notional = 250, margin ratio = 26.5 / 250 = 0.106
+                const aliceMarginRatio = await clearingHouseViewer.getMarginRatio(amm.address, alice)
+                expect(aliceMarginRatio).to.eq(toFullDigit(0.106))
+            })
+
+            it("with pnl and funding rate is positive", async () => {
+                await approve(alice, clearingHouse.address, 2000)
+                await approve(bob, clearingHouse.address, 2000)
+
+                // now price is 1250 / 80 = 15.625
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(20), {
+                    from: alice,
+                })
+                // now price is 800 / 125 = 6.4
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(45), toDecimal(10), toDecimal(45), {
+                    from: bob,
+                })
+
+                // given the underlying twap price is 6.3
+                await mockPriceFeed.setTwapPrice(toFullDigit(6.3))
+
+                await gotoNextFundingTime()
+                await clearingHouse.payFunding(amm.address)
+                expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(0.1))
+
+                // marginRatio = (margin + funding payments + unrealized Pnl) / openNotional
+                // then alice need to pay 10% of her position size as fundingPayment which is 20 * 10% = 2
+                // margin 25 --> 23 (margin + funding payment)
+                // pnl is -139.655, margin ratio = (23 + (-139.655)) / 250 = -0.466
+                const pnl = await clearingHouse.getPositionNotionalAndUnrealizedPnl(amm.address, alice, 0)
+                console.log(pnl[0].d.toString(), pnl[1].d.toString())
+                const aliceMarginRatio = await clearingHouseViewer.getMarginRatio(amm.address, alice)
+                expect(aliceMarginRatio).to.eq("-466620689655172413")
+
+                // then bob need to pay 10% of his position size as fundingPayment which is 45 * 10% = 4.5
+                // margin 45 --> 49.5 (margin + funding payment)
+                // pnl is 0, margin ratio = 49.5 / 450 = 0.11
+                const bobMarginRatio = await clearingHouseViewer.getMarginRatio(amm.address, bob)
+                expect(bobMarginRatio).to.eq(toFullDigit(0.11))
+            })
+
+            it("with pnl and funding rate is negative", async () => {
+                await approve(alice, clearingHouse.address, 2000)
+                await approve(bob, clearingHouse.address, 2000)
+
+                // now price is 1250 / 80 = 15.625
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(20), {
+                    from: alice,
+                })
+                // now price is 800 / 125 = 6.4
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(45), toDecimal(10), toDecimal(45), {
+                    from: bob,
+                })
+
+                // given the underlying twap price is 6.5
+                await mockPriceFeed.setTwapPrice(toFullDigit(6.5))
+
+                await gotoNextFundingTime()
+                await clearingHouse.payFunding(amm.address)
+                expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(-0.1))
+
+                // marginRatio = (margin + funding payments + unrealized Pnl) / openNotional
+                // then alice need to pay 10% of her position size as fundingPayment which is 20 * -10% = -2
+                // margin 25 --> 27 (margin + funding payment)
+                // pnl is -139.655, margin ratio = (27 + (-139.655)) / 250 = -0.450620689655172413
+                const pnl = await clearingHouse.getPositionNotionalAndUnrealizedPnl(amm.address, alice, 0)
+                console.log(pnl[0].d.toString(), pnl[1].d.toString())
+                const aliceMarginRatio = await clearingHouseViewer.getMarginRatio(amm.address, alice)
+                expect(aliceMarginRatio).to.eq("-450620689655172413")
+
+                // then bob need to pay -10% of his position size as fundingPayment which is 45 * -10% = 4.5
+                // margin 45 --> 40.5 (margin + funding payment)
+                // pnl is 0, margin ratio = 40.5 / 450 = 0.09
+                const bobMarginRatio = await clearingHouseViewer.getMarginRatio(amm.address, bob)
+                expect(bobMarginRatio).to.eq(toFullDigit(0.09))
+            })
+        })
     })
 
     describe("liquidate", () => {
@@ -715,6 +926,7 @@ describe("ClearingHouse Test", () => {
                 fee: "0",
                 positionSizeAfter: "0",
                 realizedPnl: "-15384615384615384623",
+                fundingPayment: "0",
             })
 
             // verify carol get her reward
@@ -843,7 +1055,7 @@ describe("ClearingHouse Test", () => {
             // then anyone (eg. carol) calling liquidate() would get an exception
             await expectRevert(
                 clearingHouse.liquidate(amm.address, alice, { from: carol }),
-                "Margin ratio is larger than min requirement",
+                "Margin ratio not meet criteria",
             )
         })
 
@@ -876,7 +1088,7 @@ describe("ClearingHouse Test", () => {
             // then anyone (eg. carol) calling liquidate() would get an exception
             await expectRevert(
                 clearingHouse.liquidate(amm.address, alice, { from: carol }),
-                "Margin ratio is larger than min requirement",
+                "Margin ratio not meet criteria",
             )
         })
 
@@ -942,10 +1154,12 @@ describe("ClearingHouse Test", () => {
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
             await approve(carol, clearingHouse.address, 100)
-            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.2), { from: admin })
+            // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
 
             // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
             // AMM after: 1100 : 90.9090909091
+            // actual margin ratio is 19.99...9%
             await openSmallPositions(bob, Side.BUY, toDecimal(4), toDecimal(5), 5)
 
             // when carol create a 10 margin * 5x long position when 7.5757575758 quoteAsset = 100 DAI
@@ -981,7 +1195,8 @@ describe("ClearingHouse Test", () => {
             await approve(bob, clearingHouse.address, 100)
             await approve(carol, clearingHouse.address, 100)
             await approve(relayer, clearingHouse.address, 100)
-            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.2), { from: admin })
+            // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
 
             // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
             // AMM after: 1100 : 90.9090909091
@@ -1047,7 +1262,8 @@ describe("ClearingHouse Test", () => {
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
             await approve(carol, clearingHouse.address, 100)
-            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.2), { from: admin })
+            // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
 
             // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
             // AMM after: 1100 : 90.9090909091, price: 12.1
@@ -1084,7 +1300,8 @@ describe("ClearingHouse Test", () => {
             await approve(bob, clearingHouse.address, 100)
             await approve(carol, clearingHouse.address, 100)
             await approve(relayer, clearingHouse.address, 100)
-            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.2), { from: admin })
+            // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
 
             // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
             // AMM after: 1100 : 90.9090909091, price: 12.1
@@ -1377,35 +1594,6 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("4998048781")
             expect(await quoteToken.balanceOf(clearingHouse.address)).to.eq(toFullDigit(0))
-        })
-
-        it("force error, open an opposite position but existing margin not enough to pay PnL", async () => {
-            // deposit to 30
-            await approve(bob, clearingHouse.address, 30)
-
-            // AMM after 1250 : 80...
-            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(0), {
-                from: bob,
-            })
-
-            // Then alice short 250,  price will decrease
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(25), toDecimal(10), toDecimal(0), {
-                from: alice,
-            })
-
-            /**
-             * Now Bob's position is {margin: 25}
-             * positionValue of 20 quoteAsset is 166.67 now
-             */
-            // Bob's realizedPnl = 166.67 - 250 = -83.33, he lost all his margin(25)
-            // realizedPnl(58.33) > bob's allowance(5) + margin(25)
-            // which means Bob has no money to pay the loss to close the position
-            await expectRevert(
-                clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(25), toDecimal(10), toDecimal(0), {
-                    from: bob,
-                }),
-                "reduce an underwater position",
-            )
         })
     })
 
@@ -2154,6 +2342,175 @@ describe("ClearingHouse Test", () => {
             expectEvent.inTransaction(r.tx, clearingHouse, "PositionChanged", {
                 realizedPnl: "-137",
                 exchangedPositionSize: "1619047619047619047696",
+            })
+        })
+
+        it("adjust position after adding liquidity with positive position size", async () => {
+            // alice position: 9.090
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+            // bob position: 13.986
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(10), toDecimal(0), {
+                from: bob,
+            })
+            // carol position: -6.41
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: carol,
+            })
+
+            // baseReserve = 83.33...
+            // quoteReserve = 1200
+            // new baseReserve = 166.66
+            // new quoteReserve = 2400
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0), { from: admin })
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).true
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).true
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, carol)).true
+
+            const receiptAlice = await clearingHouse.adjustPosition(amm.address, { from: alice })
+            await expectEvent.inTransaction(receiptAlice.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "8620689655172413793",
+            })
+            const receiptBob = await clearingHouse.adjustPosition(amm.address, { from: bob })
+            await expectEvent.inTransaction(receiptBob.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "12903225806451612904",
+            })
+            const receiptCarol = await clearingHouse.adjustPosition(amm.address, { from: carol })
+            await expectEvent.inTransaction(receiptCarol.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "-6666666666666666667",
+            })
+
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).false
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).false
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, carol)).false
+        })
+
+        it("adjust position after adding liquidity with negative position size", async () => {
+            // alice position: -11.11
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+            // bob position: -31.74
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
+                from: bob,
+            })
+
+            // total position = -42.85
+            // baseReserve = 142.85
+            // quoteReserve = 700
+            // new baseReserve = 285.71
+            // new quoteReserve = 1400
+            await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).true
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).true
+
+            const receiptAlice = await clearingHouse.adjustPosition(amm.address, { from: alice })
+            await expectEvent.inTransaction(receiptAlice.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "-11560693641618497111",
+            })
+            const receiptBob = await clearingHouse.adjustPosition(amm.address, { from: bob })
+            await expectEvent.inTransaction(receiptBob.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "-35714285714285714286",
+            })
+
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).false
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).false
+        })
+
+        it("adjust position after adding liquidity with position size is zero", async () => {
+            // alice position: 9.09
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+            // bob position: -9.09
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: bob,
+            })
+
+            // total position = 0
+            // baseReserve = 100
+            // quoteReserve = 1000
+            // new baseReserve = 200
+            // new quoteReserve = 2000
+            const receipt = await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).true
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).true
+
+            const receiptAlice = await clearingHouse.adjustPosition(amm.address, { from: alice })
+            await expectEvent.inTransaction(receiptAlice.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "8695652173913043479",
+            })
+            const receiptBob = await clearingHouse.adjustPosition(amm.address, { from: bob })
+            await expectEvent.inTransaction(receiptBob.tx, clearingHouse, "PositionAdjusted", {
+                newPositionSize: "-9523809523809523810",
+            })
+
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, alice)).false
+            expect(await clearingHouseViewer.isPositionNeedToBeMigrated(amm.address, bob)).false
+        })
+
+        // AMM quote : base = 1000 : 100
+        describe("limitation of reducing liquidity", () => {
+            it("(short) can reduce liquidity when above the limit", async () => {
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(200), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                })
+                // Amm reserve : 800 : 125
+                // total position size = -25, baseAssetDelta = 25
+                // limit should be (25 + 1g wei) / 125 ~= 0.20+
+                const r = await amm.migrateLiquidity(toDecimal("0.21"), toDecimal(0))
+                await expectEvent.inTransaction(r.tx, amm, "LiquidityChanged")
+
+                // Amm reserves are around 168 : 26.25
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                })
+
+                const r2 = await amm.migrateLiquidity(toDecimal(10), toDecimal(0))
+                await expectEvent.inTransaction(r2.tx, amm, "LiquidityChanged")
+            })
+
+            it("(short) can not reduce liquidity when under the limit", async () => {
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(200), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                })
+                // Amm reserve : 800 : 125
+                // total position size = -25, baseAssetDelta = 25
+                // limit should be (25 + 1g wei) / 125 ~= 0.20+
+                await expectRevert(amm.migrateLiquidity(toDecimal("0.2"), toDecimal(0)), "illegal liquidity multiplier")
+            })
+
+            it("(long) can reduce liquidity when above the limit", async () => {
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(250), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                })
+                // Amm reserve : 1250 : 80
+                // total position size = 20
+                // limit should be (20 + 1gwei) / 80 ~= 0.25+
+                const r = await amm.migrateLiquidity(toDecimal("0.26"), toDecimal(0))
+                await expectEvent.inTransaction(r.tx, amm, "LiquidityChanged")
+            })
+
+            it("(long) can not reduce liquidity when under the limit", async () => {
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(250), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                })
+                // Amm reserve : 1250 : 80
+                // total position size = 20
+                // limit should be (20 + 1gwei) / 80 ~= 0.25+
+                await expectRevert(
+                    amm.migrateLiquidity(toDecimal("0.25"), toDecimal(0)),
+                    "illegal liquidity multiplier",
+                )
+            })
+
+            it("(long) no upper bound when increase liquidity", async () => {
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(250), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                })
+                const r = await amm.migrateLiquidity(toDecimal("100"), toDecimal(0))
+                await expectEvent.inTransaction(r.tx, amm, "LiquidityChanged")
             })
         })
     })

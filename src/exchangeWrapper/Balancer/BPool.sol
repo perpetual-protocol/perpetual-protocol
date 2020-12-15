@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
-
 
 // copy from Balancer doc https://docs.balancer.finance/smart-contracts/interfaces
 interface BPool {
@@ -50,9 +49,17 @@ interface BPool {
 
     function finalize() external;
 
-    function bind(address token, uint256 balance, uint256 denorm) external;
+    function bind(
+        address token,
+        uint256 balance,
+        uint256 denorm
+    ) external;
 
-    function rebind(address token, uint256 balance, uint256 denorm) external;
+    function rebind(
+        address token,
+        uint256 balance,
+        uint256 denorm
+    ) external;
 
     function unbind(address token) external;
 
@@ -82,21 +89,29 @@ interface BPool {
         uint256 maxPrice
     ) external returns (uint256 tokenAmountIn, uint256 spotPriceAfter);
 
-    function joinswapExternAmountIn(address tokenIn, uint256 tokenAmountIn, uint256 minPoolAmountOut)
-        external
-        returns (uint256 poolAmountOut);
+    function joinswapExternAmountIn(
+        address tokenIn,
+        uint256 tokenAmountIn,
+        uint256 minPoolAmountOut
+    ) external returns (uint256 poolAmountOut);
 
-    function joinswapPoolAmountOut(address tokenIn, uint256 poolAmountOut, uint256 maxAmountIn)
-        external
-        returns (uint256 tokenAmountIn);
+    function joinswapPoolAmountOut(
+        address tokenIn,
+        uint256 poolAmountOut,
+        uint256 maxAmountIn
+    ) external returns (uint256 tokenAmountIn);
 
-    function exitswapPoolAmountIn(address tokenOut, uint256 poolAmountIn, uint256 minAmountOut)
-        external
-        returns (uint256 tokenAmountOut);
+    function exitswapPoolAmountIn(
+        address tokenOut,
+        uint256 poolAmountIn,
+        uint256 minAmountOut
+    ) external returns (uint256 tokenAmountOut);
 
-    function exitswapExternAmountOut(address tokenOut, uint256 tokenAmountOut, uint256 maxPoolAmountIn)
-        external
-        returns (uint256 poolAmountIn);
+    function exitswapExternAmountOut(
+        address tokenOut,
+        uint256 tokenAmountOut,
+        uint256 maxPoolAmountIn
+    ) external returns (uint256 poolAmountIn);
 
     function totalSupply() external view returns (uint256);
 
@@ -108,7 +123,11 @@ interface BPool {
 
     function transfer(address dst, uint256 amt) external returns (bool);
 
-    function transferFrom(address src, address dst, uint256 amt) external returns (bool);
+    function transferFrom(
+        address src,
+        address dst,
+        uint256 amt
+    ) external returns (bool);
 
     function calcSpotPrice(
         uint256 tokenBalanceIn,

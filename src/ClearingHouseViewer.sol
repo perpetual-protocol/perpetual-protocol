@@ -1,15 +1,18 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
+import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import { Decimal } from "./utils/Decimal.sol";
-import { SignedDecimal, MixedDecimal } from "./utils/MixedDecimal.sol";
+import { SignedDecimal } from "./utils/SignedDecimal.sol";
+import { MixedDecimal } from "./utils/MixedDecimal.sol";
 import { IAmm } from "./interface/IAmm.sol";
 import { IInsuranceFund } from "./interface/IInsuranceFund.sol";
 import { ClearingHouse } from "./ClearingHouse.sol";
 
 contract ClearingHouseViewer {
+    using SafeMath for uint256;
     using Decimal for Decimal.decimal;
     using SignedDecimal for SignedDecimal.signedDecimal;
     using MixedDecimal for SignedDecimal.signedDecimal;
@@ -40,9 +43,8 @@ contract ClearingHouseViewer {
         address _trader,
         ClearingHouse.PnlCalcOption _pnlCalcOption
     ) external view returns (SignedDecimal.signedDecimal memory) {
-        (, SignedDecimal.signedDecimal memory unrealizedPnl) = (
-            clearingHouse.getPositionNotionalAndUnrealizedPnl(_amm, _trader, _pnlCalcOption)
-        );
+        (, SignedDecimal.signedDecimal memory unrealizedPnl) =
+            (clearingHouse.getPositionNotionalAndUnrealizedPnl(_amm, _trader, _pnlCalcOption));
         return unrealizedPnl;
     }
 
@@ -80,10 +82,29 @@ contract ClearingHouseViewer {
         returns (ClearingHouse.Position memory position)
     {
         position = clearingHouse.getPosition(_amm, _trader);
-        SignedDecimal.signedDecimal memory marginWithFundingPayment = MixedDecimal.fromDecimal(position.margin).addD(
-            getFundingPayment(position, clearingHouse.getLatestCumulativePremiumFraction(_amm))
-        );
+        SignedDecimal.signedDecimal memory marginWithFundingPayment =
+            MixedDecimal.fromDecimal(position.margin).addD(
+                getFundingPayment(position, clearingHouse.getLatestCumulativePremiumFraction(_amm))
+            );
         position.margin = marginWithFundingPayment.toInt() >= 0 ? marginWithFundingPayment.abs() : Decimal.zero();
+    }
+
+    /**
+     * @notice verify if trader's position needs to be migrated
+     * @param _amm IAmm address
+     * @param _trader trader address
+     * @return true if trader's position is not at the latest Amm curve, otherwise is false
+     */
+    function isPositionNeedToBeMigrated(IAmm _amm, address _trader) external view returns (bool) {
+        ClearingHouse.Position memory unadjustedPosition = clearingHouse.getUnadjustedPosition(_amm, _trader);
+        if (unadjustedPosition.size.toInt() == 0) {
+            return false;
+        }
+        uint256 latestLiquidityIndex = _amm.getLiquidityHistoryLength().sub(1);
+        if (unadjustedPosition.liquidityHistoryIndex == latestLiquidityIndex) {
+            return false;
+        }
+        return true;
     }
 
     /**

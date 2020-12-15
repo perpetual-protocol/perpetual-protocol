@@ -4,11 +4,11 @@
       "contracts": {
         "RootBridge": {
           "name": "RootBridge",
-          "address": "0xCF2824225Ef0c6799C78E18305A8654c9f70D5aa"
+          "address": "0xA51156F3F1e39d1036Ca4ba4974107A1C1815d1e"
         },
         "ChainlinkL1": {
           "name": "ChainlinkL1",
-          "address": "0x2069fA2972B597C4d3cc3CF581c3551B444118A0"
+          "address": "0x05b1d5B3ad20769B3b71b658A1Df2290CD5A2376"
         }
       },
       "accounts": [],
@@ -19,46 +19,47 @@
         "usdc": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
         "tether": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
         "ambBridgeOnEth": "0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e",
-        "multiTokenMediatorOnEth": "0x88ad09518695c6c3712AC10a214bE5109a655671"
+        "multiTokenMediatorOnEth": "0x88ad09518695c6c3712AC10a214bE5109a655671",
+        "proxyAdmin": "0x29853EcF31eaedcD9074a11A85A8C8b689165F0b"
       }
     },
     "layer2": {
       "contracts": {
         "MetaTxGateway": {
           "name": "MetaTxGateway",
-          "address": "0x958dFAC85FFfFC66943df6A9604A6185F29cf47b"
+          "address": "0xA51156F3F1e39d1036Ca4ba4974107A1C1815d1e"
         },
         "ClientBridge": {
           "name": "ClientBridge",
-          "address": "0x70A747d26f3e12F15B1F964cb557493863e95043"
+          "address": "0x05b1d5B3ad20769B3b71b658A1Df2290CD5A2376"
         },
         "InsuranceFund": {
           "name": "InsuranceFund",
-          "address": "0x0F22d4ab05dDF568A50ed79a187c9780708d81EE"
+          "address": "0x8C29F6F7fc1999aB84b476952E986F974Acb3824"
         },
         "L2PriceFeed": {
           "name": "L2PriceFeed",
-          "address": "0x155DCaDd81F15B161ccD3079b4CD56806E7E3D41"
+          "address": "0xb0C0387bC0eBe8C8A6Cc7f089B12aB1a063AAfFb"
         },
         "ClearingHouse": {
           "name": "ClearingHouse",
-          "address": "0x425e0EC09f9Bcdfd20283Bf23251cCB74D118813"
+          "address": "0x5d9593586b4B5edBd23E7Eba8d88FD8F09D83EBd"
         },
         "ETHUSDC": {
           "name": "Amm",
-          "address": "0xC965e232913ba707a3Ad1259E47d94D9f213289c"
+          "address": "0x8d22F1a9dCe724D8c1B4c688D75f17A2fE2D32df"
         },
         "BTCUSDC": {
           "name": "Amm",
-          "address": "0xc086b84839C83444F9ebfdC1e3ce72E558f5476f"
+          "address": "0x0f346e19F01471C02485DF1758cfd3d624E399B4"
         },
         "ClearingHouseViewer": {
           "name": "ClearingHouseViewer",
-          "address": "0x3257DbBBcAdee4A2BD91B6a5039ECf9BE2bCfd6e"
+          "address": "0xef8093561D193d24b7677F784e41A10714E7FE25"
         },
         "AmmReader": {
           "name": "AmmReader",
-          "address": "0xB388F24560e215Cb00236725Fd677bD7bFCe80Ff"
+          "address": "0x2FA2c9B377D9e152d52A42bcc403022baCb2aF05"
         }
       },
       "accounts": [],
@@ -69,7 +70,8 @@
         "usdc": "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83",
         "tether": "0x4ECaBa5870353805a9F068101A40E0f32ed605C6",
         "ambBridgeOnXDai": "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
-        "multiTokenMediatorOnXDai": "0xf6A78083ca3e2a662D6dd1703c939c8aCE2e268d"
+        "multiTokenMediatorOnXDai": "0xf6A78083ca3e2a662D6dd1703c939c8aCE2e268d",
+        "proxyAdmin": "0x29853EcF31eaedcD9074a11A85A8C8b689165F0b"
       }
     }
   }

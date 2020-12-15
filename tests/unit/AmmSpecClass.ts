@@ -301,7 +301,7 @@ class AmmSpec {
         // then fundingRate and nextFundingTime is updated
         // premiumFraction = premium * fundingPeriod / 24h = (10 - 10.3) / 3 = -0.1
         // fundingRate = premiumFraction / underlyingPrice = -0.1 / 10.3 ~= -0.97%
-        await this.priceFeed.setPrice(toFullDigit(103).divn(10))
+        await this.priceFeed.setTwapPrice(toFullDigit(103).divn(10))
         const response = await amm.settleFunding()
 
         expectEvent(response, "FundingRateUpdated", { rate: "-9708737864077669" })

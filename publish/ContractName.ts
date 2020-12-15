@@ -5,7 +5,6 @@ export enum AmmInstanceName {
 
 export enum ContractName {
     MetaTxGateway = "MetaTxGateway",
-    PerpToken = "PerpToken",
     TetherToken = "TetherToken",
     InsuranceFund = "InsuranceFund",
     ChainlinkL1 = "ChainlinkL1",

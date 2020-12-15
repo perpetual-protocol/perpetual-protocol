@@ -5,6 +5,8 @@ import {
     AMBBridgeMockInstance,
     AmmFakeContract,
     AmmFakeInstance,
+    AmmReaderContract,
+    AmmReaderInstance,
     BalancerMockContract,
     BalancerMockInstance,
     ChainlinkL1FakeContract,
@@ -17,8 +19,6 @@ import {
     CUsdtMockInstance,
     ERC20FakeContract,
     ERC20FakeInstance,
-    ERC20TokenContract,
-    ERC20TokenInstance,
     ExchangeWrapperContract,
     ExchangeWrapperInstance,
     ExchangeWrapperMockContract,
@@ -57,6 +57,7 @@ import { Decimal, toFullDigit } from "./number"
 const L2PriceFeedMock = artifacts.require("L2PriceFeedMock") as L2PriceFeedMockContract
 const ERC20Fake = artifacts.require("ERC20Fake") as ERC20FakeContract
 const AmmFake = artifacts.require("AmmFake") as AmmFakeContract
+const AmmReader = artifacts.require("AmmReader") as AmmReaderContract
 const ClearingHouseViewer = artifacts.require("ClearingHouseViewer") as ClearingHouseViewerContract
 const ClearingHouseFake = artifacts.require("ClearingHouseFake") as ClearingHouseFakeContract
 const InsuranceFund = artifacts.require("InsuranceFundFake") as InsuranceFundFakeContract
@@ -76,7 +77,6 @@ const RootBridge = artifacts.require("RootBridge") as RootBridgeContract
 const MultiTokenMediatorMock = artifacts.require("MultiTokenMediatorMock") as MultiTokenMediatorMockContract
 const AMBBridgeMock = artifacts.require("AMBBridgeMock") as AMBBridgeMockContract
 const MetaTxGateway = artifacts.require("MetaTxGateway") as MetaTxGatewayContract
-const ERC20Token = artifacts.require("ERC20Token") as ERC20TokenContract
 const KeeperRewardL1 = artifacts.require("KeeperRewardL1") as KeeperRewardL1Contract
 const KeeperRewardL2 = artifacts.require("KeeperRewardL2") as KeeperRewardL2Contract
 
@@ -167,6 +167,10 @@ export async function deployAmm(params: {
     )
 }
 
+export async function deployAmmReader(): Promise<AmmReaderInstance> {
+    return await AmmReader.new()
+}
+
 export async function deployClearingHouse(
     initMarginRatio: Decimal,
     maintenanceMarginRatio: Decimal,
@@ -199,14 +203,6 @@ export async function deployErc20Fake(
     const instance = await ERC20Fake.new()
     await instance.initializeERC20Fake(initSupply, name, symbol, decimal)
     return instance
-}
-
-export async function deployErc20Token(
-    initSupply: BN = new BN(0),
-    name = "name",
-    symbol = "symbol",
-): Promise<ERC20TokenInstance> {
-    return await ERC20Token.new(name, symbol, initSupply)
 }
 
 export async function deployPerpToken(initSupply: BN): Promise<PerpTokenInstance> {

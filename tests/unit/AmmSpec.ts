@@ -212,6 +212,10 @@ describe("Amm Unit Test", () => {
                 quoteAssetAmount: toFullDigit(600),
                 baseAssetAmount: toFullDigit(37.5),
             })
+            expectEvent(receipt, "ReserveSnapshotted", {
+                quoteAssetReserve: toFullDigit(1600),
+                baseAssetReserve: toFullDigit(62.5),
+            })
 
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(1600))
             expect(await amm.baseAssetReserve()).to.eq(toFullDigit(62.5))
@@ -224,6 +228,10 @@ describe("Amm Unit Test", () => {
                 dir: Dir.REMOVE_FROM_AMM.toString(),
                 quoteAssetAmount: toFullDigit(600),
                 baseAssetAmount: toFullDigit(150),
+            })
+            expectEvent(receipt, "ReserveSnapshotted", {
+                quoteAssetReserve: toFullDigit(400),
+                baseAssetReserve: toFullDigit(250),
             })
 
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(400))

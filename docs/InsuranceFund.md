@@ -6,7 +6,7 @@
 
 
 
-### `initialize(contract IERC20 _quoteToken)` (external)
+### `initialize()` (external)
 
 
 
@@ -15,25 +15,39 @@
 Parameters:
 
 Returns:
-### `addToken(contract IERC20 _token)` (external)
+### `addAmm(contract IAmm _amm)` (public)
 
 
 
+only owner can call
 
+
+Parameters:
+ - _amm → IAmm address
+
+Returns:
+### `removeAmm(contract IAmm _amm)` (external)
+
+
+
+only owner can call. no need to call
+
+
+Parameters:
+ - _amm → IAmm address
+
+Returns:
+### `shutdownAllAmm()` (external)
+
+shutdown all Amms when fatal error happens
+
+
+only owner can call. Emit `ShutdownAllAmms` event
 
 Parameters:
 
 Returns:
 ### `removeToken(contract IERC20 _token)` (external)
-
-
-
-
-
-Parameters:
-
-Returns:
-### `getTokenWithMaxValue() → address` (internal)
 
 
 
@@ -71,7 +85,16 @@ Returns:
 Parameters:
 
 Returns:
-### `setMinter(contract Minter _minter)` (public)
+### `setMinter(contract IMinter _minter)` (public)
+
+
+
+
+
+Parameters:
+
+Returns:
+### `setInflationMonitor(contract IInflationMonitor _inflationMonitor)` (external)
 
 
 
@@ -81,6 +104,15 @@ Parameters:
 
 Returns:
 ### `getQuoteTokenLength() → uint256` (public)
+
+
+
+
+
+Parameters:
+
+Returns:
+### `getTokenWithMaxValue() → address` (internal)
 
 
 
@@ -116,6 +148,24 @@ Returns:
 Parameters:
 
 Returns:
+### `isExistedAmm(contract IAmm _amm) → bool` (public)
+
+
+
+
+
+Parameters:
+
+Returns:
+### `getAllAmms() → contract IAmm[]` (external)
+
+
+
+
+
+Parameters:
+
+Returns:
 ### `isQuoteTokenExisted(contract IERC20 _token) → bool` (internal)
 
 
@@ -126,15 +176,6 @@ Parameters:
 
 Returns:
 ### `getOrderedQuoteTokens(contract IERC20 _exceptionQuoteToken) → contract IERC20[] orderedTokens` (internal)
-
-
-
-
-
-Parameters:
-
-Returns:
-### `getTokenIndex(contract IERC20 _token) → int256` (internal)
 
 
 

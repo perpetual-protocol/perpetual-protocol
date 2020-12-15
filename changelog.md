@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2020-12-10
+### Added
+- add `fundingPayment` to `ClearingHouse::PositionChanged` and `ClearingHouse::MarginChanged` #95
+- add `spotPrice` to `ClearingHouse::PositionChanged` #95
+- index `trader` and `amm` in position-related events #95
+
+## Removed
+- `IAmm::getReserve` #95
+- remove `quotAssetReserve` and `baseAssetReserve` from `ClearingHouse::PositionChanged` event #95
+
+## [0.13.3] - 2020-12-03
+### Added
+- add `ClearingHouse::adjustPositionForLiquidityChanged()` #68
+### Changed
+- change ClearingHouse's event `PositionAdjusted.newPositionSize` parameter's type from `uint256` to `int256` #68
+- change error message from both "Margin ratio is larger than min requirement" and "marginRatio not enough" to "Margin ratio not meet criteria" #72
+
 ## [0.13.0] - 2020-11-26
 ### Added
 - add `ClearingHouse::openInterestNotional` and `Amm::openInterestNotionalCap` #58

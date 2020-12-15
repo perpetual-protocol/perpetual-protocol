@@ -51,3 +51,12 @@ Returns:
 Parameters:
 
 Returns:
+### `setLatestData(bytes32 _priceFeedKey, uint256 _price, uint256 _timestamp, uint256 _roundId)` (external)
+
+
+
+
+
+Parameters:
+
+Returns:

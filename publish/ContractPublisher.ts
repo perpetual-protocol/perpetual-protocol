@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { ethers } from "@nomiclabs/buidler"
+import bre, { ethers } from "@nomiclabs/buidler"
+import { TASK_COMPILE } from "@nomiclabs/buidler/builtin-tasks/task-names"
+import { SRC_DIR } from "../constants"
 import { ExternalContracts, Layer } from "../scripts/common"
+import { flatten } from "../scripts/flatten"
 import {
     AmmReader,
     ChainlinkL1,
@@ -15,7 +18,7 @@ import {
     RootBridge,
 } from "../types/ethers"
 import { ContractWrapperFactory } from "./contract/ContractWrapperFactory"
-import { DeployConfig } from "./contract/DeployConfig"
+import { DeployConfig, PriceFeedKey } from "./contract/DeployConfig"
 import { AmmInstanceName, ContractName } from "./ContractName"
 import { OzContractDeployer } from "./OzContractDeployer"
 import { SettingsDao } from "./SettingsDao"
@@ -33,7 +36,7 @@ export class ContractPublisher {
             // batch 0
             [
                 async (): Promise<void> => {
-                    // deploy root bridge
+                    console.log("deploy root bridge")
                     await this.factory
                         .create<RootBridge>(ContractName.RootBridge)
                         .deployUpgradableContract(
@@ -62,30 +65,53 @@ export class ContractPublisher {
                     await (await rootBridge.setPriceFeed(chainlinkContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
-                    console.log("add aggregator of chainlink price feed on layer 1...")
+                    console.log("add BTC aggregator of chainlink price feed on layer 1...")
                     const chainlinkContract = this.factory.create<ChainlinkL1>(ContractName.ChainlinkL1)
                     const chainlink = await chainlinkContract.instance()
-                    for (const priceFeedKey in this.deployConfig.chainlinkMap) {
-                        const address = this.deployConfig.chainlinkMap[priceFeedKey]
-                        console.log(`addAggregator=${priceFeedKey.toString()}`)
-                        await (
-                            await chainlink.addAggregator(
-                                ethers.utils.formatBytes32String(priceFeedKey.toString()),
-                                address,
-                            )
-                        ).wait(this.confirmations)
-                    }
+                    const address = this.deployConfig.chainlinkMap[PriceFeedKey.BTC]
+                    await (
+                        await chainlink.addAggregator(
+                            ethers.utils.formatBytes32String(PriceFeedKey.BTC.toString()),
+                            address,
+                        )
+                    ).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("add ETH aggregator of chainlink price feed on layer 1...")
+                    const chainlinkContract = this.factory.create<ChainlinkL1>(ContractName.ChainlinkL1)
+                    const chainlink = await chainlinkContract.instance()
+                    const address = this.deployConfig.chainlinkMap[PriceFeedKey.ETH]
+                    await (
+                        await chainlink.addAggregator(
+                            ethers.utils.formatBytes32String(PriceFeedKey.ETH.toString()),
+                            address,
+                        )
+                    ).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     const gov = this.externalContract.foundationGovernance!
-                    console.log(`transferring owner to governance=${gov}...please remember to claim the ownership`)
-
+                    console.log(
+                        `transferring chainlinkL1's owner to governance=${gov}...please remember to claim the ownership`,
+                    )
                     const chainlinkL1 = await this.factory.create<ChainlinkL1>(ContractName.ChainlinkL1).instance()
-                    const rootBridge = await this.factory.create<RootBridge>(ContractName.RootBridge).instance()
                     await (await chainlinkL1.setOwner(gov)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring rootBridge's owner to governance=${gov}...please remember to claim the ownership`,
+                    )
+                    const rootBridge = await this.factory.create<RootBridge>(ContractName.RootBridge).instance()
                     await (await rootBridge.setOwner(gov)).wait(this.confirmations)
                 },
+                async (): Promise<void> => {
+                    const governance = this.externalContract.foundationGovernance!
+                    console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
+                    await OzContractDeployer.transferProxyAdminOwnership(governance)
+                    console.log(`${this.layerType} contract deployment finished.`)
+                },
             ],
+            // V1 END
             // batch 2
             [
                 async (): Promise<void> => {
@@ -111,14 +137,14 @@ export class ContractPublisher {
             // batch 0
             [
                 async (): Promise<void> => {
-                    // deploy meta tx gateway
+                    console.log("deploy metaTxGateway...")
                     const chainId = this.settingsDao.getChainId("layer1")
                     await this.factory
                         .create<MetaTxGateway>(ContractName.MetaTxGateway)
                         .deployUpgradableContract("Perp", "1", chainId)
                 },
                 async (): Promise<void> => {
-                    // deploy client bridge
+                    console.log("deploy clientBridge...")
                     const ambBridgeOnXDai = this.externalContract.ambBridgeOnXDai!
                     const multiTokenMediatorOnXDai = this.externalContract.multiTokenMediatorOnXDai!
                     const metaTxGatewayContract = this.factory.create<MetaTxGateway>(ContractName.MetaTxGateway)
@@ -131,11 +157,11 @@ export class ContractPublisher {
                         )
                 },
                 async (): Promise<void> => {
-                    // deploy insurance fund
+                    console.log("deploy insuranceFund...")
                     await this.factory.create<InsuranceFund>(ContractName.InsuranceFund).deployUpgradableContract()
                 },
                 async (): Promise<void> => {
-                    // deploy L2 price feed
+                    console.log("deploy L2PriceFeed")
                     const ambBridgeOnXDaiAddr = this.externalContract.ambBridgeOnXDai!
                     const rootBridgeOnEthAddr = this.systemMetadataDao.getContractMetadata(
                         "layer1",
@@ -146,7 +172,7 @@ export class ContractPublisher {
                         .deployUpgradableContract(ambBridgeOnXDaiAddr, rootBridgeOnEthAddr)
                 },
                 async (): Promise<void> => {
-                    // deploy clearing house
+                    console.log("deploy clearing house...")
                     const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
                     const metaTxGatewayContract = this.factory.create<MetaTxGateway>(ContractName.MetaTxGateway)
                     await this.factory
@@ -160,27 +186,32 @@ export class ContractPublisher {
                         )
                 },
                 async (): Promise<void> => {
-                    const clearingHouse = await this.factory
-                        .create<ClearingHouse>(ContractName.ClearingHouse)
-                        .instance()
+                    console.log("metaTxGateway.addToWhitelists...")
+                    const clearingHouse = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
                     const metaTxGateway = await this.factory
                         .create<MetaTxGateway>(ContractName.MetaTxGateway)
                         .instance()
+                    await (await metaTxGateway.addToWhitelists(clearingHouse.address!)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("insuranceFundContract.setBeneficiary...")
+                    const clearingHouse = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
                     const insuranceFund = await this.factory
                         .create<InsuranceFund>(ContractName.InsuranceFund)
                         .instance()
-
-                    console.log("metaTxGateway.addToWhitelists...")
-                    await (await metaTxGateway.addToWhitelists(clearingHouse.address)).wait(this.confirmations)
-                    console.log("insuranceFundContract.setBeneficiary...")
-                    await (await insuranceFund.setBeneficiary(clearingHouse.address)).wait(this.confirmations)
-                    console.log("clearingHouse.setWhitelist...")
+                    await (await insuranceFund.setBeneficiary(clearingHouse.address!)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("clearingHouse add arb to whitelist...")
+                    const clearingHouse = await this.factory
+                        .create<ClearingHouse>(ContractName.ClearingHouse)
+                        .instance()
                     await (
                         await clearingHouse.setWhitelist(this.settingsDao.getExternalContracts("layer2").arbitrageur!)
                     ).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
-                    // deploy amm
+                    console.log("deploy ETHUSDC amm...")
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
                     const ammContract = this.factory.createAmm(AmmInstanceName.ETHUSDC)
                     const quoteTokenAddr = this.externalContract.usdc!
@@ -191,7 +222,7 @@ export class ContractPublisher {
                     )
                 },
                 async (): Promise<void> => {
-                    // deploy amm
+                    console.log("deploy BTCUSDC amm...")
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
                     const ammContract = this.factory.createAmm(AmmInstanceName.BTCUSDC)
                     const quoteTokenAddr = this.externalContract.usdc!
@@ -202,7 +233,7 @@ export class ContractPublisher {
                     )
                 },
                 async (): Promise<void> => {
-                    //  deploy clearingHouseViewer
+                    console.log("deploy clearingHouseViewer...")
                     const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
                     const clearingHouseViewerContract = this.factory.create<ClearingHouseViewer>(
                         ContractName.ClearingHouseViewer,
@@ -210,41 +241,38 @@ export class ContractPublisher {
                     await clearingHouseViewerContract.deployImmutableContract(clearingHouseContract.address!)
                 },
                 async (): Promise<void> => {
-                    //  deploy ammReader
+                    console.log("deploy ammReader...")
                     const ammReaderContract = this.factory.create<AmmReader>(ContractName.AmmReader)
                     await ammReaderContract.deployImmutableContract()
                 },
                 async (): Promise<void> => {
-                    console.log("metaTxGateway.addToWhitelists(clientBridge.address)...")
+                    console.log("metaTxGateway add clientBridge to whitelist...")
                     const metaTxGatewayContract = this.factory.create<MetaTxGateway>(ContractName.MetaTxGateway)
                     const metaTxGateway = await metaTxGatewayContract.instance()
                     const clientBridgeContract = this.factory.create<ClientBridge>(ContractName.ClientBridge)
                     await (await metaTxGateway.addToWhitelists(clientBridgeContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
-                    console.log("add aggregators to L2PriceFeed")
+                    console.log("add ETH aggregators to L2PriceFeed")
                     const l2PriceFeed = await this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed).instance()
-                    for (const priceFeedKey in this.deployConfig.chainlinkMap) {
-                        console.log(`add aggregator=${priceFeedKey}`)
-                        await (
-                            await l2PriceFeed.addAggregator(ethers.utils.formatBytes32String(priceFeedKey.toString()))
-                        ).wait(this.confirmations)
-                    }
+                    await (
+                        await l2PriceFeed.addAggregator(ethers.utils.formatBytes32String(PriceFeedKey.ETH.toString()))
+                    ).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
-                    // setup amm
-                    console.log("setting up Amm ETHUSDC...")
-                    const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
-                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.ETHUSDC)
-                    const amm = await ammContract.instance()
-                    const insuranceFund = await insuranceFundContract.instance()
+                    console.log("add BTC aggregators to L2PriceFeed")
+                    const l2PriceFeed = await this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed).instance()
+                    await (
+                        await l2PriceFeed.addAggregator(ethers.utils.formatBytes32String(PriceFeedKey.BTC.toString()))
+                    ).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("set ETH amm Cap...")
+                    const amm = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
                     const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
                         AmmInstanceName.ETHUSDC
                     ].properties
-
                     if (maxHoldingBaseAsset.gt(0)) {
-                        console.log("setCap...")
                         await (
                             await amm.setCap(
                                 { d: maxHoldingBaseAsset.toString() },
@@ -252,25 +280,27 @@ export class ContractPublisher {
                             )
                         ).wait(this.confirmations)
                     }
-                    console.log("amm.setCounterParty...")
-                    await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
-                    console.log("insuranceFund.addAmm...")
-                    await (await insuranceFund.addAmm(amm.address)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
-                    // setup amm
-                    console.log("setting up Amm BTCUSDC...")
-                    const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
+                    console.log("ETH amm.setCounterParty...")
                     const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.BTCUSDC)
-                    const amm = await ammContract.instance()
+                    const amm = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
+                    await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("insuranceFund.add ETH amm...")
+                    const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
+                    const ammContract = this.factory.createAmm(AmmInstanceName.ETHUSDC)
                     const insuranceFund = await insuranceFundContract.instance()
+                    await (await insuranceFund.addAmm(ammContract.address!)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("set BTC amm Cap...")
+                    const amm = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
                     const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
                         AmmInstanceName.BTCUSDC
                     ].properties
-
                     if (maxHoldingBaseAsset.gt(0)) {
-                        console.log("setCap...")
                         await (
                             await amm.setCap(
                                 { d: maxHoldingBaseAsset.toString() },
@@ -278,24 +308,22 @@ export class ContractPublisher {
                             )
                         ).wait(this.confirmations)
                     }
-                    console.log("amm.setCounterParty...")
+                },
+                async (): Promise<void> => {
+                    console.log("BTC amm.setCounterParty...")
+                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const amm = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
                     await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
-                    console.log("insuranceFund.addAmm...")
-                    await (await insuranceFund.addAmm(amm.address)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
-                    // open amm
-                    console.log("opening Amm ETHUSDC...")
-                    const ethUsdc = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
-                    await (await ethUsdc.setOpen(true)).wait(this.confirmations)
+                    console.log("insuranceFund.add BTC amm...")
+                    const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
+                    const ammContract = this.factory.createAmm(AmmInstanceName.BTCUSDC)
+                    const insuranceFund = await insuranceFundContract.instance()
+                    await (await insuranceFund.addAmm(ammContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
-                    // open amm
-                    console.log("opening Amm BTCUSDC...")
-                    const btcUsdc = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
-                    await (await btcUsdc.setOpen(true)).wait(this.confirmations)
-                },
-                async (): Promise<void> => {
+                    console.log("l2priceFeed setRootBridge...")
                     const l2PriceFeed = await this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed).instance()
                     await (
                         await l2PriceFeed!.setRootBridge(
@@ -304,33 +332,120 @@ export class ContractPublisher {
                     ).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
+                    console.log("opening Amm ETHUSDC...")
+                    const ethUsdc = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
+                    await (await ethUsdc.setOpen(true)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("opening Amm BTCUSDC...")
+                    const btcUsdc = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
+                    await (await btcUsdc.setOpen(true)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
                     const gov = this.externalContract.foundationGovernance!
-                    console.log(`transferring owner to governance=${gov}...please remember to claim the ownership`)
-
+                    console.log(
+                        `transferring metaTxGateway's owner to governance=${gov}...please remember to claim the ownership`,
+                    )
                     const metaTxGateway = await this.factory
                         .create<MetaTxGateway>(ContractName.MetaTxGateway)
                         .instance()
+                    await (await metaTxGateway.setOwner(gov)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring clientBridge's owner to governance=${gov}...please remember to claim the ownership`,
+                    )
                     const clientBridge = await this.factory.create<ClientBridge>(ContractName.ClientBridge).instance()
+                    await (await clientBridge.setOwner(gov)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring insuranceFund's owner to governance=${gov}...please remember to claim the ownership`,
+                    )
                     const insuranceFund = await this.factory
                         .create<InsuranceFund>(ContractName.InsuranceFund)
                         .instance()
+                    await (await insuranceFund.setOwner(gov)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring l2PriceFeed's owner to governance=${gov}...please remember to claim the ownership`,
+                    )
                     const l2PriceFeed = await this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed).instance()
+                    await (await l2PriceFeed.setOwner(gov)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring clearingHouse's owner to governance=${gov}...please remember to claim the ownership`,
+                    )
                     const clearingHouse = await this.factory
                         .create<ClearingHouse>(ContractName.ClearingHouse)
                         .instance()
+                    await (await clearingHouse.setOwner(gov)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring ETHUSDC owner to governance=${gov}...please remember to claim the ownership`,
+                    )
                     const ETHUSDC = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
+                    await (await ETHUSDC.setOwner(gov)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring BTCUSDC owner to governance=${gov}...please remember to claim the ownership`,
+                    )
                     const BTCUSDC = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
-
-                    // await (await metaTxGateway.setOwner(gov)).wait(this.confirmations)
-                    // await (await clientBridge.setOwner(gov)).wait(this.confirmations)
-                    // await (await insuranceFund.setOwner(gov)).wait(this.confirmations)
-                    // await (await l2PriceFeed.setOwner(gov)).wait(this.confirmations)
-                    // await (await clearingHouse.setOwner(gov)).wait(this.confirmations)
-                    // await (await ETHUSDC.setOwner(gov)).wait(this.confirmations)
                     await (await BTCUSDC.setOwner(gov)).wait(this.confirmations)
                 },
+                async (): Promise<void> => {
+                    const governance = this.externalContract.foundationGovernance!
+                    console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
+                    await OzContractDeployer.transferProxyAdminOwnership(governance)
+                },
             ],
-            // batch 1
+            // batch 1 (optional)
+            // deploy a new implementation of ClearingHouse, in order to make xdai blockscout verification works,
+            // we'll deploy a flatten one in an isolated build env. then PROXY_ADMIN should upgrade proxy to the new implementation
+            [
+                async (): Promise<void> => {
+                    const filename = `${ContractName.ClearingHouse}.sol`
+
+                    // after flatten sol file we must re-compile again
+                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                    await bre.run(TASK_COMPILE)
+
+                    // deploy clearing house implementation
+                    const contract = await this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    await contract.prepareUpgradeContract()
+                },
+            ],
+            // batch 2 (optional)
+            // deploy a new implementation of Amm, in order to make xdai blockscout verification works,
+            // we'll deploy a flatten one in an isolated build env. then PROXY_ADMIN should upgrade proxy to the new implementation
+            [
+                async (): Promise<void> => {
+                    const filename = `${ContractName.Amm}.sol`
+
+                    // after flatten sol file we must re-compile again
+                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                    await bre.run(TASK_COMPILE)
+
+                    // deploy amm implementation
+                    const ETHUSDC = this.factory.createAmm(AmmInstanceName.ETHUSDC)
+                    await ETHUSDC.prepareUpgradeContract()
+
+                    const BTCUSDC = this.factory.createAmm(AmmInstanceName.BTCUSDC)
+                    await BTCUSDC.prepareUpgradeContract()
+                },
+            ],
+            // V1 END
+            // batch 3
             [
                 async (): Promise<void> => {
                     console.log("deploying KeeperRewardL2 on layer 2...")
@@ -411,9 +526,6 @@ export class ContractPublisher {
                 return
             }
         }
-        const governance = this.externalContract.foundationGovernance!
-        console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
-        await OzContractDeployer.transferProxyAdminOwnership(governance)
-        console.log("contract deployment finished.")
+        console.log(`${this.layerType} contract deployment finished.`)
     }
 }

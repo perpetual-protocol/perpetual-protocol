@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BSD-3-CLAUSE
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
@@ -84,9 +84,8 @@ contract InflationMonitor is IInflationMonitor, PerpFiOwnableUpgrade, BlockConte
 
         Decimal.decimal memory minted;
         for (uint256 i = len - 1; i > 0; i--) {
-            Decimal.decimal memory amount = mintedTokenHistory[i].cumulativeAmount.subD(
-                mintedTokenHistory[i - 1].cumulativeAmount
-            );
+            Decimal.decimal memory amount =
+                mintedTokenHistory[i].cumulativeAmount.subD(mintedTokenHistory[i - 1].cumulativeAmount);
             minted = minted.addD(amount);
 
             durationSinceLastMinted += mintedTokenHistory[i].timestamp.sub(mintedTokenHistory[i - 1].timestamp);

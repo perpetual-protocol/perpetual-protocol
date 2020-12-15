@@ -7,6 +7,7 @@ import ClientBridgeArtifact from "../../build/contracts/ClientBridge.json"
 import InsuranceFundArtifact from "../../build/contracts/InsuranceFund.json"
 import L2PriceFeedArtifact from "../../build/contracts/L2PriceFeed.json"
 import MetaTxGatewayArtifact from "../../build/contracts/MetaTxGateway.json"
+import OwnableArtifact from "../../build/contracts/Ownable.json"
 import RootBridgeArtifact from "../../build/contracts/RootBridge.json"
 import { AmmInstanceName, ContractName } from "../../publish/ContractName"
 import { SettingsDao } from "../../publish/SettingsDao"
@@ -19,23 +20,25 @@ import {
     InsuranceFund,
     L2PriceFeed,
     MetaTxGateway,
+    Ownable,
     RootBridge,
 } from "../../types/ethers"
 
-const RINKEBY = "rinkeby"
+const LAYER_1 = "mainnet"
 const XDAI_URL = "https://rpc.xdaichain.com/"
 const XDAI_NAME = "xdai"
 const XDAI_CHAINID = 100
-const STAGE = "staging"
+const STAGE = "production"
 
-// TODO should activate once we deploy the new amm with updated quoteToken changed (usdc)
-describe.skip("SystemTest Spec", () => {
-    const l1Provider = ethers.getDefaultProvider(RINKEBY)
+// TODO: activate this after deployment
+// for current production.json, we already shut down the amm and remove token from insurance fund
+describe("SystemTest Spec", () => {
+    const l1Provider = ethers.getDefaultProvider(LAYER_1)
     const l2Provider = new ethers.providers.JsonRpcProvider(XDAI_URL, { name: XDAI_NAME, chainId: XDAI_CHAINID })
     const settingsDao: SettingsDao = new SettingsDao(STAGE)
     const systemMetadataDao: SystemMetadataDao = new SystemMetadataDao(settingsDao)
 
-    const perpToken = systemMetadataDao.getContractMetadata("layer1", ContractName.PerpToken)
+    const perpToken = settingsDao.getExternalContracts("layer1").perp!
     const chainLinkL1 = systemMetadataDao.getContractMetadata("layer1", ContractName.ChainlinkL1)
     const rootBridge = systemMetadataDao.getContractMetadata("layer1", ContractName.RootBridge)
     const multiTokenMediatorL1 = settingsDao.getExternalContracts("layer1").multiTokenMediatorOnEth
@@ -71,6 +74,10 @@ describe.skip("SystemTest Spec", () => {
         it("has MultiTokenMediatorL1", async () => {
             expect(await instance.multiTokenMediator()).to.eq(multiTokenMediatorL1)
         })
+
+        it("own by gov", async () => {
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer1").foundationGovernance)
+        })
     })
 
     describe("ChainlinkL1", () => {
@@ -86,6 +93,10 @@ describe.skip("SystemTest Spec", () => {
 
         it("has priceFeedL2Address", async () => {
             expect(await instance.priceFeedL2Address()).to.eq(l2PriceFeed.address)
+        })
+
+        it("own by gov", async () => {
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer1").foundationGovernance)
         })
     })
 
@@ -103,6 +114,10 @@ describe.skip("SystemTest Spec", () => {
         // with function isInWhitelists(), as whitelistMap is private
         it("has ClientBridge as whitelistMap", async () => {
             expect(await instance.isInWhitelists(clientBridge.address))
+        })
+
+        it("own by gov", async () => {
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
         })
     })
 
@@ -123,6 +138,10 @@ describe.skip("SystemTest Spec", () => {
 
         it("has TrustedForwarder", async () => {
             expect(await instance.isTrustedForwarder(metaTxGateway.address))
+        })
+
+        it("own by gov", async () => {
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
         })
     })
 
@@ -157,7 +176,7 @@ describe.skip("SystemTest Spec", () => {
 
         // there is no perp token on rinkeby?
         it.skip("has perpToken", async () => {
-            expect(await instance.perpToken()).to.eq(perpToken.address)
+            expect(await instance.perpToken()).to.eq(perpToken)
         })
 
         // not yet implemented
@@ -165,6 +184,10 @@ describe.skip("SystemTest Spec", () => {
 
         // not yet implemented
         it.skip("has inflationMonitor", async () => {})
+
+        it("own by gov", async () => {
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+        })
     })
 
     describe("L2PriceFeed", async () => {
@@ -180,6 +203,10 @@ describe.skip("SystemTest Spec", () => {
 
         it("has ambBridgeL2", async () => {
             expect(await instance.ambBridge()).to.eq(ambBridgeL2)
+        })
+
+        it("own by gov", async () => {
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
         })
     })
 
@@ -208,6 +235,10 @@ describe.skip("SystemTest Spec", () => {
         it("has InsuranceFund", async () => {
             expect(await instance.insuranceFund()).to.eq(insuranceFund.address)
         })
+
+        it("own by gov", async () => {
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+        })
     })
 
     describe("Amm", async () => {
@@ -228,6 +259,23 @@ describe.skip("SystemTest Spec", () => {
             it("has L2PriceFeed", async () => {
                 expect(await instance.priceFeed()).to.eq(l2PriceFeed.address)
             })
+
+            it("own by gov", async () => {
+                expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+            })
+
+            it("has correct config", async () => {
+                expect(await instance.tradeLimitRatio()).eq(ethers.utils.parseEther("0.9").toString())
+                expect(await instance.fluctuationLimitRatio()).eq(ethers.utils.parseEther("0.012").toString())
+                expect(await instance.tollRatio()).eq(ethers.utils.parseEther("0").toString())
+                expect(await instance.spreadRatio()).eq(ethers.utils.parseEther("0.001").toString())
+                expect((await instance.getMaxHoldingBaseAsset()).d.toString()).eq(
+                    ethers.utils.parseEther("10").toString(),
+                )
+                expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
+                    ethers.utils.parseEther("500000").toString(),
+                )
+            })
         })
 
         describe("BTCUSDC", async () => {
@@ -247,6 +295,37 @@ describe.skip("SystemTest Spec", () => {
             it("has L2PriceFeed", async () => {
                 expect(await instance.priceFeed()).to.eq(l2PriceFeed.address)
             })
+
+            it("own by gov", async () => {
+                expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+            })
+
+            it("has correct config", async () => {
+                expect(await instance.tradeLimitRatio()).eq(ethers.utils.parseEther("0.9").toString())
+                expect(await instance.fluctuationLimitRatio()).eq(ethers.utils.parseEther("0.012").toString())
+                expect(await instance.tollRatio()).eq(ethers.utils.parseEther("0").toString())
+                expect(await instance.spreadRatio()).eq(ethers.utils.parseEther("0.001").toString())
+                expect((await instance.getMaxHoldingBaseAsset()).d.toString()).eq(
+                    ethers.utils.parseEther("0.25").toString(),
+                )
+                expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
+                    ethers.utils.parseEther("500000").toString(),
+                )
+            })
+        })
+    })
+
+    describe("proxyAdmin", () => {
+        it("own by gov at L1", async () => {
+            const proxyAdminOnEth = settingsDao.getExternalContracts("layer1").proxyAdmin!
+            const instance = new ethers.Contract(proxyAdminOnEth, OwnableArtifact.abi, l1Provider) as Ownable
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer1").foundationGovernance)
+        })
+
+        it("own by gov at L2", async () => {
+            const proxyAdminOnEth = settingsDao.getExternalContracts("layer2").proxyAdmin!
+            const instance = new ethers.Contract(proxyAdminOnEth, OwnableArtifact.abi, l2Provider) as Ownable
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
         })
     })
 })
