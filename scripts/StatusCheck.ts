@@ -39,6 +39,16 @@ async function printAmmInfo(amm: Amm, clearingHouse: ClearingHouse): Promise<voi
         ")",
     )
 
+    const reserve = await amm.getReserve()
+    console.log(
+        "quote reserve:",
+        utils.formatEther(reserve[0].d.toString()),
+        "base reserve:",
+        utils.formatEther(reserve[1].d.toString()),
+        "price:",
+        reserve[0].d.div(reserve[1].d).toString(),
+    )
+
     const cumulativeNotional = await amm.getCumulativeNotional()
     const totalPosition = await amm.totalPositionSize()
     console.log(
@@ -96,10 +106,12 @@ async function printStatus(json: any): Promise<void> {
     const balanceOfInsuranceFund = (await usdc.functions.balanceOf(insuranceFund.address))[0]
     const balanceOfClearingHouse = (await usdc.functions.balanceOf(clearingHouse.address))[0]
     const balanceOfArbitrageur = (await usdc.functions.balanceOf(arbitrageur))[0]
+    const ethBalanceOfArbitrageur = await provider.getBalance(arbitrageur)
 
     await balanceLog("insuranceFund", balanceOfInsuranceFund)
     await balanceLog("clearingHouse", balanceOfClearingHouse)
     await balanceLog("arbitrageur", balanceOfArbitrageur)
+    console.log("arbitrageur eth", utils.formatEther(ethBalanceOfArbitrageur.toString()), "eth")
 
     console.log()
 }
