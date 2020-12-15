@@ -6,7 +6,7 @@
 
 
 
-### `swapInput(contract IERC20 inputToken, contract IERC20 outputToken, struct Decimal.decimal inputTokenSold, struct Decimal.decimal minOutputTokenBought) → struct Decimal.decimal` (external)
+### `swapInput(contract IERC20 inputToken, contract IERC20 outputToken, struct Decimal.decimal inputTokenSold, struct Decimal.decimal minOutputTokenBought, struct Decimal.decimal maxPrice) → struct Decimal.decimal` (external)
 
 
 
@@ -15,7 +15,7 @@
 Parameters:
 
 Returns:
-### `swapOutput(contract IERC20 inputToken, contract IERC20 outputToken, struct Decimal.decimal outputTokenBought, struct Decimal.decimal maxInputTokeSold) → struct Decimal.decimal` (external)
+### `swapOutput(contract IERC20 inputToken, contract IERC20 outputToken, struct Decimal.decimal outputTokenBought, struct Decimal.decimal maxInputTokeSold, struct Decimal.decimal maxPrice) → struct Decimal.decimal` (external)
 
 
 
