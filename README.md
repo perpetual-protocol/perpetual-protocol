@@ -1,4 +1,4 @@
-# Perpetual Protocol
+#  Perpetual Protocol <img src="https://github.com/perpetual-protocol/perp-contract/blob/develop/docs/Perpetual.png" width="40"> 
 
 Perpetual Protocol is a decentralized perpetual contract protocol for every asset, made possible by a Virtual Automated Market Maker (henceforth referred to as a “vAMM” or “vAMMs”).
 >*For those who aren’t familiar with perpetual contracts: A perpetual contract is a derivative similar to a futures contract but without an expiry date. For conventional futures contracts such as WTI, the contract’s price will gradually converge with the underlying asset’s spot market price as the expiry date approaches. Perpetual contracts are futures contracts that automatically roll every few hours. In order to keep the perpetual contract in line with the underlying index, one side pays the other the funding rate. The funding rate effectively implies a cost of capital and the steepness of the futures curve. You can learn more about how funding works by reading our documentation or this piece from FTX’s help center.*
