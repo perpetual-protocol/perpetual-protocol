@@ -32,12 +32,4 @@ contract StakedPerpTokenFake is StakedPerpToken {
     function _blockNumber() internal view override returns (uint256) {
         return number;
     }
-
-    function balanceOfArr(address _owner, uint256 _index) external view returns (uint64, uint192) {
-        return (balancesHistory[_owner].history[_index].time, balancesHistory[_owner].history[_index].value);
-    }
-
-    function totalSupplyArr(uint256 _index) external view returns (uint64, uint192) {
-        return (totalSupplyHistory.history[_index].time, totalSupplyHistory.history[_index].value);
-    }
 }

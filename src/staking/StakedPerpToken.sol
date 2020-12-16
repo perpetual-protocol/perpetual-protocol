@@ -33,9 +33,9 @@ contract StakedPerpToken is
     //
     // EVENTS
     //
-    event Stake(address staker, uint256 amount);
-    event Unstake(address staker, uint256 amount);
-    event Withdraw(address staker, uint256 amount);
+    event Staked(address staker, uint256 amount);
+    event Unstaked(address staker, uint256 amount);
+    event Withdrawn(address staker, uint256 amount);
 
     //**********************************************************//
     //    The below state variables can not change the order    //
@@ -78,7 +78,7 @@ contract StakedPerpToken is
     function stake(Decimal.decimal calldata _amount) external {
         requireNonZeroAmount(_amount);
         address msgSender = _msgSender();
-        requireNotInCoolDown(msgSender);
+        requireNonPendingBalance(msgSender);
 
         uint256 blockNumber = _blockNumber();
         Decimal.decimal memory balance = Decimal.decimal(balancesHistory[msgSender].latestValue());
@@ -92,12 +92,12 @@ contract StakedPerpToken is
         addPersonalBalanceCheckPoint(msgSender, blockNumber, newBalance);
         addTotalSupplyCheckPoint(blockNumber, totalSupply.addD(_amount));
 
-        emit Stake(msgSender, _amount.toUint());
+        emit Staked(msgSender, _amount.toUint());
     }
 
     function unstake() external {
         address msgSender = _msgSender();
-        requireNotInCoolDown(msgSender);
+        requireNonPendingBalance(msgSender);
 
         Decimal.decimal memory balance = Decimal.decimal(balancesHistory[msgSender].latestValue());
         requireNonZeroAmount(balance);
@@ -112,29 +112,20 @@ contract StakedPerpToken is
         stakerCooldown[msgSender] = blockNumber.add(COOLDOWN_PERIOD);
         stakerWithdrawPendingBalance[msgSender] = balance;
 
-        emit Unstake(msgSender, balance.toUint());
+        emit Unstaked(msgSender, balance.toUint());
     }
 
     function withdraw() external {
         address msgSender = _msgSender();
-        require(stakerCooldown[msgSender] > _blockNumber());
-
         Decimal.decimal memory balance = stakerWithdrawPendingBalance[msgSender];
         requireNonZeroAmount(balance);
+        require(_blockNumber() >= stakerCooldown[msgSender], "Still in cooldown");
 
         delete stakerWithdrawPendingBalance[msgSender];
         delete stakerCooldown[msgSender];
         _transfer(perpToken, msgSender, balance);
 
-        emit Withdraw(msgSender, balance.toUint());
-    }
-
-    function latestBalance(address _owner) external view returns (Decimal.decimal memory) {
-        return _balanceOfAt(_owner, _blockNumber());
-    }
-
-    function latestTotalSupply() external view returns (Decimal.decimal memory) {
-        return _totalSupplyAt(_blockNumber());
+        emit Withdrawn(msgSender, balance.toUint());
     }
 
     //
@@ -152,7 +143,7 @@ contract StakedPerpToken is
     // override: ERC20UpgradeSafe, not allowed to transfer/transferFrom/approve in StakedPerpToken
     //
     function transfer(address, uint256) public override returns (bool) {
-        revert("transfer() is not supported.");
+        revert("transfer() is not supported");
     }
 
     function transferFrom(
@@ -160,11 +151,11 @@ contract StakedPerpToken is
         address,
         uint256
     ) public override returns (bool) {
-        revert("transferFrom() is not supported.");
+        revert("transferFrom() is not supported");
     }
 
     function approve(address, uint256) public override returns (bool) {
-        revert("approve() is not supported.");
+        revert("approve() is not supported");
     }
 
     //
@@ -200,10 +191,10 @@ contract StakedPerpToken is
     }
 
     function requireNonZeroAmount(Decimal.decimal memory _amount) private pure {
-        require(_amount.toUint() > 0, "Amount is 0.");
+        require(_amount.toUint() > 0, "Amount is 0");
     }
 
-    function requireNotInCoolDown(address _staker) private view {
-        require(stakerCooldown[_staker] == 0, "Still in cooldown.");
+    function requireNonPendingBalance(address _staker) private view {
+        require(stakerWithdrawPendingBalance[_staker].toUint() == 0, "Need to withdraw first");
     }
 }
