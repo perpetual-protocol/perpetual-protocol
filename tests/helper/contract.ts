@@ -43,6 +43,8 @@ import {
     RewardsDistributionFakeInstance,
     RootBridgeContract,
     RootBridgeInstance,
+    StakedPerpTokenFakeContract,
+    StakedPerpTokenFakeInstance,
     StakingReserveFakeContract,
     StakingReserveFakeInstance,
     SupplyScheduleFakeContract,
@@ -73,6 +75,7 @@ const RootBridge = artifacts.require("RootBridge") as RootBridgeContract
 const MultiTokenMediatorMock = artifacts.require("MultiTokenMediatorMock") as MultiTokenMediatorMockContract
 const AMBBridgeMock = artifacts.require("AMBBridgeMock") as AMBBridgeMockContract
 const MetaTxGateway = artifacts.require("MetaTxGateway") as MetaTxGatewayContract
+const StakedPerpToken = artifacts.require("StakedPerpTokenFake") as StakedPerpTokenFakeContract
 
 export enum Side {
     BUY = 0,
@@ -322,5 +325,14 @@ export async function deployMetaTxGateway(
 ): Promise<MetaTxGatewayInstance> {
     const instance = await MetaTxGateway.new()
     instance.initialize(name, version, chainIdL1)
+    return instance
+}
+
+export async function deployStakedPerpToken(
+    perpToken: string,
+    rewardPool: string,
+): Promise<StakedPerpTokenFakeInstance> {
+    const instance = await StakedPerpToken.new()
+    await instance.initialize(perpToken, rewardPool)
     return instance
 }
