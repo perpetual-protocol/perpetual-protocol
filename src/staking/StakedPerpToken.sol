@@ -16,9 +16,9 @@ import { IRewardPool } from "../interface/IRewardPool.sol";
 
 contract StakedPerpToken is
     IERC20WithCheckpointing,
-    PerpFiOwnableUpgrade,
-    DecimalERC20,
     ERC20UpgradeSafe,
+    DecimalERC20,
+    PerpFiOwnableUpgrade,
     BlockContext
 {
     using Checkpointing for Checkpointing.History;
@@ -28,24 +28,24 @@ contract StakedPerpToken is
     //
     // CONSTANT
     //
-    uint256 public constant COOLDOWN_PERIOD = 1 weeks;
+    uint256 public constant COOLDOWN_PERIOD = 44800; // around a week, (7 * 24 * 60 * 60) / 13.5 ~= 44800 blocks
 
     //
     // EVENTS
     //
-    event Stake(address staker, uint256 amount, uint256 blockNumber);
-    event Unstake(address staker, uint256 amount, uint256 blockNumber);
-    event Withdraw(address staker, uint256 amount, uint256 blockNumber);
+    event Stake(address staker, uint256 amount);
+    event Unstake(address staker, uint256 amount);
+    event Withdraw(address staker, uint256 amount);
 
     //**********************************************************//
     //    The below state variables can not change the order    //
     //**********************************************************//
 
-    // Checkpointed balances of the deposited token by block number
-    mapping(address => Checkpointing.History) internal balancesHistory;
-
     // Checkpointed total supply of the deposited token
     Checkpointing.History internal totalSupplyHistory;
+
+    // Checkpointed balances of the deposited token by block number
+    mapping(address => Checkpointing.History) internal balancesHistory;
 
     // staker => the time staker can withdraw PERP
     mapping(address => uint256) public stakerCooldown;
@@ -77,56 +77,56 @@ contract StakedPerpToken is
 
     function stake(Decimal.decimal calldata _amount) external {
         requireNonZeroAmount(_amount);
-
         address msgSender = _msgSender();
-        uint256 amount = _amount.toUint();
         requireNotInCoolDown(msgSender);
+
+        uint256 blockNumber = _blockNumber();
+        Decimal.decimal memory balance = Decimal.decimal(balancesHistory[msgSender].latestValue());
+        Decimal.decimal memory totalSupply = Decimal.decimal(totalSupplyHistory.latestValue());
+        Decimal.decimal memory newBalance = balance.addD(_amount);
+
         _transferFrom(perpToken, msgSender, address(this), _amount);
-        _mint(msgSender, amount);
+        rewardPool.notifyStake(msgSender, newBalance);
+        mint(msgSender, _amount);
 
-        uint64 blockNumber = _blockNumber().toUint64Time();
-        uint256 balance = balancesHistory[msgSender].latestValue();
-        uint256 totalSupply = totalSupplyHistory.latestValue();
-        uint256 newBalance = balance.add(amount);
-        balancesHistory[msgSender].addCheckpoint(blockNumber, newBalance.toUint192Value());
-        totalSupplyHistory.addCheckpoint(blockNumber, totalSupply.add(amount).toUint192Value());
+        addPersonalBalanceCheckPoint(msgSender, blockNumber, newBalance);
+        addTotalSupplyCheckPoint(blockNumber, totalSupply.addD(_amount));
 
-        rewardPool.notifyStake(msgSender, Decimal.decimal(newBalance));
-
-        emit Stake(msgSender, amount, uint256(blockNumber));
+        emit Stake(msgSender, _amount.toUint());
     }
 
     function unstake() external {
         address msgSender = _msgSender();
-        uint256 balance = balancesHistory[msgSender].latestValue();
         requireNotInCoolDown(msgSender);
-        requireNonZeroAmount(Decimal.decimal(balance));
-        _burn(msgSender, balance);
 
-        uint256 blockNumber = _blockNumber();
-        uint256 totalSupply = totalSupplyHistory.latestValue();
-        balancesHistory[msgSender].addCheckpoint(blockNumber.toUint64Time(), uint192(0));
-        totalSupplyHistory.addCheckpoint(blockNumber.toUint64Time(), totalSupply.sub(balance).toUint192Value());
-        stakerCooldown[msgSender] = blockNumber.add(COOLDOWN_PERIOD);
-        stakerWithdrawPendingBalance[msgSender] = Decimal.decimal(balance);
+        Decimal.decimal memory balance = Decimal.decimal(balancesHistory[msgSender].latestValue());
+        requireNonZeroAmount(balance);
 
         rewardPool.notifyStake(msgSender, Decimal.zero());
+        burn(msgSender, balance);
 
-        emit Unstake(msgSender, balance, blockNumber);
+        uint256 blockNumber = _blockNumber();
+        Decimal.decimal memory totalSupply = Decimal.decimal(totalSupplyHistory.latestValue());
+        addPersonalBalanceCheckPoint(msgSender, blockNumber, Decimal.zero());
+        addTotalSupplyCheckPoint(blockNumber, totalSupply.subD(balance));
+        stakerCooldown[msgSender] = blockNumber.add(COOLDOWN_PERIOD);
+        stakerWithdrawPendingBalance[msgSender] = balance;
+
+        emit Unstake(msgSender, balance.toUint());
     }
 
     function withdraw() external {
         address msgSender = _msgSender();
-        uint256 blockNumber = _blockNumber();
+        require(stakerCooldown[msgSender] > _blockNumber());
+
         Decimal.decimal memory balance = stakerWithdrawPendingBalance[msgSender];
-        require(stakerCooldown[msgSender] > blockNumber);
         requireNonZeroAmount(balance);
 
-        stakerWithdrawPendingBalance[msgSender] = Decimal.zero();
-        stakerCooldown[msgSender] = 0;
+        delete stakerWithdrawPendingBalance[msgSender];
+        delete stakerCooldown[msgSender];
         _transfer(perpToken, msgSender, balance);
 
-        emit Withdraw(msgSender, balance.toUint(), blockNumber);
+        emit Withdraw(msgSender, balance.toUint());
     }
 
     function latestBalance(address _owner) external view returns (Decimal.decimal memory) {
@@ -149,7 +149,7 @@ contract StakedPerpToken is
     }
 
     //
-    // override: ERC20UpgradeSafe
+    // override: ERC20UpgradeSafe, not allowed to transfer/transferFrom/approve in StakedPerpToken
     //
     function transfer(address, uint256) public override returns (bool) {
         revert("transfer() is not supported.");
@@ -170,6 +170,27 @@ contract StakedPerpToken is
     //
     // INTERNAL FUNCTIONS
     //
+
+    function mint(address _staker, Decimal.decimal memory _amount) private {
+        _mint(_staker, _amount.toUint());
+    }
+
+    function burn(address _staker, Decimal.decimal memory _amount) private {
+        _burn(_staker, _amount.toUint());
+    }
+
+    function addTotalSupplyCheckPoint(uint256 _blockNumber, Decimal.decimal memory _amount) internal {
+        totalSupplyHistory.addCheckpoint(_blockNumber.toUint64Time(), _amount.toUint().toUint192Value());
+    }
+
+    function addPersonalBalanceCheckPoint(
+        address _staker,
+        uint256 _blockNumber,
+        Decimal.decimal memory _amount
+    ) internal {
+        balancesHistory[_staker].addCheckpoint(_blockNumber.toUint64Time(), _amount.toUint().toUint192Value());
+    }
+
     function _balanceOfAt(address _owner, uint256 _blockNumber) internal view returns (Decimal.decimal memory) {
         return Decimal.decimal(balancesHistory[_owner].getValueAt(_blockNumber.toUint64Time()));
     }
