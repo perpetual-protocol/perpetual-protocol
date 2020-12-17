@@ -2,13 +2,12 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import { KeeperRewardBase } from "./KeeperRewardBase.sol";
 import { ChainlinkL1 } from "../ChainlinkL1.sol";
-import { PerpToken } from "../PerpToken.sol";
 
 contract KeeperRewardL1 is KeeperRewardBase {
-    function initialize(PerpToken _perpToken) external {
+    function initialize(IERC20 _perpToken) external {
         __BaseKeeperReward_init(_perpToken);
     }
 
