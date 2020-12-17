@@ -273,7 +273,7 @@ describe("SystemTest Spec", () => {
                     ethers.utils.parseEther("20").toString(),
                 )
                 expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
-                    ethers.utils.parseEther("500000").toString(),
+                    ethers.utils.parseEther("1000000").toString(),
                 )
             })
         })
@@ -309,7 +309,7 @@ describe("SystemTest Spec", () => {
                     ethers.utils.parseEther("0.5").toString(),
                 )
                 expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
-                    ethers.utils.parseEther("500000").toString(),
+                    ethers.utils.parseEther("1000000").toString(),
                 )
             })
         })
