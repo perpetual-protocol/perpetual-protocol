@@ -47,6 +47,8 @@ import {
     RewardsDistributionFakeInstance,
     RootBridgeContract,
     RootBridgeInstance,
+    StakedPerpTokenFakeContract,
+    StakedPerpTokenFakeInstance,
     StakingReserveFakeContract,
     StakingReserveFakeInstance,
     SupplyScheduleFakeContract,
@@ -79,6 +81,7 @@ const AMBBridgeMock = artifacts.require("AMBBridgeMock") as AMBBridgeMockContrac
 const MetaTxGateway = artifacts.require("MetaTxGateway") as MetaTxGatewayContract
 const KeeperRewardL1 = artifacts.require("KeeperRewardL1") as KeeperRewardL1Contract
 const KeeperRewardL2 = artifacts.require("KeeperRewardL2") as KeeperRewardL2Contract
+const StakedPerpToken = artifacts.require("StakedPerpTokenFake") as StakedPerpTokenFakeContract
 
 export enum Side {
     BUY = 0,
@@ -340,5 +343,14 @@ export async function deployL1KeeperReward(perpToken: string): Promise<KeeperRew
 export async function deployL2KeeperReward(perpToken: string): Promise<KeeperRewardL2Instance> {
     const instance = await KeeperRewardL2.new()
     await instance.initialize(perpToken)
+    return instance
+}
+
+export async function deployStakedPerpToken(
+    perpToken: string,
+    rewardPool: string,
+): Promise<StakedPerpTokenFakeInstance> {
+    const instance = await StakedPerpToken.new()
+    await instance.initialize(perpToken, rewardPool)
     return instance
 }
