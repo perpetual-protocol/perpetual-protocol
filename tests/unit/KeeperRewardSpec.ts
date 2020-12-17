@@ -15,7 +15,7 @@ import { toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 
-describe.only("Keeper reward L1/L2 Spec", () => {
+describe("Keeper reward L1/L2 Spec", () => {
     let addresses: string[]
     let admin: string
     let fakeAmm: string
