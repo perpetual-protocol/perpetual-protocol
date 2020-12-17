@@ -28,7 +28,7 @@ contract StakedPerpToken is
     //
     // CONSTANT
     //
-    uint256 public constant COOLDOWN_PERIOD = 120960; // around a week, (7 * 24 * 60 * 60) / 5 ~= 120,960 blocks
+    uint256 public constant COOLDOWN_PERIOD = 120960; // a week, (7 * 24 * 60 * 60) / 5 ~= 120,960 blocks
 
     //
     // EVENTS
