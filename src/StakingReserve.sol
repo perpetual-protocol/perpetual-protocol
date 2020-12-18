@@ -224,9 +224,8 @@ contract StakingReserve is
         }
 
         // update totalEffectiveStakeMap for coming epoch
-        SignedDecimal.signedDecimal memory updatedTotalEffectiveStakeBalance = totalPendingStakeBalance.addD(
-            totalBalanceBeforeEndEpoch
-        );
+        SignedDecimal.signedDecimal memory updatedTotalEffectiveStakeBalance =
+            totalPendingStakeBalance.addD(totalBalanceBeforeEndEpoch);
         require(updatedTotalEffectiveStakeBalance.toInt() >= 0, "Unstake more than locked balance");
         totalEffectiveStakeMap[(nextEpochIndex())] = updatedTotalEffectiveStakeBalance.abs();
         totalPendingStakeBalance = SignedDecimal.zero();
@@ -360,9 +359,8 @@ contract StakingReserve is
             if (latestLockedStake.toUint() == 0) {
                 continue;
             }
-            Decimal.decimal memory rewardInThisEpoch = epochRewardHistory[i].perpReward.mulD(latestLockedStake).divD(
-                totalEffectiveStakeMap[i]
-            );
+            Decimal.decimal memory rewardInThisEpoch =
+                epochRewardHistory[i].perpReward.mulD(latestLockedStake).divD(totalEffectiveStakeMap[i]);
             reward = reward.addD(rewardInThisEpoch);
         }
     }

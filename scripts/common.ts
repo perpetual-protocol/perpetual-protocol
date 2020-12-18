@@ -10,7 +10,7 @@ export const ozNetworkFile: Record<Network, string> = {
     ropsten: "ropsten",
     localhost: "unknown-31337",
     xdai: "unknown-100",
-    sokol: "unknown-100",
+    sokol: "unknown-77",
 }
 
 // TODO deprecated

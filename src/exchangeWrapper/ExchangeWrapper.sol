@@ -183,11 +183,8 @@ contract ExchangeWrapper is PerpFiOwnableUpgrade, IExchangeWrapper, DecimalERC20
         IERC20 inToken = balancerAcceptableToken(_inputToken);
         IERC20 outToken = balancerAcceptableToken(_outputToken);
         //___1. calc how much input tokens needed by given outTokenBought,
-        Decimal.decimal memory expectedTokenInAmount = calcBalancerInGivenOut(
-            address(inToken),
-            address(outToken),
-            outTokenBought
-        );
+        Decimal.decimal memory expectedTokenInAmount =
+            calcBalancerInGivenOut(address(inToken), address(outToken), outTokenBought);
         require(_maxInputTokenSold.cmp(expectedTokenInAmount) >= 0, "max input amount less than expected");
 
         //___2 transfer input tokens to exchangeWrapper
@@ -201,13 +198,8 @@ contract ExchangeWrapper is PerpFiOwnableUpgrade, IExchangeWrapper, DecimalERC20
         }
 
         //___3. swap
-        Decimal.decimal memory requiredInAmount = balancerSwapOut(
-            inToken,
-            outToken,
-            outTokenBought,
-            _maxInputTokenSold,
-            _maxPrice
-        );
+        Decimal.decimal memory requiredInAmount =
+            balancerSwapOut(inToken, outToken, outTokenBought, _maxInputTokenSold, _maxPrice);
 
         // if _outputToken is USDT, redeem cUSDT to USDT
         if (isUSDT(_outputToken)) {
@@ -237,13 +229,14 @@ contract ExchangeWrapper is PerpFiOwnableUpgrade, IExchangeWrapper, DecimalERC20
 
         // swap
         uint256 tokeSold = _toUint(_inputToken, _inputTokenSold);
-        (uint256 outAmountInSelfDecimals, ) = balancerPool.swapExactAmountIn(
-            address(_inputToken),
-            tokeSold,
-            address(_outputToken),
-            _toUint(_outputToken, _minOutputTokenBought),
-            _maxPrice.toUint()
-        );
+        (uint256 outAmountInSelfDecimals, ) =
+            balancerPool.swapExactAmountIn(
+                address(_inputToken),
+                tokeSold,
+                address(_outputToken),
+                _toUint(_outputToken, _minOutputTokenBought),
+                _maxPrice.toUint()
+            );
         require(outAmountInSelfDecimals > 0, "Balancer exchange error");
         emit BalancerSwap(tokeSold, outAmountInSelfDecimals);
 
@@ -267,13 +260,14 @@ contract ExchangeWrapper is PerpFiOwnableUpgrade, IExchangeWrapper, DecimalERC20
         // swap
         uint256 tokenBought = _toUint(_outputToken, _outputTokenBought);
         uint256 maxTokenSold = _toUint(_inputToken, _maxInputTokenSold);
-        (uint256 inAmountInSelfDecimals, ) = balancerPool.swapExactAmountOut(
-            address(_inputToken),
-            maxTokenSold,
-            address(_outputToken),
-            tokenBought,
-            _maxPrice.toUint()
-        );
+        (uint256 inAmountInSelfDecimals, ) =
+            balancerPool.swapExactAmountOut(
+                address(_inputToken),
+                maxTokenSold,
+                address(_outputToken),
+                tokenBought,
+                _maxPrice.toUint()
+            );
         require(inAmountInSelfDecimals > 0, "Balancer exchange error");
         emit BalancerSwap(inAmountInSelfDecimals, tokenBought);
 
@@ -331,9 +325,8 @@ contract ExchangeWrapper is PerpFiOwnableUpgrade, IExchangeWrapper, DecimalERC20
 
         // The amount of underlying tokens received is equal to the quantity of cTokens,
         // multiplied by the current Exchange Rate
-        Decimal.decimal memory underlyingTokenIn6Decimals = Decimal.decimal(cTokenIn8Decimals).mulD(
-            Decimal.decimal(exchangeRate)
-        );
+        Decimal.decimal memory underlyingTokenIn6Decimals =
+            Decimal.decimal(cTokenIn8Decimals).mulD(Decimal.decimal(exchangeRate));
         underlyingAmount = _toDecimal(usdtToken, underlyingTokenIn6Decimals.toUint());
     }
 
@@ -349,10 +342,8 @@ contract ExchangeWrapper is PerpFiOwnableUpgrade, IExchangeWrapper, DecimalERC20
 
         // The amount of cTokens is equal to the quantity of underlying tokens received,
         // divided by the current Exchange Rate
-        uint256 cTokenIn8Decimals = Decimal
-            .decimal(underlyingTokenIn6Decimals)
-            .divD(Decimal.decimal(exchangeRate))
-            .toUint();
+        uint256 cTokenIn8Decimals =
+            Decimal.decimal(underlyingTokenIn6Decimals).divD(Decimal.decimal(exchangeRate)).toUint();
         cTokenAmount = _toDecimal(IERC20(address(compoundCUsdt)), cTokenIn8Decimals);
     }
 
@@ -373,14 +364,15 @@ contract ExchangeWrapper is PerpFiOwnableUpgrade, IExchangeWrapper, DecimalERC20
         uint256 outWeight = balancerPool.getDenormalizedWeight(_outToken);
         uint256 inBalance = balancerPool.getBalance(_inToken);
         uint256 outBalance = balancerPool.getBalance(_outToken);
-        uint256 expectedTokenInAmount = balancerPool.calcInGivenOut(
-            inBalance,
-            inWeight,
-            outBalance,
-            outWeight,
-            givenOut,
-            balancerPool.getSwapFee()
-        );
+        uint256 expectedTokenInAmount =
+            balancerPool.calcInGivenOut(
+                inBalance,
+                inWeight,
+                outBalance,
+                outWeight,
+                givenOut,
+                balancerPool.getSwapFee()
+            );
         return _toDecimal(IERC20(_inToken), expectedTokenInAmount);
     }
 

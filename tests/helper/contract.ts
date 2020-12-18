@@ -27,6 +27,10 @@ import {
     InflationMonitorFakeInstance,
     InsuranceFundFakeContract,
     InsuranceFundFakeInstance,
+    KeeperRewardL1Contract,
+    KeeperRewardL1Instance,
+    KeeperRewardL2Contract,
+    KeeperRewardL2Instance,
     L2PriceFeedFakeContract,
     L2PriceFeedFakeInstance,
     L2PriceFeedMockContract,
@@ -75,6 +79,8 @@ const RootBridge = artifacts.require("RootBridge") as RootBridgeContract
 const MultiTokenMediatorMock = artifacts.require("MultiTokenMediatorMock") as MultiTokenMediatorMockContract
 const AMBBridgeMock = artifacts.require("AMBBridgeMock") as AMBBridgeMockContract
 const MetaTxGateway = artifacts.require("MetaTxGateway") as MetaTxGatewayContract
+const KeeperRewardL1 = artifacts.require("KeeperRewardL1") as KeeperRewardL1Contract
+const KeeperRewardL2 = artifacts.require("KeeperRewardL2") as KeeperRewardL2Contract
 const StakedPerpToken = artifacts.require("StakedPerpTokenFake") as StakedPerpTokenFakeContract
 
 export enum Side {
@@ -325,6 +331,18 @@ export async function deployMetaTxGateway(
 ): Promise<MetaTxGatewayInstance> {
     const instance = await MetaTxGateway.new()
     instance.initialize(name, version, chainIdL1)
+    return instance
+}
+
+export async function deployL1KeeperReward(perpToken: string): Promise<KeeperRewardL1Instance> {
+    const instance = await KeeperRewardL1.new()
+    await instance.initialize(perpToken)
+    return instance
+}
+
+export async function deployL2KeeperReward(perpToken: string): Promise<KeeperRewardL2Instance> {
+    const instance = await KeeperRewardL2.new()
+    await instance.initialize(perpToken)
     return instance
 }
 
