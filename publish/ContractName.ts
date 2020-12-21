@@ -17,6 +17,8 @@ export enum ContractName {
     RootBridge = "RootBridge",
     KeeperRewardL1 = "KeeperRewardL1",
     KeeperRewardL2 = "KeeperRewardL2",
+    PerpRewardVesting = "PerpRewardVesting",
+    StakedPerpToken = "StakedPerpToken",
 }
 
 export type ContractInstanceName = ContractName | AmmInstanceName

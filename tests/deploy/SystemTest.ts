@@ -30,7 +30,6 @@ const XDAI_NAME = "xdai"
 const XDAI_CHAINID = 100
 const STAGE = "production"
 
-// TODO: activate this after deployment
 // for current production.json, we already shut down the amm and remove token from insurance fund
 describe.skip("SystemTest Spec", () => {
     const l1Provider = ethers.getDefaultProvider(LAYER_1)
@@ -273,7 +272,7 @@ describe.skip("SystemTest Spec", () => {
                     ethers.utils.parseEther("20").toString(),
                 )
                 expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
-                    ethers.utils.parseEther("1000000").toString(),
+                    ethers.utils.parseEther("1500000").toString(),
                 )
             })
         })
@@ -309,7 +308,7 @@ describe.skip("SystemTest Spec", () => {
                     ethers.utils.parseEther("0.5").toString(),
                 )
                 expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
-                    ethers.utils.parseEther("1000000").toString(),
+                    ethers.utils.parseEther("1500000").toString(),
                 )
             })
         })
