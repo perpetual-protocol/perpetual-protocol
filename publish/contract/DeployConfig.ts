@@ -4,6 +4,7 @@ import { AmmInstanceName } from "../ContractName"
 
 // TODO replace by ethers format
 const DEFAULT_DIGITS = BigNumber.from(10).pow(18)
+const WEEK = BigNumber.from(7 * 24 * 60 * 60)
 
 // chainlink
 export enum PriceFeedKey {
@@ -111,6 +112,9 @@ export class DeployConfig {
     // KeeperReward
     readonly keeperRewardOnL1 = BigNumber.from(1).mul(DEFAULT_DIGITS) // 1 perp token
     readonly keeperRewardOnL2 = BigNumber.from(1).mul(DEFAULT_DIGITS) // 1 perp token
+
+    // PerpRewardVesting
+    readonly vestingPeriod = WEEK.mul(12)
 
     constructor(stage: Stage) {
         switch (stage) {

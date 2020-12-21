@@ -1,260 +1,440 @@
 import { web3 } from "@nomiclabs/buidler"
-import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
+import { expectRevert } from "@openzeppelin/test-helpers"
+import BN from "bn.js"
 import { use } from "chai"
-import { PerpTokenInstance, RewardPoolMockInstance, StakedPerpTokenFakeInstance } from "../../types/truffle"
+import { PerpRewardVestingFakeInstance, PerpTokenInstance } from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
-import { deployPerpToken, deployStakedPerpToken } from "../helper/contract"
-import { deployRewardPoolMock } from "../helper/mockContract"
-import { toDecimal, toFullDigit } from "../helper/number"
+import { deployPerpRewardVesting, deployPerpToken } from "../helper/contract"
+import { toFullDigit, toFullDigitStr } from "../helper/number"
 
 use(assertionHelper)
 
 describe("PerpRewardVestingSpec", () => {
+    const RANDOM_BYTES32_1 = "0x7c1b1e7c2eaddafdf52250cba9679e5b30014a9d86a0e2af17ec4cee24a5fc80"
+    const RANDOM_BYTES32_2 = "0xb6801f31f93d990dfe65d67d3479c3853d5fafd7a7f2b8fad9e68084d8d409e0"
+    const RANDOM_BYTES32_3 = "0x43bd90E4CC93D6E40580507102Cc7B1Bc8A25284a7f2b8fad9e68084d8d409e0"
     let admin: string
     let alice: string
-    let stakedPerpToken: StakedPerpTokenFakeInstance
+    let bob: string
+    let perpRewardVesting: PerpRewardVestingFakeInstance
     let perpToken: PerpTokenInstance
-    let rewardPoolMock: RewardPoolMockInstance
-    let cooldownPeriod: number
+    let vestingPeriod: BN
 
     async function forwardBlockTimestamp(time: number): Promise<void> {
-        const timestamp = await stakedPerpToken.mock_getCurrentTimestamp()
-        const blockNumber = await stakedPerpToken.mock_getCurrentBlockNumber()
+        const timestamp = await perpRewardVesting.mock_getCurrentTimestamp()
+        const blockNumber = await perpRewardVesting.mock_getCurrentBlockNumber()
         const movedBlocks = time / 15 < 1 ? 1 : time / 15
 
-        await stakedPerpToken.mock_setBlockTimestamp(timestamp.addn(time))
-        await stakedPerpToken.mock_setBlockNumber(blockNumber.addn(movedBlocks))
+        await perpRewardVesting.mock_setBlockTimestamp(timestamp.addn(time))
+        await perpRewardVesting.mock_setBlockNumber(blockNumber.addn(movedBlocks))
     }
 
     beforeEach(async () => {
         const addresses = await web3.eth.getAccounts()
         admin = addresses[0]
         alice = addresses[1]
+        bob = addresses[2]
 
         perpToken = await deployPerpToken(toFullDigit(2000000))
-        rewardPoolMock = await deployRewardPoolMock()
-        stakedPerpToken = await deployStakedPerpToken(perpToken.address, rewardPoolMock.address)
+        // 12 * 7 * 24 * 60 * 60 = 7,257,600
+        perpRewardVesting = await deployPerpRewardVesting(perpToken.address, new BN(7257600))
+        vestingPeriod = await perpRewardVesting.defaultVestingPeriod()
 
-        await perpToken.transfer(alice, toFullDigit(2000))
-        await perpToken.approve(stakedPerpToken.address, toFullDigit(2000), { from: alice })
-        await perpToken.approve(stakedPerpToken.address, toFullDigit(5000), { from: admin })
-
-        cooldownPeriod = (await stakedPerpToken.COOLDOWN_PERIOD()).toNumber()
+        await perpToken.approve(perpRewardVesting.address, toFullDigit(2000000), { from: admin })
     })
 
-    describe("stake()", () => {
-        it("alice stakes 100", async () => {
-            const blockNumber = await stakedPerpToken.mock_getCurrentBlockNumber()
-            const receipt = await stakedPerpToken.stake(toDecimal(100), { from: alice })
+    describe("seedAllocations()", () => {
+        it("verify balances after seeding", async () => {
+            const timestamp = await perpRewardVesting.mock_getCurrentTimestamp()
+            await perpRewardVesting.seedAllocations(new BN(1), RANDOM_BYTES32_1, toFullDigit(1000000), { from: admin })
 
-            expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(100))
-            expect(await stakedPerpToken.totalSupply()).to.eq(toFullDigit(100))
+            expect(await perpToken.balanceOf(admin)).to.eq(toFullDigit(1000000))
+            expect(await perpToken.balanceOf(perpRewardVesting.address)).to.eq(toFullDigit(1000000))
+            expect(await perpRewardVesting.weekMerkleRoots(new BN(1))).to.eq(RANDOM_BYTES32_1)
+            expect(await perpRewardVesting.merkleRootTimestampMap(new BN(1))).to.eq(timestamp)
+            expect(await perpRewardVesting.merkleRootIndexes(new BN(0))).to.eq(new BN(1))
+        })
+    })
 
-            expect(await stakedPerpToken.balanceOfAt(alice, blockNumber)).to.eq(toFullDigit(100))
-            expect(await stakedPerpToken.totalSupplyAt(blockNumber)).to.eq(toFullDigit(100))
-            await expectEvent.inTransaction(receipt.tx, stakedPerpToken, "Staked")
-            await expectEvent.inTransaction(receipt.tx, rewardPoolMock, "NotificationReceived")
+    describe("claimWeek()", () => {
+        it("alice claims her own share", async () => {
+            await perpRewardVesting.seedAllocations(new BN(1), RANDOM_BYTES32_1, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
 
-            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1900))
+            await perpRewardVesting.claimWeek(alice, new BN(1), toFullDigit(500000), [RANDOM_BYTES32_1], {
+                from: alice,
+            })
+
+            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(500000))
+            expect(await perpToken.balanceOf(perpRewardVesting.address)).to.eq(toFullDigit(500000))
+            expect(await perpRewardVesting.claimed(new BN(1), alice)).to.eq(true)
         })
 
-        it("alice stakes 100 and then stakes 400", async () => {
-            const prevBlockNumber = await stakedPerpToken.mock_getCurrentBlockNumber()
-            await stakedPerpToken.stake(toDecimal(100), { from: alice })
+        it("admin claims alice's share", async () => {
+            await perpRewardVesting.seedAllocations(new BN(1), RANDOM_BYTES32_1, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
 
-            await forwardBlockTimestamp(15)
+            await perpRewardVesting.claimWeek(alice, new BN(1), toFullDigit(500000), [RANDOM_BYTES32_1], {
+                from: admin,
+            })
 
-            await stakedPerpToken.stake(toDecimal(400), { from: alice })
-            expect(await stakedPerpToken.balanceOfAt(alice, prevBlockNumber)).to.eq(toFullDigit(100))
-
-            const blockNumber = await stakedPerpToken.mock_getCurrentBlockNumber()
-            expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(500))
-            expect(await stakedPerpToken.totalSupply()).to.eq(toFullDigit(500))
-
-            expect(await stakedPerpToken.balanceOfAt(alice, blockNumber)).to.eq(toFullDigit(500))
-            expect(await stakedPerpToken.totalSupplyAt(blockNumber)).to.eq(toFullDigit(500))
-
-            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1500))
+            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(500000))
+            expect(await perpToken.balanceOf(perpRewardVesting.address)).to.eq(toFullDigit(500000))
+            expect(await perpRewardVesting.claimed(new BN(1), alice)).to.eq(true)
         })
 
-        it("alice stakes 100 & admin stakes 300 in the same block", async () => {
-            const blockNumber = await stakedPerpToken.mock_getCurrentBlockNumber()
-            await stakedPerpToken.stake(toDecimal(100), { from: alice })
-            await stakedPerpToken.stake(toDecimal(300), { from: admin })
+        it("alice & bob both claim their shares", async () => {
+            await perpRewardVesting.seedAllocations(new BN(1), RANDOM_BYTES32_1, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
 
-            expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(100))
-            expect(await stakedPerpToken.balanceOfAt(alice, blockNumber)).to.eq(toFullDigit(100))
+            await perpRewardVesting.claimWeek(alice, new BN(1), toFullDigit(500000), [RANDOM_BYTES32_1], {
+                from: alice,
+            })
 
-            expect(await stakedPerpToken.balanceOf(admin)).to.eq(toFullDigit(300))
-            expect(await stakedPerpToken.balanceOfAt(admin, blockNumber)).to.eq(toFullDigit(300))
+            await perpRewardVesting.claimWeek(bob, new BN(1), toFullDigit(300000), [RANDOM_BYTES32_1], {
+                from: bob,
+            })
 
-            expect(await stakedPerpToken.totalSupply()).to.eq(toFullDigit(400))
-            expect(await stakedPerpToken.totalSupplyAt(blockNumber)).to.eq(toFullDigit(400))
+            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(500000))
+            expect(await perpToken.balanceOf(bob)).to.eq(toFullDigit(300000))
+            expect(await perpToken.balanceOf(perpRewardVesting.address)).to.eq(toFullDigit(200000))
+            expect(await perpRewardVesting.claimed(new BN(1), alice)).to.eq(true)
+            expect(await perpRewardVesting.claimed(new BN(1), bob)).to.eq(true)
         })
 
-        it("alice stakes 100 and after one block admin stakes 300", async () => {
-            const blockNumberOfAlice = await stakedPerpToken.mock_getCurrentBlockNumber()
-            await stakedPerpToken.stake(toDecimal(100), { from: alice })
+        it("there are three allocations and alice claims two of them", async () => {
+            await perpRewardVesting.seedAllocations(new BN(1), RANDOM_BYTES32_1, toFullDigit(500000), { from: admin })
+            await forwardBlockTimestamp(30)
 
-            await forwardBlockTimestamp(15)
+            await perpRewardVesting.seedAllocations(new BN(3), RANDOM_BYTES32_1, toFullDigit(600000), { from: admin })
+            await forwardBlockTimestamp(30)
 
-            const blockNumberOfAdmin = await stakedPerpToken.mock_getCurrentBlockNumber()
-            await stakedPerpToken.stake(toDecimal(300), { from: admin })
+            await perpRewardVesting.seedAllocations(new BN(5), RANDOM_BYTES32_3, toFullDigit(700000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
 
-            expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(100))
-            expect(await stakedPerpToken.balanceOfAt(alice, blockNumberOfAlice)).to.eq(toFullDigit(100))
-            expect(await stakedPerpToken.balanceOfAt(alice, blockNumberOfAdmin)).to.eq(toFullDigit(100))
+            await perpRewardVesting.claimWeek(alice, new BN(1), toFullDigit(500000), [RANDOM_BYTES32_1], {
+                from: alice,
+            })
 
-            expect(await stakedPerpToken.balanceOf(admin)).to.eq(toFullDigit(300))
-            expect(await stakedPerpToken.balanceOfAt(admin, blockNumberOfAdmin)).to.eq(toFullDigit(300))
+            await perpRewardVesting.claimWeek(alice, new BN(5), toFullDigit(700000), [RANDOM_BYTES32_3], {
+                from: alice,
+            })
 
-            expect(await stakedPerpToken.totalSupply()).to.eq(toFullDigit(400))
-            expect(await stakedPerpToken.totalSupplyAt(blockNumberOfAdmin)).to.eq(toFullDigit(400))
+            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1200000))
+            expect(await perpRewardVesting.claimed(new BN(3), alice)).to.eq(false)
+
+            await perpRewardVesting.claimWeek(alice, new BN(3), toFullDigit(600000), [RANDOM_BYTES32_2], {
+                from: alice,
+            })
+
+            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1800000))
         })
 
-        it("force error, amount is zero", async () => {
-            await expectRevert(stakedPerpToken.stake(toDecimal(0), { from: alice }), "Amount is 0")
-        })
+        it("force error, claiming is not yet available", async () => {
+            await perpRewardVesting.seedAllocations(new BN(1), RANDOM_BYTES32_1, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(60)
 
-        it("force error, balance is insufficient", async () => {
             await expectRevert(
-                stakedPerpToken.stake(toDecimal(6000), { from: alice }),
-                "DecimalERC20: transferFrom failed",
+                perpRewardVesting.claimWeek(alice, new BN(1), toFullDigit(500000), [RANDOM_BYTES32_1], {
+                    from: alice,
+                }),
+                "Claiming is not yet available",
             )
         })
+
+        it("force error, claiming twice", async () => {
+            await perpRewardVesting.seedAllocations(new BN(1), RANDOM_BYTES32_1, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
+
+            await perpRewardVesting.claimWeek(alice, new BN(1), toFullDigit(500000), [RANDOM_BYTES32_1], {
+                from: alice,
+            })
+
+            await expectRevert(
+                perpRewardVesting.claimWeek(alice, new BN(1), toFullDigit(500000), [RANDOM_BYTES32_1], {
+                    from: alice,
+                }),
+                "Claimed already",
+            )
+        })
+
+        // we do not verify if the claimed amount is valid or not; we suppose this is verified by MerkleRedeem.sol
+        it.skip("force error, claimed amount larger than the available quota", async () => {})
     })
 
-    describe("unstake()", () => {
-        it("alice stakes 100 and then unstakes", async () => {
-            await stakedPerpToken.stake(toDecimal(100), { from: alice })
+    describe("claimWeeks()", () => {
+        // when testing claimWeeks(), input all inputs as strings s.t. Claims[] will not cause error
+        it("alice claims her two shares", async () => {
+            await perpRewardVesting.seedAllocations(new BN(2), RANDOM_BYTES32_1, toFullDigit(500000), { from: admin })
+            await forwardBlockTimestamp(30)
 
-            await forwardBlockTimestamp(15)
+            await perpRewardVesting.seedAllocations(new BN(7), RANDOM_BYTES32_2, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
 
-            const blockNumber = await stakedPerpToken.mock_getCurrentBlockNumber()
-            const receipt = await stakedPerpToken.unstake({ from: alice })
-            await expectEvent.inTransaction(receipt.tx, stakedPerpToken, "Unstaked")
-            await expectEvent.inTransaction(receipt.tx, rewardPoolMock, "NotificationReceived")
+            const claimsArr = [
+                {
+                    week: "2",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_1],
+                },
+                {
+                    week: "7",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_2],
+                },
+            ]
 
-            expect(await stakedPerpToken.stakerCooldown(alice)).to.eq(blockNumber.addn(cooldownPeriod))
-            expect(await stakedPerpToken.stakerWithdrawPendingBalance(alice)).to.eq(toFullDigit(100))
-
-            expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(0))
-            expect(await stakedPerpToken.totalSupply()).to.eq(toFullDigit(0))
-
-            expect(await stakedPerpToken.balanceOfAt(alice, blockNumber)).to.eq(toFullDigit(0))
-            expect(await stakedPerpToken.totalSupplyAt(blockNumber)).to.eq(toFullDigit(0))
-
-            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1900))
+            await perpRewardVesting.claimWeeks(alice, claimsArr, { from: alice })
+            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(200000))
+            expect(await perpToken.balanceOf(perpRewardVesting.address)).to.eq(toFullDigit(1300000))
+            expect(await perpRewardVesting.claimed("2", alice)).to.eq(true)
+            expect(await perpRewardVesting.claimed("7", alice)).to.eq(true)
         })
 
-        it("alice stakes 100, 200 and then unstakes", async () => {
-            await stakedPerpToken.stake(toDecimal(100), { from: alice })
+        it("admin claims alice's two shares", async () => {
+            await perpRewardVesting.seedAllocations(new BN(2), RANDOM_BYTES32_1, toFullDigit(500000), { from: admin })
+            await forwardBlockTimestamp(30)
 
-            await forwardBlockTimestamp(15)
-            await stakedPerpToken.stake(toDecimal(200), { from: alice })
+            await perpRewardVesting.seedAllocations(new BN(7), RANDOM_BYTES32_2, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
 
-            await forwardBlockTimestamp(15)
-            await stakedPerpToken.unstake({ from: alice })
+            const claimsArr = [
+                {
+                    week: "2",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_1],
+                },
+                {
+                    week: "7",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_2],
+                },
+            ]
 
-            const blockNumber = await stakedPerpToken.mock_getCurrentBlockNumber()
-            expect(await stakedPerpToken.stakerWithdrawPendingBalance(alice)).to.eq(toFullDigit(300))
-
-            expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(0))
-            expect(await stakedPerpToken.totalSupply()).to.eq(toFullDigit(0))
-
-            expect(await stakedPerpToken.balanceOfAt(alice, blockNumber)).to.eq(toFullDigit(0))
-            expect(await stakedPerpToken.totalSupplyAt(blockNumber)).to.eq(toFullDigit(0))
-
-            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1700))
+            await perpRewardVesting.claimWeeks(alice, claimsArr, { from: admin })
+            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(200000))
+            expect(await perpRewardVesting.claimed("2", alice)).to.eq(true)
+            expect(await perpRewardVesting.claimed("7", alice)).to.eq(true)
         })
 
-        it("alice stakes 100, 200, unstakes and then admin stakes 300", async () => {
-            await stakedPerpToken.stake(toDecimal(100), { from: alice })
+        it("alice & bob both claim their three shares", async () => {
+            await perpRewardVesting.seedAllocations(new BN(2), RANDOM_BYTES32_1, toFullDigit(500000), { from: admin })
+            await forwardBlockTimestamp(30)
 
-            await forwardBlockTimestamp(15)
-            await stakedPerpToken.stake(toDecimal(200), { from: alice })
+            await perpRewardVesting.seedAllocations(new BN(5), RANDOM_BYTES32_2, toFullDigit(500000), { from: admin })
+            await forwardBlockTimestamp(30)
 
-            await forwardBlockTimestamp(15)
-            await stakedPerpToken.unstake({ from: alice })
+            await perpRewardVesting.seedAllocations(new BN(7), RANDOM_BYTES32_3, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
 
-            await forwardBlockTimestamp(15)
-            await stakedPerpToken.stake(toDecimal(300), { from: admin })
+            const claimsArr = [
+                {
+                    week: "2",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_1],
+                },
+                {
+                    week: "5",
+                    balance: toFullDigitStr(150000),
+                    merkleProof: [RANDOM_BYTES32_2],
+                },
+                {
+                    week: "7",
+                    balance: toFullDigitStr(200000),
+                    merkleProof: [RANDOM_BYTES32_3],
+                },
+            ]
 
-            const blockNumber = await stakedPerpToken.mock_getCurrentBlockNumber()
-            expect(await stakedPerpToken.stakerWithdrawPendingBalance(alice)).to.eq(toFullDigit(300))
-            expect(await stakedPerpToken.stakerWithdrawPendingBalance(admin)).to.eq(toFullDigit(0))
-
-            expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(0))
-            expect(await stakedPerpToken.balanceOf(admin)).to.eq(toFullDigit(300))
-            expect(await stakedPerpToken.totalSupply()).to.eq(toFullDigit(300))
-
-            expect(await stakedPerpToken.balanceOfAt(alice, blockNumber)).to.eq(toFullDigit(0))
-            expect(await stakedPerpToken.balanceOfAt(admin, blockNumber)).to.eq(toFullDigit(300))
-            expect(await stakedPerpToken.totalSupplyAt(blockNumber)).to.eq(toFullDigit(300))
-
-            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1700))
+            await perpRewardVesting.claimWeeks(alice, claimsArr, { from: alice })
+            await perpRewardVesting.claimWeeks(bob, claimsArr, { from: bob })
+            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(450000))
+            expect(await perpToken.balanceOf(bob)).to.eq(toFullDigit(450000))
+            expect(await perpToken.balanceOf(perpRewardVesting.address)).to.eq(toFullDigit(1100000))
         })
 
-        it("force error, alice stakes 100, unstakes and then stakes 200", async () => {
-            await stakedPerpToken.stake(toDecimal(100), { from: alice })
+        it("alice & bob both claim two of their three shares", async () => {
+            await perpRewardVesting.seedAllocations(new BN(2), RANDOM_BYTES32_1, toFullDigit(500000), { from: admin })
+            await forwardBlockTimestamp(30)
 
-            await forwardBlockTimestamp(15)
-            await stakedPerpToken.unstake({ from: alice })
+            await perpRewardVesting.seedAllocations(new BN(5), RANDOM_BYTES32_1, toFullDigit(500000), { from: admin })
+            await forwardBlockTimestamp(30)
 
-            await forwardBlockTimestamp(15)
-            await expectRevert(stakedPerpToken.stake(toDecimal(200), { from: alice }), "Need to withdraw first")
+            await perpRewardVesting.seedAllocations(new BN(7), RANDOM_BYTES32_3, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
+
+            const aliceClaimsArr = [
+                {
+                    week: "2",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_1],
+                },
+                {
+                    week: "5",
+                    balance: toFullDigitStr(150000),
+                    merkleProof: [RANDOM_BYTES32_2],
+                },
+            ]
+
+            const bobClaimsArr = [
+                {
+                    week: "2",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_1],
+                },
+                {
+                    week: "7",
+                    balance: toFullDigitStr(200000),
+                    merkleProof: [RANDOM_BYTES32_3],
+                },
+            ]
+
+            await perpRewardVesting.claimWeeks(alice, aliceClaimsArr, { from: alice })
+            await perpRewardVesting.claimWeeks(bob, bobClaimsArr, { from: bob })
+            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(250000))
+            expect(await perpToken.balanceOf(bob)).to.eq(toFullDigit(300000))
+            expect(await perpToken.balanceOf(perpRewardVesting.address)).to.eq(toFullDigit(1450000))
+            expect(await perpRewardVesting.claimed("7", alice)).to.eq(false)
+            expect(await perpRewardVesting.claimed("5", bob)).to.eq(false)
         })
 
-        it("force error, alice unstakes and then unstakes again", async () => {
-            await stakedPerpToken.stake(toDecimal(100), { from: alice })
-            await stakedPerpToken.unstake({ from: alice })
+        it("force error, alice has two shares and both are not yet available", async () => {
+            await perpRewardVesting.seedAllocations(new BN(2), RANDOM_BYTES32_1, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(60)
 
-            await forwardBlockTimestamp(15)
-            await expectRevert(stakedPerpToken.unstake({ from: alice }), "Need to withdraw first")
+            await perpRewardVesting.seedAllocations(new BN(7), RANDOM_BYTES32_2, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(60)
+
+            const claimsArr = [
+                {
+                    week: "2",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_1],
+                },
+                {
+                    week: "7",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_2],
+                },
+            ]
+
+            await expectRevert(
+                perpRewardVesting.claimWeeks(alice, claimsArr, { from: alice }),
+                "Claiming is not yet available",
+            )
         })
 
-        it("force error, alice unstakes without previous staking", async () => {
-            await expectRevert(stakedPerpToken.unstake({ from: alice }), "Amount is 0")
-        })
-    })
+        it("force error, alice has three shares and the latest one is not yet available", async () => {
+            await perpRewardVesting.seedAllocations(new BN(2), RANDOM_BYTES32_1, toFullDigit(500000), { from: admin })
+            await forwardBlockTimestamp(30)
 
-    describe("withdraw()", () => {
-        it("alice stakes 100, unstakes and then withdraw", async () => {
-            await stakedPerpToken.stake(toDecimal(100), { from: alice })
+            await perpRewardVesting.seedAllocations(new BN(5), RANDOM_BYTES32_2, toFullDigit(500000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
 
-            await forwardBlockTimestamp(15)
-            await stakedPerpToken.unstake({ from: alice })
+            await perpRewardVesting.seedAllocations(new BN(7), RANDOM_BYTES32_3, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(30)
 
-            await forwardBlockTimestamp(15 * cooldownPeriod)
-            const receipt = await stakedPerpToken.withdraw({ from: alice })
-            await expectEvent.inTransaction(receipt.tx, stakedPerpToken, "Withdrawn")
+            const claimsArr = [
+                {
+                    week: "2",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_1],
+                },
+                {
+                    week: "5",
+                    balance: toFullDigitStr(150000),
+                    merkleProof: [RANDOM_BYTES32_2],
+                },
+                {
+                    week: "7",
+                    balance: toFullDigitStr(200000),
+                    merkleProof: [RANDOM_BYTES32_3],
+                },
+            ]
 
-            expect(await stakedPerpToken.stakerWithdrawPendingBalance(alice)).to.eq(toFullDigit(0))
-            expect(await stakedPerpToken.stakerCooldown(alice)).to.eq(toFullDigit(0))
-
-            // alice should have 0 sPERP
-            expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(0))
-            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(2000))
-        })
-
-        it("force error, alice stakes 100, unstakes and then withdraw within cooling down period", async () => {
-            await stakedPerpToken.stake(toDecimal(100), { from: alice })
-
-            await forwardBlockTimestamp(15)
-            await stakedPerpToken.unstake({ from: alice })
-
-            await forwardBlockTimestamp(15 * cooldownPeriod - 1)
-            await expectRevert(stakedPerpToken.withdraw({ from: alice }), "Still in cooldown")
-        })
-
-        it("force error, alice withdraw without previous staking", async () => {
-            await expectRevert(stakedPerpToken.withdraw({ from: alice }), "Amount is 0")
+            await expectRevert(
+                perpRewardVesting.claimWeeks(alice, claimsArr, { from: alice }),
+                "Claiming is not yet available",
+            )
         })
 
-        it("force error, alice withdraw without previous unstaking", async () => {
-            await stakedPerpToken.stake(toDecimal(100), { from: alice })
-            await forwardBlockTimestamp(15 * cooldownPeriod)
-            await expectRevert(stakedPerpToken.withdraw({ from: alice }), "Amount is 0")
+        it("force error, claimWeeks() twice", async () => {
+            await perpRewardVesting.seedAllocations(new BN(2), RANDOM_BYTES32_1, toFullDigit(500000), { from: admin })
+            await forwardBlockTimestamp(30)
+
+            await perpRewardVesting.seedAllocations(new BN(7), RANDOM_BYTES32_2, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
+
+            const claimsArr = [
+                {
+                    week: "2",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_1],
+                },
+                {
+                    week: "7",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_2],
+                },
+            ]
+
+            await perpRewardVesting.claimWeeks(alice, claimsArr, { from: alice })
+            await expectRevert(perpRewardVesting.claimWeeks(alice, claimsArr, { from: alice }), "Claimed already")
+        })
+
+        it("force error, claiming twice, first claimWeek() then claimWeeks()", async () => {
+            await perpRewardVesting.seedAllocations(new BN(2), RANDOM_BYTES32_1, toFullDigit(500000), { from: admin })
+            await forwardBlockTimestamp(30)
+
+            await perpRewardVesting.seedAllocations(new BN(7), RANDOM_BYTES32_2, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
+
+            await perpRewardVesting.claimWeek(alice, new BN(2), toFullDigit(100000), [RANDOM_BYTES32_1], {
+                from: alice,
+            })
+
+            const claimsArr = [
+                {
+                    week: "2",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_1],
+                },
+                {
+                    week: "6",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_2],
+                },
+            ]
+
+            await expectRevert(perpRewardVesting.claimWeeks(alice, claimsArr, { from: alice }), "Claimed already")
+        })
+
+        it("force error, claiming twice, first claimWeeks() then claimWeek()", async () => {
+            await perpRewardVesting.seedAllocations(new BN(2), RANDOM_BYTES32_1, toFullDigit(500000), { from: admin })
+            await forwardBlockTimestamp(30)
+
+            await perpRewardVesting.seedAllocations(new BN(7), RANDOM_BYTES32_2, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
+
+            const claimsArr = [
+                {
+                    week: "2",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_1],
+                },
+                {
+                    week: "6",
+                    balance: toFullDigitStr(100000),
+                    merkleProof: [RANDOM_BYTES32_2],
+                },
+            ]
+
+            await perpRewardVesting.claimWeeks(alice, claimsArr, { from: alice })
+            await expectRevert(
+                perpRewardVesting.claimWeek(alice, new BN(2), toFullDigit(100000), [RANDOM_BYTES32_1], {
+                    from: alice,
+                }),
+                "Claimed already",
+            )
         })
     })
 })

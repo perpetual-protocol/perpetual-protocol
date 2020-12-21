@@ -15,7 +15,9 @@ import {
     KeeperRewardL2,
     L2PriceFeed,
     MetaTxGateway,
+    PerpRewardVesting,
     RootBridge,
+    StakedPerpToken,
 } from "../types/ethers"
 import { ContractWrapperFactory } from "./contract/ContractWrapperFactory"
 import { DeployConfig, PriceFeedKey } from "./contract/DeployConfig"
@@ -134,6 +136,21 @@ export class ContractPublisher {
                             [this.deployConfig.keeperRewardOnL1],
                         )
                     ).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("deploying PerpRewardVesting on layer 1...")
+                    const perp = this.externalContract.perp!
+                    await this.factory
+                        .create<PerpRewardVesting>(ContractName.PerpRewardVesting)
+                        .deployUpgradableContract(perp!, this.deployConfig.vestingPeriod)
+                },
+                // TODO: add rewardPool as the second parameter
+                async (): Promise<void> => {
+                    console.log("deploying StakedPerpToken on layer 1...")
+                    const perp = this.externalContract.perp!
+                    await this.factory
+                        .create<StakedPerpToken>(ContractName.StakedPerpToken)
+                        .deployUpgradableContract(perp!, perp)
                 },
             ],
         ],

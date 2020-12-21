@@ -50,7 +50,7 @@ abstract contract MerkleRedeem is PerpFiOwnableUpgrade {
         uint256 _claimedBalance,
         bytes32[] memory _merkleProof
     ) public virtual {
-        require(!claimed[_week][_liquidityProvider]);
+        require(!claimed[_week][_liquidityProvider], "Claimed already");
         require(verifyClaim(_liquidityProvider, _week, _claimedBalance, _merkleProof), "Incorrect merkle proof");
 
         claimed[_week][_liquidityProvider] = true;
@@ -69,7 +69,7 @@ abstract contract MerkleRedeem is PerpFiOwnableUpgrade {
         for (uint256 i = 0; i < claims.length; i++) {
             claim = claims[i];
 
-            require(!claimed[claim.week][_liquidityProvider]);
+            require(!claimed[claim.week][_liquidityProvider], "Claimed already");
             require(
                 verifyClaim(_liquidityProvider, claim.week, claim.balance, claim.merkleProof),
                 "Incorrect merkle proof"
@@ -108,7 +108,7 @@ abstract contract MerkleRedeem is PerpFiOwnableUpgrade {
         uint256 _week,
         uint256 _claimedBalance,
         bytes32[] memory _merkleProof
-    ) public view returns (bool valid) {
+    ) public view virtual returns (bool valid) {
         bytes32 leaf = keccak256(abi.encodePacked(_liquidityProvider, _claimedBalance));
         return MerkleProof.verify(_merkleProof, weekMerkleRoots[_week], leaf);
     }

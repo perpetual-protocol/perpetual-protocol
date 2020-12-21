@@ -41,6 +41,8 @@ import {
     MinterInstance,
     MultiTokenMediatorMockContract,
     MultiTokenMediatorMockInstance,
+    PerpRewardVestingFakeContract,
+    PerpRewardVestingFakeInstance,
     PerpTokenContract,
     PerpTokenInstance,
     RewardsDistributionFakeContract,
@@ -82,6 +84,7 @@ const MetaTxGateway = artifacts.require("MetaTxGateway") as MetaTxGatewayContrac
 const KeeperRewardL1 = artifacts.require("KeeperRewardL1") as KeeperRewardL1Contract
 const KeeperRewardL2 = artifacts.require("KeeperRewardL2") as KeeperRewardL2Contract
 const StakedPerpToken = artifacts.require("StakedPerpTokenFake") as StakedPerpTokenFakeContract
+const PerpRewardVesting = artifacts.require("PerpRewardVestingFake") as PerpRewardVestingFakeContract
 
 export enum Side {
     BUY = 0,
@@ -352,5 +355,14 @@ export async function deployStakedPerpToken(
 ): Promise<StakedPerpTokenFakeInstance> {
     const instance = await StakedPerpToken.new()
     await instance.initialize(perpToken, rewardPool)
+    return instance
+}
+
+export async function deployPerpRewardVesting(
+    perpToken: string,
+    vestingPeriod: BN,
+): Promise<PerpRewardVestingFakeInstance> {
+    const instance = await PerpRewardVesting.new()
+    await instance.initialize(perpToken, vestingPeriod)
     return instance
 }
