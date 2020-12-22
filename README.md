@@ -51,5 +51,7 @@ or
 it.only("admin open amm", async () => { ... }
 ```
 
+All the test cases are under `./test` folder.
+
 ## License 
 GPL3.0 or later
