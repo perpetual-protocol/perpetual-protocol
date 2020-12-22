@@ -5,7 +5,7 @@ Perpetual Protocol is a decentralized perpetual contract protocol for every asse
 
 ##### Key features of the Perpetual Protocol include:
   - 10x Leverage On-Chain Perpetual Contacts
-Traders can trade with up to 10x leverage long or short, have transparent fees, and 24/7 guaranteed liquidity.
+Traders can trade with up to 10x leverage long or short, with transparent fees and 24/7 guaranteed liquidity.
   - Go Long or Short on Any Asset
 Every asset can be supported on Perpetual Protocol. Whether it's gold, fiat, BTC, BCH, ETH, ERC-20s, XRP, EOS, LTC, ZEC, XMR, and more - Perpetual Protocol can support it all. All that Perpetual Protocol requires is a price feed for the underlying asset from an oracle.
   - Lower Slippage than Other AMMs
