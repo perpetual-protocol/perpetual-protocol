@@ -51,7 +51,7 @@ or
 it.only("admin open amm", async () => { ... }
 ```
 
-All the test cases are under `./test` folder.
+Test cases can be found in the `./tests` folder.
 
 ## License 
 GPL3.0 or later
