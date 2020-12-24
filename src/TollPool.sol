@@ -19,7 +19,7 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
     //
     event TokenReceived(address token, uint256 amount);
     event TokenTransferred(address token, uint256 amount);
-    event TmpRewardPoolSet(address tmpRewardPool);
+    event TmpRewardPoolSet(address tmpRewardPoolL1);
     event FeeTokenAdded(address token);
     event FeeTokenRemoved(address token);
 
@@ -85,11 +85,11 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
         require(hasToll, "fee is now zero");
     }
 
-    function setTmpRewardPool(ITmpRewardPool _tmpRewardPool) external onlyOwner {
-        require(address(_tmpRewardPool) != address(0), "invalid input");
-        require(address(_tmpRewardPool) != address(tmpRewardPoolL1), "input is the same as the current one");
-        tmpRewardPoolL1 = _tmpRewardPool;
-        emit TmpRewardPoolSet(address(_tmpRewardPool));
+    function setTmpRewardPool(ITmpRewardPool _tmpRewardPoolL1) external onlyOwner {
+        require(address(_tmpRewardPoolL1) != address(0), "invalid input");
+        require(address(_tmpRewardPoolL1) != address(tmpRewardPoolL1), "input is the same as the current one");
+        tmpRewardPoolL1 = _tmpRewardPoolL1;
+        emit TmpRewardPoolSet(address(_tmpRewardPoolL1));
     }
 
     function addFeeToken(IERC20 _token) external onlyOwner {
