@@ -1,10 +1,10 @@
 import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
-import { use } from "chai"
-import { PerpTokenInstance, RewardPoolMockInstance, StakedPerpTokenFakeInstance } from "../../types/truffle"
+import { expect, use } from "chai"
+import { PerpTokenInstance, StakedPerpTokenFakeInstance, TmpRewardPoolMockInstance } from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { deployPerpToken, deployStakedPerpToken } from "../helper/contract"
-import { deployRewardPoolMock } from "../helper/mockContract"
+import { deployTmpRewardPoolMock } from "../helper/mockContract"
 import { toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
@@ -14,7 +14,7 @@ describe("StakedPerpTokenSpec", () => {
     let alice: string
     let stakedPerpToken: StakedPerpTokenFakeInstance
     let perpToken: PerpTokenInstance
-    let rewardPoolMock: RewardPoolMockInstance
+    let feeRewardPoolMock: TmpRewardPoolMockInstance
     let cooldownPeriod: number
 
     async function forwardBlockTimestamp(time: number): Promise<void> {
@@ -32,8 +32,8 @@ describe("StakedPerpTokenSpec", () => {
         alice = addresses[1]
 
         perpToken = await deployPerpToken(toFullDigit(2000000))
-        rewardPoolMock = await deployRewardPoolMock()
-        stakedPerpToken = await deployStakedPerpToken(perpToken.address, rewardPoolMock.address)
+        feeRewardPoolMock = await deployTmpRewardPoolMock()
+        stakedPerpToken = await deployStakedPerpToken(perpToken.address, feeRewardPoolMock.address)
 
         await perpToken.transfer(alice, toFullDigit(2000))
         await perpToken.approve(stakedPerpToken.address, toFullDigit(2000), { from: alice })
@@ -53,7 +53,7 @@ describe("StakedPerpTokenSpec", () => {
             expect(await stakedPerpToken.balanceOfAt(alice, blockNumber)).to.eq(toFullDigit(100))
             expect(await stakedPerpToken.totalSupplyAt(blockNumber)).to.eq(toFullDigit(100))
             await expectEvent.inTransaction(receipt.tx, stakedPerpToken, "Staked")
-            await expectEvent.inTransaction(receipt.tx, rewardPoolMock, "NotificationReceived")
+            await expectEvent.inTransaction(receipt.tx, feeRewardPoolMock, "NotificationReceived")
 
             expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1900))
         })
@@ -133,7 +133,7 @@ describe("StakedPerpTokenSpec", () => {
             const blockNumber = await stakedPerpToken.mock_getCurrentBlockNumber()
             const receipt = await stakedPerpToken.unstake({ from: alice })
             await expectEvent.inTransaction(receipt.tx, stakedPerpToken, "Unstaked")
-            await expectEvent.inTransaction(receipt.tx, rewardPoolMock, "NotificationReceived")
+            await expectEvent.inTransaction(receipt.tx, feeRewardPoolMock, "NotificationReceived")
 
             expect(await stakedPerpToken.stakerCooldown(alice)).to.eq(blockNumber.addn(cooldownPeriod))
             expect(await stakedPerpToken.stakerWithdrawPendingBalance(alice)).to.eq(toFullDigit(100))
