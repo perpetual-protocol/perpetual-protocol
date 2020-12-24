@@ -7,5 +7,5 @@ import { Decimal } from "../utils/Decimal.sol";
 interface IFeeRewardPool {
     function notifyStake(address staker, Decimal.decimal calldata _amount) external;
 
-    function notifyFeeTransfer(uint256 _amount) external;
+    function notifyRewardAmount(uint256 _amount) external;
 }

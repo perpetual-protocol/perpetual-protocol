@@ -8,12 +8,12 @@ import {
     ChainlinkL1MockInstance,
     ClearingHouseMockContract,
     ClearingHouseMockInstance,
+    FeeRewardPoolMockContract,
+    FeeRewardPoolMockInstance,
     PerpTokenMockContract,
     PerpTokenMockInstance,
     RootBridgeMockContract,
     RootBridgeMockInstance,
-    TmpRewardPoolMockContract,
-    TmpRewardPoolMockInstance,
 } from "../../types/truffle"
 
 const AmmMock = artifacts.require("AmmMock") as AmmMockContract
@@ -22,7 +22,7 @@ const RootBridgeMock = artifacts.require("RootBridgeMock") as RootBridgeMockCont
 const PerpTokenMock = artifacts.require("PerpTokenMock") as PerpTokenMockContract
 const ChainlinkL1Mock = artifacts.require("ChainlinkL1Mock") as ChainlinkL1MockContract
 const ClearingHouseMock = artifacts.require("ClearingHouseMock") as ClearingHouseMockContract
-const TmpRewardPoolMock = artifacts.require("TmpRewardPoolMock") as TmpRewardPoolMockContract
+const FeeRewardPoolMock = artifacts.require("FeeRewardPoolMock") as FeeRewardPoolMockContract
 
 export async function deployAmmMock(): Promise<AmmMockInstance> {
     return AmmMock.new()
@@ -44,8 +44,8 @@ export async function deployRootBridgeMock(): Promise<RootBridgeMockInstance> {
     return RootBridgeMock.new()
 }
 
-export async function deployTmpRewardPoolMock(): Promise<TmpRewardPoolMockInstance> {
-    return TmpRewardPoolMock.new()
+export async function deployFeeRewardPoolMock(): Promise<FeeRewardPoolMockInstance> {
+    return FeeRewardPoolMock.new()
 }
 
 export async function deployClearingHouseMock(): Promise<ClearingHouseMockInstance> {

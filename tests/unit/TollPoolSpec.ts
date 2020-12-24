@@ -1,12 +1,7 @@
 import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { use } from "chai"
-import {
-    ERC20FakeInstance,
-    MultiTokenMediatorMockInstance,
-    TmpRewardPoolMockInstance,
-    TollPoolInstance,
-} from "../../types/truffle"
+import { ERC20FakeInstance, MultiTokenMediatorMockInstance, TollPoolInstance } from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
 import {
     deployClientBridge,
@@ -15,7 +10,6 @@ import {
     deployMockMultiToken,
     deployTollPool,
 } from "../helper/contract"
-import { deployTmpRewardPoolMock } from "../helper/mockContract"
 import { toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
@@ -25,16 +19,17 @@ const EMPTY_ADDRESS = "0x0000000000000000000000000000000000000000"
 describe("tollPoolSpec", () => {
     let admin: string
     let alice: string
+    let tmpRewardPoolMock: string
     let tokenMediator: MultiTokenMediatorMockInstance
     let tollPool: TollPoolInstance
     let usdt: ERC20FakeInstance
     let usdc: ERC20FakeInstance
-    let tmpRewardPoolMock: TmpRewardPoolMockInstance
 
     beforeEach(async () => {
         const addresses = await web3.eth.getAccounts()
         admin = addresses[0]
         alice = addresses[1]
+        tmpRewardPoolMock = addresses[2]
 
         usdt = await deployErc20Fake(toFullDigit(2000000))
         usdc = await deployErc20Fake(toFullDigit(2000000))
@@ -44,7 +39,6 @@ describe("tollPoolSpec", () => {
         const clientBridge = await deployClientBridge(ambBridge.address, tokenMediator.address, admin)
 
         tollPool = await deployTollPool(admin, clientBridge.address)
-        tmpRewardPoolMock = await deployTmpRewardPoolMock()
 
         await usdt.approve(tollPool.address, toFullDigit(2000000))
         await usdc.approve(tollPool.address, toFullDigit(2000000))
@@ -52,7 +46,7 @@ describe("tollPoolSpec", () => {
 
     describe("notifyTokenAmount()", () => {
         beforeEach(async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock.address)
+            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
             await tollPool.addFeeToken(usdt.address)
         })
 
@@ -65,10 +59,7 @@ describe("tollPoolSpec", () => {
         })
 
         it("force error, invalid token", async () => {
-            await expectRevert(
-                tollPool.notifyTokenAmount(tmpRewardPoolMock.address, toDecimal(1000)),
-                "token does not exist",
-            )
+            await expectRevert(tollPool.notifyTokenAmount(tmpRewardPoolMock, toDecimal(1000)), "token does not exist")
         })
 
         it("force error, not called by clearingHouse", async () => {
@@ -87,7 +78,7 @@ describe("tollPoolSpec", () => {
         beforeEach(async () => {})
 
         it("tmpRewardPool should receive all the balance of one token in the tollPool contract", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock.address)
+            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
             await tollPool.addFeeToken(usdt.address)
             await tollPool.addFeeToken(usdc.address)
 
@@ -98,7 +89,7 @@ describe("tollPoolSpec", () => {
         })
 
         it("tmpRewardPool should receive all the balances of tokens in the tollPool contract", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock.address)
+            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
             await tollPool.addFeeToken(usdt.address)
             await tollPool.addFeeToken(usdc.address)
 
@@ -112,7 +103,7 @@ describe("tollPoolSpec", () => {
         })
 
         it("tmpRewardPool should receive usdt but not usdc, since the balance of usdc is 0", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock.address)
+            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
             await tollPool.addFeeToken(usdt.address)
             await tollPool.addFeeToken(usdc.address)
 
@@ -126,12 +117,12 @@ describe("tollPoolSpec", () => {
         })
 
         it("force error, feeTokens not yet set", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock.address)
+            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
             await expectRevert(tollPool.transferToTmpRewardPool(), "feeTokens not set yet")
         })
 
         it("force error, the amount of all registered token is zero", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock.address)
+            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
             await tollPool.addFeeToken(usdt.address)
             await expectRevert(tollPool.transferToTmpRewardPool(), "fee is now zero")
         })
@@ -139,12 +130,12 @@ describe("tollPoolSpec", () => {
 
     describe("setTmpRewardPool()", () => {
         it("tmpRewardPool should be set", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock.address)
-            expect(await tollPool.tmpRewardPoolL1()).to.eq(tmpRewardPoolMock.address)
+            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
+            expect(await tollPool.tmpRewardPoolL1()).to.eq(tmpRewardPoolMock)
         })
 
         it("tmpRewardPool should be updated", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock.address)
+            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
             await tollPool.setTmpRewardPool(alice)
             expect(await tollPool.tmpRewardPoolL1()).to.eq(alice)
         })
@@ -161,11 +152,8 @@ describe("tollPoolSpec", () => {
         })
 
         it("force error, tmpRewardPool already existed", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock.address)
-            await expectRevert(
-                tollPool.setTmpRewardPool(tmpRewardPoolMock.address),
-                "input is the same as the current one",
-            )
+            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
+            await expectRevert(tollPool.setTmpRewardPool(tmpRewardPoolMock), "input is the same as the current one")
         })
     })
 
