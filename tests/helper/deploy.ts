@@ -185,6 +185,7 @@ export async function fullDeploy(args: ContractDeployArgs): Promise<PerpContract
     await minter.setRewardsDistribution(rewardsDistribution.address)
     await minter.setInflationMonitor(inflationMonitor.address)
     await minter.setInsuranceFund(insuranceFund.address)
+    await tollPool.addFeeToken(quoteToken.address)
 
     if (startSchedule) {
         await supplySchedule.startSchedule()
