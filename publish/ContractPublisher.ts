@@ -153,6 +153,11 @@ export class ContractPublisher {
                         .create<StakedPerpToken>(ContractName.StakedPerpToken)
                         .deployUpgradableContract(perp!, perp)
                 },
+                async (): Promise<void> => {
+                    console.log("deploying TmpRewardPool on layer 1...")
+                    await this.factory.create<StakedPerpToken>(ContractName.TmpRewardPoolL1).deployUpgradableContract()
+                },
+                // TODO: addFeeRewardPool
             ],
         ],
         layer2: [
@@ -505,7 +510,7 @@ export class ContractPublisher {
                     // TODO: should get tmpRewardPoolL1 instead of RootBridge
                     const tmpRewardPoolL1 = this.systemMetadataDao.getContractMetadata(
                         "layer1",
-                        ContractName.RootBridge,
+                        ContractName.TmpRewardPoolL1,
                     ).address
 
                     const usdc = this.externalContract.usdc!
