@@ -57,6 +57,8 @@ import {
     StakingReserveFakeInstance,
     SupplyScheduleFakeContract,
     SupplyScheduleFakeInstance,
+    TmpRewardPoolL1Contract,
+    TmpRewardPoolL1Instance,
     TollPoolContract,
     TollPoolInstance,
 } from "../../types/truffle"
@@ -90,6 +92,7 @@ const KeeperRewardL2 = artifacts.require("KeeperRewardL2") as KeeperRewardL2Cont
 const StakedPerpToken = artifacts.require("StakedPerpTokenFake") as StakedPerpTokenFakeContract
 const PerpRewardVesting = artifacts.require("PerpRewardVestingFake") as PerpRewardVestingFakeContract
 const TollPool = artifacts.require("TollPool") as TollPoolContract
+const TmpRewardPoolL1 = artifacts.require("TmpRewardPoolL1") as TmpRewardPoolL1Contract
 const ClientBridge = artifacts.require("ClientBridge") as ClientBridgeContract
 
 export enum Side {
@@ -386,5 +389,11 @@ export async function deployPerpRewardVesting(
 export async function deployTollPool(clearingHouse: string, clientBridge: string): Promise<TollPoolInstance> {
     const instance = await TollPool.new()
     await instance.initialize(clearingHouse, clientBridge)
+    return instance
+}
+
+export async function deployTmpRewardPoolL1(): Promise<TmpRewardPoolL1Instance> {
+    const instance = await TmpRewardPoolL1.new()
+    await instance.initialize()
     return instance
 }
