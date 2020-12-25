@@ -18,6 +18,7 @@ import {
     PerpRewardVesting,
     RootBridge,
     StakedPerpToken,
+    TollPool,
 } from "../types/ethers"
 import { ContractWrapperFactory } from "./contract/ContractWrapperFactory"
 import { DeployConfig, PriceFeedKey } from "./contract/DeployConfig"
@@ -128,7 +129,7 @@ export class ContractPublisher {
                     const keeperRewardL1 = await this.factory
                         .create<KeeperRewardL1>(ContractName.KeeperRewardL1)
                         .instance()
-                    const chainlinkL1 = await this.factory.create<ChainlinkL1>(ContractName.ChainlinkL1)
+                    const chainlinkL1 = this.factory.create<ChainlinkL1>(ContractName.ChainlinkL1)
                     await (
                         await keeperRewardL1.setKeeperFunctions(
                             ["0xf463e18e"], // bytes4(keccak("updateLatestRoundData(bytes32)"))
@@ -442,7 +443,7 @@ export class ContractPublisher {
                     await bre.run(TASK_COMPILE)
 
                     // deploy clearing house implementation
-                    const contract = await this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const contract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
                     await contract.prepareUpgradeContract()
                 },
             ],
@@ -488,6 +489,37 @@ export class ContractPublisher {
                             [this.deployConfig.keeperRewardOnL2],
                         )
                     ).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("deploying TollPool on layer 2...")
+                    const clearingHouse = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const clientBridge = this.factory.create<ClientBridge>(ContractName.ClientBridge)
+                    await this.factory
+                        .create<TollPool>(ContractName.TollPool)
+                        .deployUpgradableContract(clearingHouse.address!, clientBridge.address!)
+                },
+                async (): Promise<void> => {
+                    console.log("tollPool addFeeToken & setTmpRewardPool...")
+                    const tollPool = await this.factory.create<TollPool>(ContractName.TollPool).instance()
+
+                    // TODO: should get tmpRewardPoolL1 instead of RootBridge
+                    const tmpRewardPoolL1 = this.systemMetadataDao.getContractMetadata(
+                        "layer1",
+                        ContractName.RootBridge,
+                    ).address
+
+                    const usdc = this.externalContract.usdc!
+                    await tollPool.addFeeToken(usdc)
+                    await tollPool.setTmpRewardPool(tmpRewardPoolL1)
+                },
+                // TODO may not work if owner is multi-sig wallet
+                async (): Promise<void> => {
+                    console.log("clearingHouse setTollPool...")
+                    const tollPool = this.factory.create<TollPool>(ContractName.TollPool)
+                    const clearingHouse = await this.factory
+                        .create<ClearingHouse>(ContractName.ClearingHouse)
+                        .instance()
+                    await (await clearingHouse.setTollPool(tollPool.address!)).wait(this.confirmations)
                 },
             ],
         ],

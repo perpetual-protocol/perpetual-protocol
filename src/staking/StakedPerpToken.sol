@@ -12,7 +12,7 @@ import { Decimal } from "../utils/Decimal.sol";
 import { DecimalERC20 } from "../utils/DecimalERC20.sol";
 import { BlockContext } from "../utils/BlockContext.sol";
 import { PerpFiOwnableUpgrade } from "../utils/PerpFiOwnableUpgrade.sol";
-import { IRewardPool } from "../interface/IRewardPool.sol";
+import { IFeeRewardPool } from "../interface/IFeeRewardPool.sol";
 
 contract StakedPerpToken is
     IERC20WithCheckpointing,
@@ -54,7 +54,7 @@ contract StakedPerpToken is
     mapping(address => Decimal.decimal) public stakerWithdrawPendingBalance;
 
     IERC20 public perpToken;
-    IRewardPool public rewardPool;
+    IFeeRewardPool public rewardPool;
 
     //**********************************************************//
     //    The above state variables can not change the order    //
@@ -68,7 +68,7 @@ contract StakedPerpToken is
     //
     // FUNCTIONS
     //
-    function initialize(IERC20 _perpToken, IRewardPool _rewardPool) public {
+    function initialize(IERC20 _perpToken, IFeeRewardPool _rewardPool) public {
         require(address(_perpToken) != address(0) && address(_rewardPool) != address(0), "Invalid input.");
         __Ownable_init();
         perpToken = _perpToken;

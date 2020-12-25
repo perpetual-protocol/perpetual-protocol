@@ -4,6 +4,8 @@ pragma experimental ABIEncoderV2;
 
 import { Decimal } from "../utils/Decimal.sol";
 
-interface IRewardPool {
+interface IFeeRewardPool {
     function notifyStake(address staker, Decimal.decimal calldata _amount) external;
+
+    function notifyFeeTransfer(uint256 _amount) external;
 }
