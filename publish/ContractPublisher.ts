@@ -421,6 +421,65 @@ export class ContractPublisher {
                     await BTCUSDC.prepareUpgradeContract()
                 },
             ],
+            // batch 3
+            // deploy the third amm instance for new market
+            // set cap, counterParty, set open...etc
+            // transfer owner
+            // transfer proxyAdmin
+            [
+                async (): Promise<void> => {
+                    console.log("deploy SNXUSDC amm...")
+                    const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
+                    const ammContract = this.factory.createAmm(AmmInstanceName.SNXUSDC)
+                    const quoteTokenAddr = this.externalContract.usdc!
+                    await ammContract.deployUpgradableContract(
+                        this.deployConfig.ammConfigMap,
+                        l2PriceFeedContract.address!,
+                        quoteTokenAddr,
+                    )
+                },
+                async (): Promise<void> => {
+                    console.log("set SNX amm Cap...")
+                    const amm = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
+                        AmmInstanceName.SNXUSDC
+                    ].properties
+                    if (maxHoldingBaseAsset.gt(0)) {
+                        await (
+                            await amm.setCap(
+                                { d: maxHoldingBaseAsset.toString() },
+                                { d: openInterestNotionalCap.toString() },
+                            )
+                        ).wait(this.confirmations)
+                    }
+                },
+                async (): Promise<void> => {
+                    console.log("SNX amm.setCounterParty...")
+                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const amm = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
+                    await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("opening Amm SNXUSDC...")
+                    const snxUsdc = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
+                    await (await snxUsdc.setOpen(true)).wait(this.confirmations)
+                },
+                // TODO uncomment when deploying to production
+                // async (): Promise<void> => {
+                //     const gov = this.externalContract.foundationGovernance!
+                //     console.log(
+                //         `transferring SNXUSDC owner to governance=${gov}...please remember to claim the ownership`,
+                //     )
+                //     const SNXUSDC = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
+                //     await (await SNXUSDC.setOwner(gov)).wait(this.confirmations)
+                // },
+                // async (): Promise<void> => {
+                //     const governance = this.externalContract.foundationGovernance!
+                //     console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
+                //     await OzContractDeployer.transferProxyAdminOwnership(governance)
+                //     console.log(`${this.layerType} contract deployment finished.`)
+                // },
+            ],
         ],
     }
 
