@@ -103,6 +103,9 @@ export class ContractPublisher {
                     await (await rootBridge.setOwner(gov)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
+                    if (this.inSameLayer) {
+                        return
+                    }
                     const governance = this.externalContract.foundationGovernance!
                     console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
                     await OzContractDeployer.transferProxyAdminOwnership(governance)
@@ -381,6 +384,9 @@ export class ContractPublisher {
                     await (await BTCUSDC.setOwner(gov)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
+                    if (this.inSameLayer) {
+                        return
+                    }
                     const governance = this.externalContract.foundationGovernance!
                     console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
                     await OzContractDeployer.transferProxyAdminOwnership(governance)
@@ -472,12 +478,6 @@ export class ContractPublisher {
                     const SNXUSDC = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
                     await (await SNXUSDC.setOwner(gov)).wait(this.confirmations)
                 },
-                async (): Promise<void> => {
-                    const governance = this.externalContract.foundationGovernance!
-                    console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
-                    await OzContractDeployer.transferProxyAdminOwnership(governance)
-                    console.log(`${this.layerType} contract deployment finished.`)
-                },
             ],
             // batch 4
             // prepareUpgrade the flatten SNX AMM
@@ -511,6 +511,11 @@ export class ContractPublisher {
         return this.deployConfig.confirmations
     }
 
+    // local are basically in 1 layer, can't transfer twice in the same network. will transfer in the very last batch
+    get inSameLayer(): boolean {
+        return this.settingsDao.getChainId("layer1") === this.settingsDao.getChainId("layer2")
+    }
+
     async publishContracts(batch: number): Promise<void> {
         const taskBatches = this.taskBatchesMap[this.layerType]
         const completeTasksLength = taskBatches.flat().length
@@ -542,19 +547,6 @@ export class ContractPublisher {
             this.settingsDao.increaseVersion(this.layerType)
         }
 
-        // transfer admin if it's the last batch for current layer
-        const isLastBatchForCurrentLayer = taskBatches.length - 1 === batch
-        if (!isLastBatchForCurrentLayer) {
-            return
-        }
-        // local are basically in 1 layer, can't transfer twice in the same network. will transfer in the very last batch
-        if (this.settingsDao.getChainId("layer1") === this.settingsDao.getChainId("layer2")) {
-            const layerWithMoreBatch =
-                this.taskBatchesMap.layer1.length > this.taskBatchesMap.layer2.length ? "layer1" : "layer2"
-            if (layerWithMoreBatch !== this.layerType) {
-                return
-            }
-        }
-        console.log(`${this.layerType} contract deployment finished.`)
+        console.log(`${this.layerType} contract deployment batch=${batch} finished.`)
     }
 }
