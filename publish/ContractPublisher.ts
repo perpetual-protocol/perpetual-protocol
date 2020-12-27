@@ -464,21 +464,35 @@ export class ContractPublisher {
                     const snxUsdc = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
                     await (await snxUsdc.setOpen(true)).wait(this.confirmations)
                 },
-                // TODO uncomment when deploying to production
-                // async (): Promise<void> => {
-                //     const gov = this.externalContract.foundationGovernance!
-                //     console.log(
-                //         `transferring SNXUSDC owner to governance=${gov}...please remember to claim the ownership`,
-                //     )
-                //     const SNXUSDC = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
-                //     await (await SNXUSDC.setOwner(gov)).wait(this.confirmations)
-                // },
-                // async (): Promise<void> => {
-                //     const governance = this.externalContract.foundationGovernance!
-                //     console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
-                //     await OzContractDeployer.transferProxyAdminOwnership(governance)
-                //     console.log(`${this.layerType} contract deployment finished.`)
-                // },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring SNXUSDC owner to governance=${gov}...please remember to claim the ownership`,
+                    )
+                    const SNXUSDC = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
+                    await (await SNXUSDC.setOwner(gov)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const governance = this.externalContract.foundationGovernance!
+                    console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
+                    await OzContractDeployer.transferProxyAdminOwnership(governance)
+                    console.log(`${this.layerType} contract deployment finished.`)
+                },
+            ],
+            // batch 4
+            // prepareUpgrade the flatten SNX AMM
+            [
+                async (): Promise<void> => {
+                    const filename = `${ContractName.Amm}.sol`
+
+                    // after flatten sol file we must re-compile again
+                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                    await bre.run(TASK_COMPILE)
+
+                    // deploy amm implementation
+                    const ETHUSDC = this.factory.createAmm(AmmInstanceName.SNXUSDC)
+                    await ETHUSDC.prepareUpgradeContract()
+                },
             ],
         ],
     }
