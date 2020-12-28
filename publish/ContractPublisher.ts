@@ -586,7 +586,10 @@ export class ContractPublisher {
                     ).address
 
                     const usdc = this.externalContract.usdc!
+
+                    // TODO local npm run dev will fail due to ERC20.approve() during addFeeToken
                     await tollPool.addFeeToken(usdc)
+
                     await tollPool.setTmpRewardPool(tmpRewardPoolL1)
                 },
                 // TODO may not work if owner is multi-sig wallet
