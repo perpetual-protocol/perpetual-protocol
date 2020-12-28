@@ -1,10 +1,10 @@
 import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { expect, use } from "chai"
-import { PerpTokenInstance, StakedPerpTokenFakeInstance, TmpRewardPoolMockInstance } from "../../types/truffle"
+import { FeeRewardPoolMockInstance, PerpTokenInstance, StakedPerpTokenFakeInstance } from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { deployPerpToken, deployStakedPerpToken } from "../helper/contract"
-import { deployTmpRewardPoolMock } from "../helper/mockContract"
+import { deployFeeRewardPoolMock } from "../helper/mockContract"
 import { toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
@@ -14,7 +14,7 @@ describe("StakedPerpTokenSpec", () => {
     let alice: string
     let stakedPerpToken: StakedPerpTokenFakeInstance
     let perpToken: PerpTokenInstance
-    let feeRewardPoolMock: TmpRewardPoolMockInstance
+    let feeRewardPoolMock: FeeRewardPoolMockInstance
     let cooldownPeriod: number
 
     async function forwardBlockTimestamp(time: number): Promise<void> {
@@ -32,7 +32,7 @@ describe("StakedPerpTokenSpec", () => {
         alice = addresses[1]
 
         perpToken = await deployPerpToken(toFullDigit(2000000))
-        feeRewardPoolMock = await deployTmpRewardPoolMock()
+        feeRewardPoolMock = await deployFeeRewardPoolMock()
         stakedPerpToken = await deployStakedPerpToken(perpToken.address, feeRewardPoolMock.address)
 
         await perpToken.transfer(alice, toFullDigit(2000))

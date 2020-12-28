@@ -2,13 +2,12 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { Decimal } from "./utils/Decimal.sol";
 import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
+import { Decimal } from "./utils/Decimal.sol";
 import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
-import { ITollPool } from "./interface/ITollPool.sol";
-import { ITmpRewardPool } from "./interface/ITmpRewardPool.sol";
-import { IClearingHouse } from "./interface/IClearingHouse.sol";
 import { DecimalERC20 } from "./utils/DecimalERC20.sol";
+import { ITollPool } from "./interface/ITollPool.sol";
+import { IClearingHouse } from "./interface/IClearingHouse.sol";
 import { ClientBridge } from "./bridge/xDai/ClientBridge.sol";
 
 contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
@@ -35,7 +34,7 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
     //    The below state variables can not change the order    //
     //**********************************************************//
 
-    ITmpRewardPool public tmpRewardPoolL1;
+    address public tmpRewardPoolL1;
     IERC20[] public feeTokens;
 
     IClearingHouse public clearingHouse;
@@ -85,11 +84,11 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
         require(hasToll, "fee is now zero");
     }
 
-    function setTmpRewardPool(ITmpRewardPool _tmpRewardPoolL1) external onlyOwner {
-        require(address(_tmpRewardPoolL1) != address(0), "invalid input");
-        require(address(_tmpRewardPoolL1) != address(tmpRewardPoolL1), "input is the same as the current one");
+    function setTmpRewardPool(address _tmpRewardPoolL1) external onlyOwner {
+        require(_tmpRewardPoolL1 != address(0), "invalid input");
+        require(_tmpRewardPoolL1 != tmpRewardPoolL1, "input is the same as the current one");
         tmpRewardPoolL1 = _tmpRewardPoolL1;
-        emit TmpRewardPoolSet(address(_tmpRewardPoolL1));
+        emit TmpRewardPoolSet(_tmpRewardPoolL1);
     }
 
     function addFeeToken(IERC20 _token) external onlyOwner {
@@ -104,7 +103,7 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
         require(address(_token) != address(0), "invalid input");
         require(isFeeTokenExisted(_token), "token does not exist");
 
-        uint256 lengthOfFeeTokens = feeTokens.length;
+        uint256 lengthOfFeeTokens = getFeeTokenLength();
         for (uint256 i; i < lengthOfFeeTokens; i++) {
             if (_token == feeTokens[i]) {
                 _approve(_token, address(clientBridge), Decimal.zero());
@@ -129,7 +128,7 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
         return false;
     }
 
-    function getFeeTokenLength() external view returns (uint256) {
+    function getFeeTokenLength() public view returns (uint256) {
         return feeTokens.length;
     }
 }

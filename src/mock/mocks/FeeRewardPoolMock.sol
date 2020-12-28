@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import { IFeeRewardPool } from "../../interface/IFeeRewardPool.sol";
 import { Decimal } from "../../utils/Decimal.sol";
 
-contract TmpRewardPoolMock is IFeeRewardPool {
+contract FeeRewardPoolMock is IFeeRewardPool {
     using Decimal for Decimal.decimal;
     event NotificationReceived(address staker, uint256 amount);
     event FeeNotificationReceived(uint256 amount);
@@ -14,7 +14,7 @@ contract TmpRewardPoolMock is IFeeRewardPool {
         emit NotificationReceived(staker, _amount.toUint());
     }
 
-    function notifyFeeTransfer(uint256 _amount) external override {
+    function notifyRewardAmount(uint256 _amount) external override {
         emit FeeNotificationReceived(_amount);
     }
 }
