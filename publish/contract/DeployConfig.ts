@@ -10,6 +10,7 @@ const WEEK = BigNumber.from(7 * 24 * 60 * 60)
 export enum PriceFeedKey {
     BTC = "BTC",
     ETH = "ETH",
+    YFI = "YFI",
 }
 
 // amm
@@ -85,6 +86,32 @@ export const ETH_USD_AMM: AmmConfig = {
     },
 }
 
+export const YFI_USD_AMM: AmmConfig = {
+    deployArgs: {
+        // base * price
+        quoteAssetReserve: BigNumber.from(4000000).mul(DEFAULT_DIGITS),
+        baseAssetReserve: BigNumber.from(200).mul(DEFAULT_DIGITS), // 200 YFI
+        tradeLimitRatio: BigNumber.from(90)
+            .mul(DEFAULT_DIGITS)
+            .div(100), // 90% trading limit ratio
+        fundingPeriod: BigNumber.from(3600), // 1 hour
+        fluctuation: BigNumber.from(12)
+            .mul(DEFAULT_DIGITS)
+            .div(1000), // 1.2%
+        priceFeedKey: PriceFeedKey.YFI,
+        tollRatio: BigNumber.from(0)
+            .mul(DEFAULT_DIGITS)
+            .div(10000), // 0.0%
+        spreadRatio: BigNumber.from(10)
+            .mul(DEFAULT_DIGITS)
+            .div(10000), // 0.1%
+    },
+    properties: {
+        maxHoldingBaseAsset: DEFAULT_DIGITS.mul(5).div(10), // 0.5 YFI ~= $10000 USD
+        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(1000000), // $1M
+    },
+}
+
 export class DeployConfig {
     // deploy
     readonly confirmations: number
@@ -107,6 +134,7 @@ export class DeployConfig {
     readonly ammConfigMap: Record<string, AmmConfig> = {
         [AmmInstanceName.BTCUSDC]: BTC_USD_AMM,
         [AmmInstanceName.ETHUSDC]: ETH_USD_AMM,
+        [AmmInstanceName.YFIUSDC]: YFI_USD_AMM,
     }
 
     // KeeperReward
@@ -123,6 +151,7 @@ export class DeployConfig {
                 this.chainlinkMap = {
                     [PriceFeedKey.BTC]: "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
                     [PriceFeedKey.ETH]: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
+                    [PriceFeedKey.YFI]: "0xA027702dbb89fbd58938e4324ac03B58d812b0E1",
                 }
                 break
             case "staging":
@@ -130,6 +159,7 @@ export class DeployConfig {
                 this.chainlinkMap = {
                     [PriceFeedKey.BTC]: "0xECe365B379E1dD183B20fc5f022230C044d51404",
                     [PriceFeedKey.ETH]: "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
+                    [PriceFeedKey.YFI]: "0xA027702dbb89fbd58938e4324ac03B58d812b0E1", // WARNING: there is no YFI/USD PriceFeed at Rinkeby
                 }
                 break
             case "test":
@@ -138,6 +168,7 @@ export class DeployConfig {
                     // fake address
                     [PriceFeedKey.BTC]: "0xECe365B379E1dD183B20fc5f022230C044d51404",
                     [PriceFeedKey.ETH]: "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
+                    [PriceFeedKey.YFI]: "0xA027702dbb89fbd58938e4324ac03B58d812b0E1",
                 }
                 break
             default:
