@@ -60,6 +60,10 @@
         "AmmReader": {
           "name": "AmmReader",
           "address": "0x2FA2c9B377D9e152d52A42bcc403022baCb2aF05"
+        },
+        "YFIUSDC": {
+          "name": "Amm",
+          "address": "0xd41025350582674144102B74B8248550580bb869"
         }
       },
       "accounts": [],
