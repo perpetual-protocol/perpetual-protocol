@@ -86,11 +86,13 @@ contract StakedPerpToken is
         Decimal.decimal memory newBalance = balance.addD(_amount);
 
         _transferFrom(perpToken, msgSender, address(this), _amount);
-        rewardPool.notifyStake(msgSender, newBalance);
         mint(msgSender, _amount);
 
         addPersonalBalanceCheckPoint(msgSender, blockNumber, newBalance);
         addTotalSupplyCheckPoint(blockNumber, totalSupply.addD(_amount));
+
+        // Have to update balance first
+        rewardPool.notifyStake(msgSender);
 
         emit Staked(msgSender, _amount.toUint());
     }
@@ -102,7 +104,6 @@ contract StakedPerpToken is
         Decimal.decimal memory balance = Decimal.decimal(balancesHistory[msgSender].latestValue());
         requireNonZeroAmount(balance);
 
-        rewardPool.notifyStake(msgSender, Decimal.zero());
         burn(msgSender, balance);
 
         uint256 blockNumber = _blockNumber();
@@ -111,6 +112,9 @@ contract StakedPerpToken is
         addTotalSupplyCheckPoint(blockNumber, totalSupply.subD(balance));
         stakerCooldown[msgSender] = blockNumber.add(COOLDOWN_PERIOD);
         stakerWithdrawPendingBalance[msgSender] = balance;
+
+        // Have to update balance first
+        rewardPool.notifyStake(msgSender);
 
         emit Unstaked(msgSender, balance.toUint());
     }
@@ -126,17 +130,6 @@ contract StakedPerpToken is
         _transfer(perpToken, msgSender, balance);
 
         emit Withdrawn(msgSender, balance.toUint());
-    }
-
-    //
-    // override: IERC20WithCheckpointing
-    //
-    function balanceOfAt(address _owner, uint256 _blockNumber) external view override returns (uint256) {
-        return _balanceOfAt(_owner, _blockNumber).toUint();
-    }
-
-    function totalSupplyAt(uint256 _blockNumber) external view override returns (uint256) {
-        return _totalSupplyAt(_blockNumber).toUint();
     }
 
     //
@@ -156,6 +149,29 @@ contract StakedPerpToken is
 
     function approve(address, uint256) public override returns (bool) {
         revert("approve() is not supported");
+    }
+
+    //
+    // VIEW FUNCTIONS
+    //
+
+    function latestBalance(address _owner) external view returns (uint256) {
+        return balancesHistory[_owner].latestValue();
+    }
+
+    function latestTotalSupply() external view returns (uint256) {
+        return totalSupplyHistory.latestValue();
+    }
+
+    //
+    // override: IERC20WithCheckpointing
+    //
+    function balanceOfAt(address _owner, uint256 _blockNumber) external view override returns (uint256) {
+        return _balanceOfAt(_owner, _blockNumber).toUint();
+    }
+
+    function totalSupplyAt(uint256 _blockNumber) external view override returns (uint256) {
+        return _totalSupplyAt(_blockNumber).toUint();
     }
 
     //

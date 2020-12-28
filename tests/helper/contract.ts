@@ -25,6 +25,8 @@ import {
     ExchangeWrapperInstance,
     ExchangeWrapperMockContract,
     ExchangeWrapperMockInstance,
+    FeeRewardPoolL1FakeContract,
+    FeeRewardPoolL1FakeInstance,
     InflationMonitorFakeContract,
     InflationMonitorFakeInstance,
     InsuranceFundFakeContract,
@@ -94,6 +96,7 @@ const PerpRewardVesting = artifacts.require("PerpRewardVestingFake") as PerpRewa
 const TollPool = artifacts.require("TollPool") as TollPoolContract
 const TmpRewardPoolL1 = artifacts.require("TmpRewardPoolL1") as TmpRewardPoolL1Contract
 const ClientBridge = artifacts.require("ClientBridge") as ClientBridgeContract
+const FeeRewardPoolL1 = artifacts.require("FeeRewardPoolL1Fake") as FeeRewardPoolL1FakeContract
 
 export enum Side {
     BUY = 0,
@@ -395,5 +398,15 @@ export async function deployTollPool(clearingHouse: string, clientBridge: string
 export async function deployTmpRewardPoolL1(): Promise<TmpRewardPoolL1Instance> {
     const instance = await TmpRewardPoolL1.new()
     await instance.initialize()
+    return instance
+}
+
+export async function deployFeeRewardPoolL1(
+    erc20: string,
+    stakedPerpToken: string,
+    tmpRewardPoolL1: string,
+): Promise<FeeRewardPoolL1FakeInstance> {
+    const instance = await FeeRewardPoolL1.new()
+    await instance.initialize(erc20, stakedPerpToken, tmpRewardPoolL1)
     return instance
 }
