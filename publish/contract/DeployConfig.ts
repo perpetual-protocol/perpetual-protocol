@@ -106,7 +106,7 @@ export const YFI_USD_AMM: AmmConfig = {
             .div(10000), // 0.1%
     },
     properties: {
-        maxHoldingBaseAsset: DEFAULT_DIGITS.mul(0.5), // 0.5 YFI ~= $10000 USD
+        maxHoldingBaseAsset: DEFAULT_DIGITS.mul(5).div(10), // 0.5 YFI ~= $10000 USD
         openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(1000000), // $1M
     },
 }
