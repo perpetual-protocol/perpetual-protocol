@@ -434,9 +434,9 @@ export class ContractPublisher {
             // transfer proxyAdmin
             [
                 async (): Promise<void> => {
-                    console.log("deploy SNXUSDC amm...")
+                    console.log("deploy YFIUSDC amm...")
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.SNXUSDC)
+                    const ammContract = this.factory.createAmm(AmmInstanceName.YFIUSDC)
                     const quoteTokenAddr = this.externalContract.usdc!
                     await ammContract.deployUpgradableContract(
                         this.deployConfig.ammConfigMap,
@@ -445,10 +445,10 @@ export class ContractPublisher {
                     )
                 },
                 async (): Promise<void> => {
-                    console.log("set SNX amm Cap...")
-                    const amm = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
+                    console.log("set YFI amm Cap...")
+                    const amm = await this.factory.createAmm(AmmInstanceName.YFIUSDC).instance()
                     const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
-                        AmmInstanceName.SNXUSDC
+                        AmmInstanceName.YFIUSDC
                     ].properties
                     if (maxHoldingBaseAsset.gt(0)) {
                         await (
@@ -460,27 +460,27 @@ export class ContractPublisher {
                     }
                 },
                 async (): Promise<void> => {
-                    console.log("SNX amm.setCounterParty...")
+                    console.log("YFI amm.setCounterParty...")
                     const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    const amm = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
+                    const amm = await this.factory.createAmm(AmmInstanceName.YFIUSDC).instance()
                     await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
-                    console.log("opening Amm SNXUSDC...")
-                    const snxUsdc = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
-                    await (await snxUsdc.setOpen(true)).wait(this.confirmations)
+                    console.log("opening Amm YFIUSDC...")
+                    const YFIUSDC = await this.factory.createAmm(AmmInstanceName.YFIUSDC).instance()
+                    await (await YFIUSDC.setOpen(true)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     const gov = this.externalContract.foundationGovernance!
                     console.log(
-                        `transferring SNXUSDC owner to governance=${gov}...please remember to claim the ownership`,
+                        `transferring YFIUSDC owner to governance=${gov}...please remember to claim the ownership`,
                     )
-                    const SNXUSDC = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
-                    await (await SNXUSDC.setOwner(gov)).wait(this.confirmations)
+                    const YFIUSDC = await this.factory.createAmm(AmmInstanceName.YFIUSDC).instance()
+                    await (await YFIUSDC.setOwner(gov)).wait(this.confirmations)
                 },
             ],
             // batch 4
-            // prepareUpgrade the flatten SNX AMM
+            // prepareUpgrade the flatten YFI AMM
             [
                 async (): Promise<void> => {
                     const filename = `${ContractName.Amm}.sol`
@@ -490,8 +490,8 @@ export class ContractPublisher {
                     await bre.run(TASK_COMPILE)
 
                     // deploy amm implementation
-                    const ETHUSDC = this.factory.createAmm(AmmInstanceName.SNXUSDC)
-                    await ETHUSDC.prepareUpgradeContract()
+                    const YFIUSDC = this.factory.createAmm(AmmInstanceName.YFIUSDC)
+                    await YFIUSDC.prepareUpgradeContract()
                 },
             ],
         ],
