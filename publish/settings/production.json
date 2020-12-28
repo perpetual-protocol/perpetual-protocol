@@ -9,7 +9,8 @@
         "usdc": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
         "tether": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
         "ambBridgeOnEth": "0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e",
-        "multiTokenMediatorOnEth": "0x88ad09518695c6c3712AC10a214bE5109a655671"
+        "multiTokenMediatorOnEth": "0x88ad09518695c6c3712AC10a214bE5109a655671",
+        "proxyAdmin": "0x29853EcF31eaedcD9074a11A85A8C8b689165F0b"
       },
       "version": "8"
     },
@@ -22,9 +23,10 @@
         "usdc": "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83",
         "tether": "0x4ECaBa5870353805a9F068101A40E0f32ed605C6",
         "ambBridgeOnXDai": "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
-        "multiTokenMediatorOnXDai": "0xf6A78083ca3e2a662D6dd1703c939c8aCE2e268d"
+        "multiTokenMediatorOnXDai": "0xf6A78083ca3e2a662D6dd1703c939c8aCE2e268d",
+        "proxyAdmin": "0x29853EcF31eaedcD9074a11A85A8C8b689165F0b"
       },
-      "version": "34"
+      "version": "40"
     }
   }
 }
