@@ -269,10 +269,10 @@ describe.skip("SystemTest Spec", () => {
                 expect(await instance.tollRatio()).eq(ethers.utils.parseEther("0").toString())
                 expect(await instance.spreadRatio()).eq(ethers.utils.parseEther("0.001").toString())
                 expect((await instance.getMaxHoldingBaseAsset()).d.toString()).eq(
-                    ethers.utils.parseEther("10").toString(),
+                    ethers.utils.parseEther("20").toString(),
                 )
                 expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
-                    ethers.utils.parseEther("500000").toString(),
+                    ethers.utils.parseEther("2500000").toString(),
                 )
             })
         })
@@ -305,10 +305,10 @@ describe.skip("SystemTest Spec", () => {
                 expect(await instance.tollRatio()).eq(ethers.utils.parseEther("0").toString())
                 expect(await instance.spreadRatio()).eq(ethers.utils.parseEther("0.001").toString())
                 expect((await instance.getMaxHoldingBaseAsset()).d.toString()).eq(
-                    ethers.utils.parseEther("0.25").toString(),
+                    ethers.utils.parseEther("0.5").toString(),
                 )
                 expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
-                    ethers.utils.parseEther("500000").toString(),
+                    ethers.utils.parseEther("3000000").toString(),
                 )
             })
         })
@@ -318,13 +318,17 @@ describe.skip("SystemTest Spec", () => {
         it("own by gov at L1", async () => {
             const proxyAdminOnEth = settingsDao.getExternalContracts("layer1").proxyAdmin!
             const instance = new ethers.Contract(proxyAdminOnEth, OwnableArtifact.abi, l1Provider) as Ownable
-            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer1").foundationGovernance)
+            const owner = await instance.owner()
+            const gov = settingsDao.getExternalContracts("layer1").foundationGovernance
+            expect(owner).eq(gov)
         })
 
         it("own by gov at L2", async () => {
-            const proxyAdminOnEth = settingsDao.getExternalContracts("layer2").proxyAdmin!
-            const instance = new ethers.Contract(proxyAdminOnEth, OwnableArtifact.abi, l2Provider) as Ownable
-            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+            const proxyAdminOnXdai = settingsDao.getExternalContracts("layer2").proxyAdmin!
+            const instance = new ethers.Contract(proxyAdminOnXdai, OwnableArtifact.abi, l2Provider) as Ownable
+            const owner = await instance.owner()
+            const gov = settingsDao.getExternalContracts("layer2").foundationGovernance
+            expect(owner).eq(gov)
         })
     })
 })
