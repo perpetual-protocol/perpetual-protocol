@@ -41,10 +41,10 @@ contract StakedPerpToken is
     //    The below state variables can not change the order    //
     //**********************************************************//
 
-    // Checkpointed total supply of the deposited token
+    // Checkpointing total supply of the deposited token
     Checkpointing.History internal totalSupplyHistory;
 
-    // Checkpointed balances of the deposited token by block number
+    // Checkpointing balances of the deposited token by block number
     mapping(address => Checkpointing.History) internal balancesHistory;
 
     // staker => the time staker can withdraw PERP
@@ -68,9 +68,9 @@ contract StakedPerpToken is
     //
     // FUNCTIONS
     //
-    function initialize(IERC20 _perpToken, IFeeRewardPool _rewardPool) public {
+    function initialize(IERC20 _perpToken, IFeeRewardPool _rewardPool) public initializer {
         require(address(_perpToken) != address(0) && address(_rewardPool) != address(0), "Invalid input.");
-        __ERC20_init("Staked Perpetual", "sPERP");
+        __ERC20ViewOnly_init("Staked Perpetual", "sPERP");
         __Ownable_init();
         perpToken = _perpToken;
         rewardPool = _rewardPool;
@@ -80,7 +80,9 @@ contract StakedPerpToken is
         requireNonZeroAmount(_amount);
         address msgSender = _msgSender();
 
+        // copy calldata amount to memory
         Decimal.decimal memory amount = _amount;
+
         // stake after unstake is allowed, and the states mutated by unstake() will being undo
         if (stakerWithdrawPendingBalance[msgSender].toUint() != 0) {
             amount = amount.addD(stakerWithdrawPendingBalance[msgSender]);
@@ -108,7 +110,7 @@ contract StakedPerpToken is
     // addPersonalBalanceCheckPoint, burn
     function unstake() external {
         address msgSender = _msgSender();
-        requireNonPendingBalance(msgSender);
+        require(stakerWithdrawPendingBalance[msgSender].toUint() == 0, "Need to withdraw first");
 
         Decimal.decimal memory balance = Decimal.decimal(balancesHistory[msgSender].latestValue());
         requireNonZeroAmount(balance);
@@ -185,9 +187,5 @@ contract StakedPerpToken is
 
     function requireNonZeroAmount(Decimal.decimal memory _amount) private pure {
         require(_amount.toUint() > 0, "Amount is 0");
-    }
-
-    function requireNonPendingBalance(address _staker) private view {
-        require(stakerWithdrawPendingBalance[_staker].toUint() == 0, "Need to withdraw first");
     }
 }
