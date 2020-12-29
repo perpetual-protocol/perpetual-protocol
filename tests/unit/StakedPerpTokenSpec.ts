@@ -43,7 +43,7 @@ describe.only("StakedPerpTokenSpec", () => {
     })
 
     describe("stake()", () => {
-        it("alice stakes 100", async () => {
+        it("alice stakes 100; her balance of sPerp should increase and event be fired", async () => {
             const blockNumber = await stakedPerpToken.mock_getCurrentBlockNumber()
             const receipt = await stakedPerpToken.stake(toDecimal(100), { from: alice })
 
@@ -195,7 +195,7 @@ describe.only("StakedPerpTokenSpec", () => {
             expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1700))
         })
 
-        it.only("alice stakes 100, unstakes and then stakes 200 in the same block", async () => {
+        it("alice stakes 100, unstakes and then stakes 200 in the same block", async () => {
             await stakedPerpToken.stake(toDecimal(100), { from: alice })
             await forwardBlockTimestamp(15)
             await stakedPerpToken.unstake({ from: alice })
@@ -206,7 +206,7 @@ describe.only("StakedPerpTokenSpec", () => {
             expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1700))
         })
 
-        it.only("alice stakes 100, unstakes and then stakes 200 not in the same block/after cool down period", async () => {
+        it("alice stakes 100, unstakes and then stakes 200 not in the same block/after cool down period", async () => {
             await stakedPerpToken.stake(toDecimal(100), { from: alice })
             await forwardBlockTimestamp(15)
             await stakedPerpToken.unstake({ from: alice })

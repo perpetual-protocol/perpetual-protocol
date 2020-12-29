@@ -78,23 +78,33 @@ contract StakedPerpToken is
     function stake(Decimal.decimal calldata _amount) external {
         requireNonZeroAmount(_amount);
         address msgSender = _msgSender();
-        requireNonPendingBalance(msgSender);
+
+        Decimal.decimal memory amount = _amount;
+        // stake after unstake is allowed, and the states mutated by unstake() will being undo
+        if (stakerWithdrawPendingBalance[msgSender].toUint() != 0) {
+            amount = amount.addD(stakerWithdrawPendingBalance[msgSender]);
+            delete stakerWithdrawPendingBalance[msgSender];
+            delete stakerCooldown[msgSender];
+        }
 
         uint256 blockNumber = _blockNumber();
         Decimal.decimal memory balance = Decimal.decimal(balancesHistory[msgSender].latestValue());
         Decimal.decimal memory totalSupply = Decimal.decimal(totalSupplyHistory.latestValue());
-        Decimal.decimal memory newBalance = balance.addD(_amount);
+        Decimal.decimal memory newBalance = balance.addD(amount);
 
+        // if staking after unstaking, the amount to be transferred does not need to be updated
         _transferFrom(perpToken, msgSender, address(this), _amount);
         rewardPool.notifyStake(msgSender, newBalance);
-        mint(msgSender, _amount);
+        mint(msgSender, amount);
 
         addPersonalBalanceCheckPoint(msgSender, blockNumber, newBalance);
-        addTotalSupplyCheckPoint(blockNumber, totalSupply.addD(_amount));
+        addTotalSupplyCheckPoint(blockNumber, totalSupply.addD(amount));
 
         emit Staked(msgSender, _amount.toUint());
     }
 
+    // this function mutates stakerWithdrawPendingBalance, stakerCooldown, addTotalSupplyCheckPoint,
+    // addPersonalBalanceCheckPoint, burn
     function unstake() external {
         address msgSender = _msgSender();
         requireNonPendingBalance(msgSender);
@@ -119,6 +129,7 @@ contract StakedPerpToken is
         address msgSender = _msgSender();
         Decimal.decimal memory balance = stakerWithdrawPendingBalance[msgSender];
         requireNonZeroAmount(balance);
+        // there won't be a case that cooldown == 0 && balance == 0
         require(_blockNumber() >= stakerCooldown[msgSender], "Still in cooldown");
 
         delete stakerWithdrawPendingBalance[msgSender];
