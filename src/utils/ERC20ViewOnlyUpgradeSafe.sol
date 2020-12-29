@@ -1,46 +1,20 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity 0.6.9;
 
-pragma solidity >=0.6.0 <0.8.0;
-
+import { Initializable } from "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
 import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
-/**
- * @dev Implementation of the {IERC20} interface.
- *
- * This implementation is agnostic to the way tokens are created. This means
- * that a supply mechanism has to be added in a derived contract using {_mint}.
- * For a generic mechanism see {ERC20PresetMinterPauser}.
- *
- * TIP: For a detailed writeup see our guide
- * https://forum.zeppelin.solutions/t/how-to-implement-erc20-supply-mechanisms/226[How
- * to implement supply mechanisms].
- *
- * We have followed general OpenZeppelin guidelines: functions revert instead
- * of returning `false` on failure. This behavior is nonetheless conventional
- * and does not conflict with the expectations of ERC20 applications.
- *
- * Additionally, an {Approval} event is emitted on calls to {transferFrom}.
- * This allows applications to reconstruct the allowance for all accounts just
- * by listening to said events. Other implementations of the EIP may not emit
- * these events, as it isn't required by the specification.
- *
- * Finally, the non-standard {decreaseAllowance} and {increaseAllowance}
- * functions have been added to mitigate the well-known issues around setting
- * allowances. See {IERC20-approve}.
- */
-contract ERC20ViewOnlyUpgradeSafe is IERC20 {
+contract ERC20ViewOnlyUpgradeSafe is IERC20, Initializable {
     using SafeMath for uint256;
 
     mapping(address => uint256) private _balances;
 
-    mapping(address => mapping(address => uint256)) private _allowances;
-
     uint256 private _totalSupply;
 
-    string internal _name;
-    string internal _symbol;
-    uint8 internal _decimals;
+    string private _name;
+    string private _symbol;
+    uint8 private _decimals;
 
     /**
      * @dev Sets the values for {name} and {symbol}, initializes {decimals} with
@@ -51,7 +25,11 @@ contract ERC20ViewOnlyUpgradeSafe is IERC20 {
      * All three of these values are immutable: they can only be set once during
      * construction.
      */
-    function __ERC20_init(string memory name_, string memory symbol_) internal {
+    function __ERC20ViewOnly_init(string memory name_, string memory symbol_) internal initializer {
+        __ERC20ViewOnly_init_unchained(name_, symbol_);
+    }
+
+    function __ERC20ViewOnly_init_unchained(string memory name_, string memory symbol_) internal initializer {
         _name = name_;
         _symbol = symbol_;
         _decimals = 18;
@@ -122,16 +100,8 @@ contract ERC20ViewOnlyUpgradeSafe is IERC20 {
     /**
      * @dev See {IERC20-allowance}.
      */
-    function allowance(address owner, address spender) public view override returns (uint256) {
+    function allowance(address, address) public view override returns (uint256) {
         return 0;
-    }
-
-    function increaseAllowance(address, uint256) public returns (bool) {
-        revert("increaseAllowance() is not supported");
-    }
-
-    function decreaseAllowance(address, uint256) public returns (bool) {
-        revert("decreaseAllowance() is not supported");
     }
 
     /** @dev Creates `amount` tokens and assigns them to `account`, increasing
