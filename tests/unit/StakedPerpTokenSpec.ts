@@ -9,7 +9,7 @@ import { toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 
-describe.only("StakedPerpTokenSpec", () => {
+describe("StakedPerpTokenSpec", () => {
     let admin: string
     let alice: string
     let stakedPerpToken: StakedPerpTokenFakeInstance
@@ -40,6 +40,14 @@ describe.only("StakedPerpTokenSpec", () => {
         await perpToken.approve(stakedPerpToken.address, toFullDigit(5000), { from: admin })
 
         cooldownPeriod = (await stakedPerpToken.COOLDOWN_PERIOD()).toNumber()
+    })
+
+    describe("assert ERC20 config", () => {
+        it("check name, symbol & decimals", async () => {
+            expect(await stakedPerpToken.name()).to.eq("Staked Perpetual")
+            expect(await stakedPerpToken.symbol()).to.eq("sPERP")
+            expect(await stakedPerpToken.decimals()).to.eq(18)
+        })
     })
 
     describe("stake()", () => {

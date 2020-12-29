@@ -3,11 +3,11 @@ pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
 import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
-import { ERC20UpgradeSafe } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20.sol";
 import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import { IERC20WithCheckpointing } from "./aragonone/IERC20WithCheckpointing.sol";
 import { Checkpointing } from "./aragonone/Checkpointing.sol";
 import { CheckpointingHelpers } from "./aragonone/CheckpointingHelpers.sol";
+import { ERC20ViewOnlyUpgradeSafe } from "../utils/ERC20ViewOnlyUpgradeSafe.sol";
 import { Decimal } from "../utils/Decimal.sol";
 import { DecimalERC20 } from "../utils/DecimalERC20.sol";
 import { BlockContext } from "../utils/BlockContext.sol";
@@ -16,7 +16,7 @@ import { IFeeRewardPool } from "../interface/IFeeRewardPool.sol";
 
 contract StakedPerpToken is
     IERC20WithCheckpointing,
-    ERC20UpgradeSafe,
+    ERC20ViewOnlyUpgradeSafe,
     DecimalERC20,
     PerpFiOwnableUpgrade,
     BlockContext
@@ -70,6 +70,7 @@ contract StakedPerpToken is
     //
     function initialize(IERC20 _perpToken, IFeeRewardPool _rewardPool) public {
         require(address(_perpToken) != address(0) && address(_rewardPool) != address(0), "Invalid input.");
+        __ERC20_init("Staked Perpetual", "sPERP");
         __Ownable_init();
         perpToken = _perpToken;
         rewardPool = _rewardPool;
@@ -148,25 +149,6 @@ contract StakedPerpToken is
 
     function totalSupplyAt(uint256 _blockNumber) external view override returns (uint256) {
         return _totalSupplyAt(_blockNumber).toUint();
-    }
-
-    //
-    // override: ERC20UpgradeSafe, not allowed to transfer/transferFrom/approve in StakedPerpToken
-    //
-    function transfer(address, uint256) public override returns (bool) {
-        revert("transfer() is not supported");
-    }
-
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) public override returns (bool) {
-        revert("transferFrom() is not supported");
-    }
-
-    function approve(address, uint256) public override returns (bool) {
-        revert("approve() is not supported");
     }
 
     //
