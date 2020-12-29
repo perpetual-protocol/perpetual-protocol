@@ -9,7 +9,7 @@ import { toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 
-describe("StakedPerpTokenSpec", () => {
+describe.only("StakedPerpTokenSpec", () => {
     let admin: string
     let alice: string
     let stakedPerpToken: StakedPerpTokenFakeInstance
@@ -195,14 +195,27 @@ describe("StakedPerpTokenSpec", () => {
             expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1700))
         })
 
-        it("force error, alice stakes 100, unstakes and then stakes 200", async () => {
+        it.only("alice stakes 100, unstakes and then stakes 200 in the same block", async () => {
             await stakedPerpToken.stake(toDecimal(100), { from: alice })
-
             await forwardBlockTimestamp(15)
             await stakedPerpToken.unstake({ from: alice })
+            await stakedPerpToken.stake(toDecimal(200), { from: alice })
 
+            expect(await stakedPerpToken.stakerWithdrawPendingBalance(alice)).to.eq(toFullDigit(0))
+            expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(300))
+            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1700))
+        })
+
+        it.only("alice stakes 100, unstakes and then stakes 200 not in the same block/after cool down period", async () => {
+            await stakedPerpToken.stake(toDecimal(100), { from: alice })
             await forwardBlockTimestamp(15)
-            await expectRevert(stakedPerpToken.stake(toDecimal(200), { from: alice }), "Need to withdraw first")
+            await stakedPerpToken.unstake({ from: alice })
+            await forwardBlockTimestamp(cooldownPeriod * 2)
+            await stakedPerpToken.stake(toDecimal(200), { from: alice })
+
+            expect(await stakedPerpToken.stakerWithdrawPendingBalance(alice)).to.eq(toFullDigit(0))
+            expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(300))
+            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1700))
         })
 
         it("force error, alice unstakes and then unstakes again", async () => {
