@@ -135,9 +135,9 @@ contract FeeRewardPoolL1 is IFeeRewardPool, PerpFiOwnableUpgrade, BlockContext, 
     // VIEW FUNCTIONS
     //
 
-    function earned(address account) public view returns (Decimal.decimal memory) {
+    function earned(address _staker) public view returns (Decimal.decimal memory) {
         return
-            balanceOf(account).mulD(getRewardMultiplier().subD(stakerRewardMultiplier[account])).addD(rewards[account]);
+            balanceOf(_staker).mulD(getRewardMultiplier().subD(stakerRewardMultiplier[_staker])).addD(rewards[_staker]);
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
@@ -168,8 +168,8 @@ contract FeeRewardPoolL1 is IFeeRewardPool, PerpFiOwnableUpgrade, BlockContext, 
         }
     }
 
-    function balanceOf(address staker) internal view returns (Decimal.decimal memory) {
-        return Decimal.decimal(stakedPerpToken.latestBalance(staker));
+    function balanceOf(address _staker) internal view returns (Decimal.decimal memory) {
+        return Decimal.decimal(stakedPerpToken.latestBalance(_staker));
     }
 
     function totalSupply() internal view returns (Decimal.decimal memory) {
