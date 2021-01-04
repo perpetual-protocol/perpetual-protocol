@@ -8,7 +8,7 @@ import { IAmm } from "../interface/IAmm.sol";
 import { IClearingHouse } from "../interface/IClearingHouse.sol";
 
 contract KeeperRewardL2 is KeeperRewardBase {
-    function initialize(IERC20 _perpToken) external {
+    function initialize(IERC20 _perpToken) external initializer {
         __BaseKeeperReward_init(_perpToken);
     }
 
