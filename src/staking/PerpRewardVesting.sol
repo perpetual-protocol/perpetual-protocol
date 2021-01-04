@@ -35,7 +35,7 @@ contract PerpRewardVesting is MerkleRedeem, BlockContext {
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variable, ables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
     uint256[50] private __gap;
 
-    function initialize(IERC20 _token, uint256 _defaultVestingPeriod) external {
+    function initialize(IERC20 _token, uint256 _defaultVestingPeriod) external initializer {
         require(address(_token) != address(0) && _defaultVestingPeriod != 0, "Invalid input");
         __Ownable_init();
         token = _token;

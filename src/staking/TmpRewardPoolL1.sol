@@ -6,7 +6,6 @@ import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token
 import { Decimal } from "../utils/Decimal.sol";
 import { PerpFiOwnableUpgrade } from "../utils/PerpFiOwnableUpgrade.sol";
 import { DecimalERC20 } from "../utils/DecimalERC20.sol";
-import { ITollPool } from "../interface/ITollPool.sol";
 import { IRewardRecipient } from "../interface/IRewardRecipient.sol";
 
 contract TmpRewardPoolL1 is PerpFiOwnableUpgrade, DecimalERC20 {
@@ -36,7 +35,7 @@ contract TmpRewardPoolL1 is PerpFiOwnableUpgrade, DecimalERC20 {
     //
     // FUNCTIONS
     //
-    function initialize() external {
+    function initialize() external initializer {
         __Ownable_init();
     }
 

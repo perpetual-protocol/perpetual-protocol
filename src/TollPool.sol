@@ -7,7 +7,6 @@ import { Decimal } from "./utils/Decimal.sol";
 import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 import { DecimalERC20 } from "./utils/DecimalERC20.sol";
 import { ITollPool } from "./interface/ITollPool.sol";
-import { IClearingHouse } from "./interface/IClearingHouse.sol";
 import { ClientBridge } from "./bridge/xDai/ClientBridge.sol";
 
 contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
@@ -37,7 +36,7 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
     address public tmpRewardPoolL1;
     IERC20[] public feeTokens;
 
-    IClearingHouse public clearingHouse;
+    address public clearingHouse;
     ClientBridge public clientBridge;
 
     //**********************************************************//
@@ -52,7 +51,7 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
     //
     // FUNCTIONS
     //
-    function initialize(IClearingHouse _clearingHouse, ClientBridge _clientBridge) public {
+    function initialize(address _clearingHouse, ClientBridge _clientBridge) external initializer {
         require(address(_clearingHouse) != address(0) && address(_clientBridge) != address(0), "invalid input");
         __Ownable_init();
         clearingHouse = _clearingHouse;
