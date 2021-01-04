@@ -139,11 +139,12 @@ describe("StakedPerpTokenSpec", () => {
             await forwardBlockTimestamp(15)
 
             const blockNumber = await stakedPerpToken.mock_getCurrentBlockNumber()
+            const timestamp = await stakedPerpToken.mock_getCurrentTimestamp()
             const receipt = await stakedPerpToken.unstake({ from: alice })
             await expectEvent.inTransaction(receipt.tx, stakedPerpToken, "Unstaked")
             await expectEvent.inTransaction(receipt.tx, feeRewardPoolMock, "NotificationReceived")
 
-            expect(await stakedPerpToken.stakerCooldown(alice)).to.eq(blockNumber.addn(cooldownPeriod))
+            expect(await stakedPerpToken.stakerCooldown(alice)).to.eq(timestamp.addn(cooldownPeriod))
             expect(await stakedPerpToken.stakerWithdrawPendingBalance(alice)).to.eq(toFullDigit(100))
 
             expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(0))
@@ -264,7 +265,7 @@ describe("StakedPerpTokenSpec", () => {
             await forwardBlockTimestamp(15)
             await stakedPerpToken.unstake({ from: alice })
 
-            await forwardBlockTimestamp(15 * cooldownPeriod - 1)
+            await forwardBlockTimestamp(cooldownPeriod - 1)
             await expectRevert(stakedPerpToken.withdraw({ from: alice }), "Still in cooldown")
         })
 

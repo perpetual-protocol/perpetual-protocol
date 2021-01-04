@@ -22,7 +22,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     //
     // CONSTANT
     //
-    uint256 public constant COOLDOWN_PERIOD = 120960; // a week, (7 * 24 * 60 * 60) / 5 ~= 120,960 blocks
+    uint256 public constant COOLDOWN_PERIOD = 1 weeks;
 
     //
     // EVENTS
@@ -115,7 +115,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
 
         _burn(msgSender, balance);
 
-        stakerCooldown[msgSender] = _blockNumber().add(COOLDOWN_PERIOD);
+        stakerCooldown[msgSender] = _blockTimestamp().add(COOLDOWN_PERIOD);
         stakerWithdrawPendingBalance[msgSender] = balance;
 
         // Have to update balance first
@@ -131,7 +131,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
         Decimal.decimal memory balance = stakerWithdrawPendingBalance[msgSender];
         requireNonZeroAmount(balance);
         // there won't be a case that cooldown == 0 && balance == 0
-        require(_blockNumber() >= stakerCooldown[msgSender], "Still in cooldown");
+        require(_blockTimestamp() >= stakerCooldown[msgSender], "Still in cooldown");
 
         delete stakerWithdrawPendingBalance[msgSender];
         delete stakerCooldown[msgSender];
