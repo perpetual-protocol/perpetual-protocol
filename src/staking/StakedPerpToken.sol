@@ -148,11 +148,11 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     // override: ERC20
     //
     function balanceOf(address _owner) public view override returns (uint256) {
-        return _balanceOfAt(_owner, _blockTimestamp()).toUint();
+        return _balanceOfAt(_owner, _blockNumber()).toUint();
     }
 
     function totalSupply() public view override returns (uint256) {
-        return _totalSupplyAt(_blockTimestamp()).toUint();
+        return _totalSupplyAt(_blockNumber()).toUint();
     }
 
     //
