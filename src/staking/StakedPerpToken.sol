@@ -7,20 +7,14 @@ import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/mat
 import { IERC20WithCheckpointing } from "./aragonone/IERC20WithCheckpointing.sol";
 import { Checkpointing } from "./aragonone/Checkpointing.sol";
 import { CheckpointingHelpers } from "./aragonone/CheckpointingHelpers.sol";
-import { ERC20ViewOnlyUpgradeSafe } from "../utils/ERC20ViewOnlyUpgradeSafe.sol";
+import { ERC20ViewOnly } from "../utils/ERC20ViewOnly.sol";
 import { Decimal } from "../utils/Decimal.sol";
 import { DecimalERC20 } from "../utils/DecimalERC20.sol";
 import { BlockContext } from "../utils/BlockContext.sol";
 import { PerpFiOwnableUpgrade } from "../utils/PerpFiOwnableUpgrade.sol";
 import { IFeeRewardPool } from "../interface/IFeeRewardPool.sol";
 
-contract StakedPerpToken is
-    IERC20WithCheckpointing,
-    ERC20ViewOnlyUpgradeSafe,
-    DecimalERC20,
-    PerpFiOwnableUpgrade,
-    BlockContext
-{
+contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20, PerpFiOwnableUpgrade, BlockContext {
     using Checkpointing for Checkpointing.History;
     using CheckpointingHelpers for uint256;
     using SafeMath for uint256;
@@ -41,9 +35,9 @@ contract StakedPerpToken is
     //    The below state variables can not change the order    //
     //**********************************************************//
 
-    string public override name;
-    string public override symbol;
-    uint8 public override decimals;
+    string public name;
+    string public symbol;
+    uint8 public decimals;
 
     // Checkpointing total supply of the deposited token
     Checkpointing.History internal totalSupplyHistory;
@@ -96,17 +90,9 @@ contract StakedPerpToken is
             delete stakerCooldown[msgSender];
         }
 
-        uint256 blockNumber = _blockNumber();
-        Decimal.decimal memory balance = Decimal.decimal(balancesHistory[msgSender].latestValue());
-        Decimal.decimal memory totalSupply = Decimal.decimal(totalSupplyHistory.latestValue());
-        Decimal.decimal memory newBalance = balance.addD(amount);
-
         // if staking after unstaking, the amount to be transferred does not need to be updated
         _transferFrom(perpToken, msgSender, address(this), _amount);
-        mint(msgSender, amount);
-
-        addPersonalBalanceCheckPoint(msgSender, blockNumber, newBalance);
-        addTotalSupplyCheckPoint(blockNumber, totalSupply.addD(amount));
+        _mint(msgSender, amount);
 
         // Have to update balance first
         rewardPool.notifyStake(msgSender);
@@ -123,13 +109,9 @@ contract StakedPerpToken is
         Decimal.decimal memory balance = Decimal.decimal(balancesHistory[msgSender].latestValue());
         requireNonZeroAmount(balance);
 
-        burn(msgSender, balance);
+        _burn(msgSender, balance);
 
-        uint256 blockNumber = _blockNumber();
-        Decimal.decimal memory totalSupply = Decimal.decimal(totalSupplyHistory.latestValue());
-        addPersonalBalanceCheckPoint(msgSender, blockNumber, Decimal.zero());
-        addTotalSupplyCheckPoint(blockNumber, totalSupply.subD(balance));
-        stakerCooldown[msgSender] = blockNumber.add(COOLDOWN_PERIOD);
+        stakerCooldown[msgSender] = _blockNumber().add(COOLDOWN_PERIOD);
         stakerWithdrawPendingBalance[msgSender] = balance;
 
         // Have to update balance first
@@ -153,42 +135,14 @@ contract StakedPerpToken is
     }
 
     //
-    // override: ERC20UpgradeSafe, not allowed to transfer/transferFrom/approve in StakedPerpToken
-    //
-    function transfer(address, uint256) public override returns (bool) {
-        revert("transfer() is not supported");
-    }
-
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) public override returns (bool) {
-        revert("transferFrom() is not supported");
-    }
-
-    function approve(address, uint256) public override returns (bool) {
-        revert("approve() is not supported");
-    }
-
-    //
     // VIEW FUNCTIONS
     //
-    function balanceOf(address _owner) external view override returns (uint256) {
-        return balancesHistory[_owner].latestValue();
+    function balanceOf(address _owner) public view override returns (uint256) {
+        return _balanceOfAt(_owner, _blockTimestamp()).toUint();
     }
 
-    // TODO remove, replace by IERC20.balanceOf
-    function latestBalance(address _owner) external view returns (uint256) {
-        return balancesHistory[_owner].latestValue();
-    }
-
-    function totalSupply() external view override returns (uint256) {
-        return totalSupplyHistory.latestValue();
-    }
-
-    function latestTotalSupply() external view returns (uint256) {
-        return totalSupplyHistory.latestValue();
+    function totalSupply() public view override returns (uint256) {
+        return _totalSupplyAt(_blockTimestamp()).toUint();
     }
 
     //
@@ -206,13 +160,31 @@ contract StakedPerpToken is
     //
     // INTERNAL FUNCTIONS
     //
+    function _mint(address account, Decimal.decimal memory amount) internal virtual {
+        require(account != address(0), "ERC20: mint to the zero address");
 
-    function mint(address _staker, Decimal.decimal memory _amount) private {
-        _mint(_staker, _amount.toUint());
+        uint256 blockNumber = _blockNumber();
+        Decimal.decimal memory balance = Decimal.decimal(balanceOf(account));
+        Decimal.decimal memory newBalance = balance.addD(amount);
+        Decimal.decimal memory totalSupply = Decimal.decimal(totalSupply());
+
+        addPersonalBalanceCheckPoint(account, blockNumber, newBalance);
+        addTotalSupplyCheckPoint(blockNumber, totalSupply.addD(amount));
+
+        emit Transfer(address(0), account, amount.toUint());
     }
 
-    function burn(address _staker, Decimal.decimal memory _amount) private {
-        _burn(_staker, _amount.toUint());
+    function _burn(address account, Decimal.decimal memory amount) internal virtual {
+        require(account != address(0), "ERC20: burn from the zero address");
+
+        uint256 blockNumber = _blockNumber();
+        Decimal.decimal memory balance = Decimal.decimal(balanceOf(account));
+        Decimal.decimal memory totalSupply = Decimal.decimal(totalSupply());
+
+        addPersonalBalanceCheckPoint(account, blockNumber, balance.subD(amount));
+        addTotalSupplyCheckPoint(blockNumber, totalSupply.subD(amount));
+
+        emit Transfer(account, address(0), amount.toUint());
     }
 
     function addTotalSupplyCheckPoint(uint256 _blockNumber, Decimal.decimal memory _amount) internal {

@@ -169,10 +169,10 @@ contract FeeRewardPoolL1 is IFeeRewardPool, PerpFiOwnableUpgrade, BlockContext, 
     }
 
     function balanceOf(address _staker) internal view returns (Decimal.decimal memory) {
-        return Decimal.decimal(stakedPerpToken.latestBalance(_staker));
+        return Decimal.decimal(stakedPerpToken.balanceOf(_staker));
     }
 
     function totalSupply() internal view returns (Decimal.decimal memory) {
-        return Decimal.decimal(stakedPerpToken.latestTotalSupply());
+        return Decimal.decimal(stakedPerpToken.totalSupply());
     }
 }

@@ -14,11 +14,7 @@ contract StakedPerpTokenMock {
         balance[_staker] = _balance;
     }
 
-    function latestBalance(address _staker) external view returns (uint256) {
+    function balanceOf(address _staker) external view returns (uint256) {
         return balance[_staker];
-    }
-
-    function latestTotalSupply() external view returns (uint256) {
-        return totalSupply;
     }
 }
