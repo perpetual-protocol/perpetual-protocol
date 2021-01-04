@@ -3,10 +3,10 @@ pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
 import { IStakeModule } from "../../interface/IStakeModule.sol";
-import { IFeeRewardPool } from "../../interface/IFeeRewardPool.sol";
+import { IRewardRecipient } from "../../interface/IRewardRecipient.sol";
 import { Decimal } from "../../utils/Decimal.sol";
 
-contract FeeRewardPoolMock is IStakeModule, IFeeRewardPool {
+contract FeeRewardPoolMock is IStakeModule, IRewardRecipient {
     using Decimal for Decimal.decimal;
     event NotificationReceived(address staker);
     event FeeNotificationReceived(uint256 amount);
