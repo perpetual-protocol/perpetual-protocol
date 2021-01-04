@@ -12,7 +12,7 @@ import { Decimal } from "../utils/Decimal.sol";
 import { DecimalERC20 } from "../utils/DecimalERC20.sol";
 import { BlockContext } from "../utils/BlockContext.sol";
 import { PerpFiOwnableUpgrade } from "../utils/PerpFiOwnableUpgrade.sol";
-import { IFeeRewardPool } from "../interface/IFeeRewardPool.sol";
+import { IStakeModule } from "../interface/IStakeModule.sol";
 
 contract StakedPerpToken is
     IERC20WithCheckpointing,
@@ -54,7 +54,7 @@ contract StakedPerpToken is
     mapping(address => Decimal.decimal) public stakerWithdrawPendingBalance;
 
     IERC20 public perpToken;
-    IFeeRewardPool[] public rewardPools;
+    IStakeModule[] public stakeModules;
 
     //**********************************************************//
     //    The above state variables can not change the order    //
@@ -68,12 +68,12 @@ contract StakedPerpToken is
     //
     // FUNCTIONS
     //
-    function initialize(IERC20 _perpToken, IFeeRewardPool _rewardPool) public initializer {
-        require(address(_perpToken) != address(0) && address(_rewardPool) != address(0), "Invalid input.");
+    function initialize(IERC20 _perpToken, IStakeModule _stakeModule) public initializer {
+        require(address(_perpToken) != address(0) && address(_stakeModule) != address(0), "Invalid input.");
         __ERC20ViewOnly_init("Staked Perpetual", "sPERP");
         __Ownable_init();
         perpToken = _perpToken;
-        rewardPools.push(_rewardPool);
+        stakeModules.push(_stakeModule);
     }
 
     function stake(Decimal.decimal calldata _amount) external {
@@ -103,8 +103,8 @@ contract StakedPerpToken is
         addTotalSupplyCheckPoint(blockNumber, totalSupply.addD(amount));
 
         // Have to update balance first
-        for (uint256 i; i < rewardPools.length; i++) {
-            rewardPools[i].notifyStake(msgSender);
+        for (uint256 i; i < stakeModules.length; i++) {
+            stakeModules[i].notifyStake(msgSender);
         }
 
         emit Staked(msgSender, _amount.toUint());
@@ -129,8 +129,8 @@ contract StakedPerpToken is
         stakerWithdrawPendingBalance[msgSender] = balance;
 
         // Have to update balance first
-        for (uint256 i; i < rewardPools.length; i++) {
-            rewardPools[i].notifyStake(msgSender);
+        for (uint256 i; i < stakeModules.length; i++) {
+            stakeModules[i].notifyStake(msgSender);
         }
 
         emit Unstaked(msgSender, balance.toUint());
