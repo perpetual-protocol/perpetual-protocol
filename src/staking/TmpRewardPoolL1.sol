@@ -6,8 +6,7 @@ import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token
 import { Decimal } from "../utils/Decimal.sol";
 import { PerpFiOwnableUpgrade } from "../utils/PerpFiOwnableUpgrade.sol";
 import { DecimalERC20 } from "../utils/DecimalERC20.sol";
-import { ITollPool } from "../interface/ITollPool.sol";
-import { IFeeRewardPool } from "../interface/IFeeRewardPool.sol";
+import { IRewardRecipient } from "../interface/IRewardRecipient.sol";
 
 contract TmpRewardPoolL1 is PerpFiOwnableUpgrade, DecimalERC20 {
     //
@@ -21,7 +20,7 @@ contract TmpRewardPoolL1 is PerpFiOwnableUpgrade, DecimalERC20 {
     //    Can not change the order of below state variables     //
     //**********************************************************//
 
-    mapping(IERC20 => IFeeRewardPool) public feeRewardPoolMap;
+    mapping(IERC20 => IRewardRecipient) public feeRewardPoolMap;
     IERC20[] public feeTokens;
 
     //**********************************************************//
@@ -36,7 +35,7 @@ contract TmpRewardPoolL1 is PerpFiOwnableUpgrade, DecimalERC20 {
     //
     // FUNCTIONS
     //
-    function initialize() external {
+    function initialize() external initializer {
         __Ownable_init();
     }
 
@@ -49,7 +48,7 @@ contract TmpRewardPoolL1 is PerpFiOwnableUpgrade, DecimalERC20 {
             Decimal.decimal memory balance = _balanceOf(token, address(this));
 
             if (balance.toUint() != 0) {
-                IFeeRewardPool feeRewardPool = feeRewardPoolMap[token];
+                IRewardRecipient feeRewardPool = feeRewardPoolMap[token];
                 _transfer(token, address(feeRewardPool), balance);
                 feeRewardPool.notifyRewardAmount(balance);
 
@@ -61,14 +60,14 @@ contract TmpRewardPoolL1 is PerpFiOwnableUpgrade, DecimalERC20 {
         require(hasFee, "fee is now zero");
     }
 
-    function addFeeRewardPool(IERC20 _token, IFeeRewardPool _feeRewardPool) external onlyOwner {
-        require(address(_token) != address(0) && address(_feeRewardPool) != address(0), "invalid input");
+    function addFeeRewardPool(IERC20 _token, IRewardRecipient _recipient) external onlyOwner {
+        require(address(_token) != address(0) && address(_recipient) != address(0), "invalid input");
         require(!isFeeTokenExisted(_token), "token is already existed");
 
         feeTokens.push(_token);
-        feeRewardPoolMap[_token] = _feeRewardPool;
+        feeRewardPoolMap[_token] = _recipient;
 
-        emit FeeRewardPoolAdded(address(_token), address(_feeRewardPool));
+        emit FeeRewardPoolAdded(address(_token), address(_recipient));
     }
 
     function removeFeeRewardPool(IERC20 _token) external onlyOwner {
@@ -78,7 +77,7 @@ contract TmpRewardPoolL1 is PerpFiOwnableUpgrade, DecimalERC20 {
         uint256 lengthOfFeeTokens = getFeeTokenLength();
         for (uint256 i; i < lengthOfFeeTokens; i++) {
             if (_token == feeTokens[i]) {
-                IFeeRewardPool feeRewardPool = feeRewardPoolMap[feeTokens[i]];
+                IRewardRecipient feeRewardPool = feeRewardPoolMap[feeTokens[i]];
                 if (i != lengthOfFeeTokens - 1) {
                     feeTokens[i] = feeTokens[lengthOfFeeTokens - 1];
                 }

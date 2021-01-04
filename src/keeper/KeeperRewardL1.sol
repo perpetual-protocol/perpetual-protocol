@@ -7,7 +7,7 @@ import { KeeperRewardBase } from "./KeeperRewardBase.sol";
 import { ChainlinkL1 } from "../ChainlinkL1.sol";
 
 contract KeeperRewardL1 is KeeperRewardBase {
-    function initialize(IERC20 _perpToken) external {
+    function initialize(IERC20 _perpToken) external initializer {
         __BaseKeeperReward_init(_perpToken);
     }
 
