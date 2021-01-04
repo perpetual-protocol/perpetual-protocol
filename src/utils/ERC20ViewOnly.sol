@@ -20,7 +20,7 @@ abstract contract ERC20ViewOnly is IERC20 {
         revert("approve() is not supported");
     }
 
-    function allowance(address, address) public view override returns (uint256) {
+    function allowance(address, address) public view virtual override returns (uint256) {
         return 0;
     }
 }

@@ -35,9 +35,11 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     //    The below state variables can not change the order    //
     //**********************************************************//
 
+    // ERC20 variables
     string public name;
     string public symbol;
     uint8 public decimals;
+    // ERC20 variables
 
     // Checkpointing total supply of the deposited token
     Checkpointing.History internal totalSupplyHistory;
@@ -51,8 +53,8 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     // staker => PERP staker can withdraw
     mapping(address => Decimal.decimal) public stakerWithdrawPendingBalance;
 
-    IERC20 public perpToken;
     IStakeModule[] public stakeModules;
+    IERC20 public perpToken;
 
     //**********************************************************//
     //    The above state variables can not change the order    //
@@ -141,6 +143,10 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     //
     // VIEW FUNCTIONS
     //
+
+    //
+    // override: ERC20
+    //
     function balanceOf(address _owner) public view override returns (uint256) {
         return _balanceOfAt(_owner, _blockTimestamp()).toUint();
     }
@@ -208,6 +214,9 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
         return Decimal.decimal(totalSupplyHistory.getValueAt(_blockNumber.toUint64Time()));
     }
 
+    //
+    // REQUIRE FUNCTIONS
+    //
     function requireNonZeroAmount(Decimal.decimal memory _amount) private pure {
         require(_amount.toUint() > 0, "Amount is 0");
     }
