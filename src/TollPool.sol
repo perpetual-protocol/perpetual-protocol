@@ -51,7 +51,7 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
     //
     // FUNCTIONS
     //
-    function initialize(address _clearingHouse, ClientBridge _clientBridge) public initializer {
+    function initialize(address _clearingHouse, ClientBridge _clientBridge) external initializer {
         require(address(_clearingHouse) != address(0) && address(_clientBridge) != address(0), "invalid input");
         __Ownable_init();
         clearingHouse = _clearingHouse;

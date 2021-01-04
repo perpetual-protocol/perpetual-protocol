@@ -68,7 +68,7 @@ contract StakedPerpToken is
     //
     // FUNCTIONS
     //
-    function initialize(IERC20 _perpToken, IStakeModule _stakeModule) public initializer {
+    function initialize(IERC20 _perpToken, IStakeModule _stakeModule) external initializer {
         require(address(_perpToken) != address(0) && address(_stakeModule) != address(0), "Invalid input.");
         __ERC20ViewOnly_init("Staked Perpetual", "sPERP");
         __Ownable_init();
