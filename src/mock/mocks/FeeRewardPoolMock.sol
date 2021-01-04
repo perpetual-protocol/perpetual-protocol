@@ -7,14 +7,14 @@ import { Decimal } from "../../utils/Decimal.sol";
 
 contract FeeRewardPoolMock is IFeeRewardPool {
     using Decimal for Decimal.decimal;
-    event NotificationReceived(address staker, uint256 amount);
+    event NotificationReceived(address staker);
     event FeeNotificationReceived(uint256 amount);
 
-    function notifyStake(address staker, Decimal.decimal calldata _amount) external override {
-        emit NotificationReceived(staker, _amount.toUint());
+    function notifyStake(address staker) external override {
+        emit NotificationReceived(staker);
     }
 
-    function notifyRewardAmount(uint256 _amount) external override {
-        emit FeeNotificationReceived(_amount);
+    function notifyRewardAmount(Decimal.decimal calldata _amount) external override {
+        emit FeeNotificationReceived(_amount.toUint());
     }
 }

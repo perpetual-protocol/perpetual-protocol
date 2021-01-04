@@ -97,11 +97,13 @@ contract StakedPerpToken is
 
         // if staking after unstaking, the amount to be transferred does not need to be updated
         _transferFrom(perpToken, msgSender, address(this), _amount);
-        rewardPool.notifyStake(msgSender, newBalance);
         mint(msgSender, amount);
 
         addPersonalBalanceCheckPoint(msgSender, blockNumber, newBalance);
         addTotalSupplyCheckPoint(blockNumber, totalSupply.addD(amount));
+
+        // Have to update balance first
+        rewardPool.notifyStake(msgSender);
 
         emit Staked(msgSender, _amount.toUint());
     }
@@ -115,7 +117,6 @@ contract StakedPerpToken is
         Decimal.decimal memory balance = Decimal.decimal(balancesHistory[msgSender].latestValue());
         requireNonZeroAmount(balance);
 
-        rewardPool.notifyStake(msgSender, Decimal.zero());
         burn(msgSender, balance);
 
         uint256 blockNumber = _blockNumber();
@@ -124,6 +125,9 @@ contract StakedPerpToken is
         addTotalSupplyCheckPoint(blockNumber, totalSupply.subD(balance));
         stakerCooldown[msgSender] = blockNumber.add(COOLDOWN_PERIOD);
         stakerWithdrawPendingBalance[msgSender] = balance;
+
+        // Have to update balance first
+        rewardPool.notifyStake(msgSender);
 
         emit Unstaked(msgSender, balance.toUint());
     }
@@ -140,6 +144,37 @@ contract StakedPerpToken is
         _transfer(perpToken, msgSender, balance);
 
         emit Withdrawn(msgSender, balance.toUint());
+    }
+
+    //
+    // override: ERC20UpgradeSafe, not allowed to transfer/transferFrom/approve in StakedPerpToken
+    //
+    function transfer(address, uint256) public override returns (bool) {
+        revert("transfer() is not supported");
+    }
+
+    function transferFrom(
+        address,
+        address,
+        uint256
+    ) public override returns (bool) {
+        revert("transferFrom() is not supported");
+    }
+
+    function approve(address, uint256) public override returns (bool) {
+        revert("approve() is not supported");
+    }
+
+    //
+    // VIEW FUNCTIONS
+    //
+
+    function latestBalance(address _owner) external view returns (uint256) {
+        return balancesHistory[_owner].latestValue();
+    }
+
+    function latestTotalSupply() external view returns (uint256) {
+        return totalSupplyHistory.latestValue();
     }
 
     //

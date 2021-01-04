@@ -81,7 +81,7 @@ contract ERC20ViewOnlyUpgradeSafe is IERC20, Initializable {
         return _balances[account];
     }
 
-    function transfer(address, uint256) public override returns (bool) {
+    function transfer(address, uint256) public virtual override returns (bool) {
         revert("transfer() is not supported");
     }
 
@@ -89,11 +89,11 @@ contract ERC20ViewOnlyUpgradeSafe is IERC20, Initializable {
         address,
         address,
         uint256
-    ) public override returns (bool) {
+    ) public virtual override returns (bool) {
         revert("transferFrom() is not supported");
     }
 
-    function approve(address, uint256) public override returns (bool) {
+    function approve(address, uint256) public virtual override returns (bool) {
         revert("approve() is not supported");
     }
 

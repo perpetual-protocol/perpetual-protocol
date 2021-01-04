@@ -51,7 +51,7 @@ contract TmpRewardPoolL1 is PerpFiOwnableUpgrade, DecimalERC20 {
             if (balance.toUint() != 0) {
                 IFeeRewardPool feeRewardPool = feeRewardPoolMap[token];
                 _transfer(token, address(feeRewardPool), balance);
-                feeRewardPool.notifyRewardAmount(balance.toUint());
+                feeRewardPool.notifyRewardAmount(balance);
 
                 hasFee = true;
                 emit FeeTransferred(address(token), address(feeRewardPool), balance.toUint());
