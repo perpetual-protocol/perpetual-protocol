@@ -24,6 +24,7 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
         rm(`.openzeppelin/${ozNetworkFile[layer2Network]}.json`)
     }
 
+    // #1
     // we have to break deployment up into multiple batches because:
     // (1) layer1 and layer2 contracts have circular dependencies
     // (2) buidler only works with one network at a time
@@ -41,9 +42,16 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
         options,
     )
 
+    // ADD NEW MARKET
+    await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 3`, options)
+    await asyncExec(
+        `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 4`,
+        options,
+    )
+
     // V2
     await asyncExec(`buidler --network ${layer1Network} ${TASK_DEPLOY_LAYER} ${stage} layer1 2`, options)
-    await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 3`, options)
+    await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 5`, options)
 }
 
 /* eslint-disable no-console */

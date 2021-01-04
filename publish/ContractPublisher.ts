@@ -108,6 +108,9 @@ export class ContractPublisher {
                     await (await rootBridge.setOwner(gov)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
+                    if (this.inSameLayer) {
+                        return
+                    }
                     const governance = this.externalContract.foundationGovernance!
                     console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
                     await OzContractDeployer.transferProxyAdminOwnership(governance)
@@ -431,6 +434,9 @@ export class ContractPublisher {
                     await (await BTCUSDC.setOwner(gov)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
+                    if (this.inSameLayer) {
+                        return
+                    }
                     const governance = this.externalContract.foundationGovernance!
                     console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
                     await OzContractDeployer.transferProxyAdminOwnership(governance)
@@ -471,8 +477,74 @@ export class ContractPublisher {
                     await BTCUSDC.prepareUpgradeContract()
                 },
             ],
-            // V1 END
             // batch 3
+            // deploy the third amm instance for new market
+            // set cap, counterParty, set open...etc
+            // transfer owner
+            // transfer proxyAdmin
+            [
+                async (): Promise<void> => {
+                    console.log("deploy YFIUSDC amm...")
+                    const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
+                    const ammContract = this.factory.createAmm(AmmInstanceName.YFIUSDC)
+                    const quoteTokenAddr = this.externalContract.usdc!
+                    await ammContract.deployUpgradableContract(
+                        this.deployConfig.ammConfigMap,
+                        l2PriceFeedContract.address!,
+                        quoteTokenAddr,
+                    )
+                },
+                async (): Promise<void> => {
+                    console.log("set YFI amm Cap...")
+                    const amm = await this.factory.createAmm(AmmInstanceName.YFIUSDC).instance()
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
+                        AmmInstanceName.YFIUSDC
+                    ].properties
+                    if (maxHoldingBaseAsset.gt(0)) {
+                        await (
+                            await amm.setCap(
+                                { d: maxHoldingBaseAsset.toString() },
+                                { d: openInterestNotionalCap.toString() },
+                            )
+                        ).wait(this.confirmations)
+                    }
+                },
+                async (): Promise<void> => {
+                    console.log("YFI amm.setCounterParty...")
+                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const amm = await this.factory.createAmm(AmmInstanceName.YFIUSDC).instance()
+                    await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("opening Amm YFIUSDC...")
+                    const YFIUSDC = await this.factory.createAmm(AmmInstanceName.YFIUSDC).instance()
+                    await (await YFIUSDC.setOpen(true)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring YFIUSDC owner to governance=${gov}...please remember to claim the ownership`,
+                    )
+                    const YFIUSDC = await this.factory.createAmm(AmmInstanceName.YFIUSDC).instance()
+                    await (await YFIUSDC.setOwner(gov)).wait(this.confirmations)
+                },
+            ],
+            // batch 4
+            // prepareUpgrade the flatten YFI AMM
+            [
+                async (): Promise<void> => {
+                    const filename = `${ContractName.Amm}.sol`
+
+                    // after flatten sol file we must re-compile again
+                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                    await bre.run(TASK_COMPILE)
+
+                    // deploy amm implementation
+                    const YFIUSDC = this.factory.createAmm(AmmInstanceName.YFIUSDC)
+                    await YFIUSDC.prepareUpgradeContract()
+                },
+            ],
+            // batch 5
             [
                 async (): Promise<void> => {
                     console.log("deploying KeeperRewardL2 on layer 2...")
@@ -514,7 +586,10 @@ export class ContractPublisher {
                     ).address
 
                     const usdc = this.externalContract.usdc!
+
+                    // TODO local npm run dev will fail due to ERC20.approve() during addFeeToken
                     await tollPool.addFeeToken(usdc)
+
                     await tollPool.setTmpRewardPool(tmpRewardPoolL1)
                 },
                 // TODO may not work if owner is multi-sig wallet
@@ -542,6 +617,11 @@ export class ContractPublisher {
 
     get confirmations(): number {
         return this.deployConfig.confirmations
+    }
+
+    // local are basically in 1 layer, can't transfer twice in the same network. will transfer in the very last batch
+    get inSameLayer(): boolean {
+        return this.settingsDao.getChainId("layer1") === this.settingsDao.getChainId("layer2")
     }
 
     async publishContracts(batch: number): Promise<void> {
@@ -575,19 +655,6 @@ export class ContractPublisher {
             this.settingsDao.increaseVersion(this.layerType)
         }
 
-        // transfer admin if it's the last batch for current layer
-        const isLastBatchForCurrentLayer = taskBatches.length - 1 === batch
-        if (!isLastBatchForCurrentLayer) {
-            return
-        }
-        // local are basically in 1 layer, can't transfer twice in the same network. will transfer in the very last batch
-        if (this.settingsDao.getChainId("layer1") === this.settingsDao.getChainId("layer2")) {
-            const layerWithMoreBatch =
-                this.taskBatchesMap.layer1.length > this.taskBatchesMap.layer2.length ? "layer1" : "layer2"
-            if (layerWithMoreBatch !== this.layerType) {
-                return
-            }
-        }
-        console.log(`${this.layerType} contract deployment finished.`)
+        console.log(`${this.layerType} contract deployment batch=${batch} finished.`)
     }
 }
