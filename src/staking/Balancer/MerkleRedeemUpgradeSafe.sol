@@ -12,7 +12,7 @@ import { MerkleProof } from "@openzeppelin/contracts-ethereum-package/contracts/
 import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import { PerpFiOwnableUpgrade } from "../../utils/PerpFiOwnableUpgrade.sol";
 
-abstract contract MerkleRedeemUpgradeSafe is PerpFiOwnableUpgrade {
+contract MerkleRedeemUpgradeSafe is PerpFiOwnableUpgrade {
     event Claimed(address _claimant, uint256 _balance);
 
     //**********************************************************//
