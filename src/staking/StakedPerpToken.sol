@@ -41,9 +41,9 @@ contract StakedPerpToken is
     //    The below state variables can not change the order    //
     //**********************************************************//
 
-    string public name;
-    string public symbol;
-    uint8 public decimals;
+    string public override name;
+    string public override symbol;
+    uint8 public override decimals;
 
     // Checkpointing total supply of the deposited token
     Checkpointing.History internal totalSupplyHistory;
@@ -74,7 +74,6 @@ contract StakedPerpToken is
     //
     function initialize(IERC20 _perpToken, IFeeRewardPool _rewardPool) public initializer {
         require(address(_perpToken) != address(0) && address(_rewardPool) != address(0), "Invalid input.");
-        __ERC20ViewOnly_init();
         __Ownable_init();
         name = "Staked Perpetual";
         symbol = "sPERP";
@@ -175,9 +174,17 @@ contract StakedPerpToken is
     //
     // VIEW FUNCTIONS
     //
+    function balanceOf(address _owner) external view override returns (uint256) {
+        return balancesHistory[_owner].latestValue();
+    }
 
+    // TODO remove, replace by IERC20.balanceOf
     function latestBalance(address _owner) external view returns (uint256) {
         return balancesHistory[_owner].latestValue();
+    }
+
+    function totalSupply() external view override returns (uint256) {
+        return totalSupplyHistory.latestValue();
     }
 
     function latestTotalSupply() external view returns (uint256) {
@@ -191,6 +198,7 @@ contract StakedPerpToken is
         return _balanceOfAt(_owner, _blockNumber).toUint();
     }
 
+    // TODO remove, replace by IERC20.totalSupply
     function totalSupplyAt(uint256 _blockNumber) external view override returns (uint256) {
         return _totalSupplyAt(_blockNumber).toUint();
     }
