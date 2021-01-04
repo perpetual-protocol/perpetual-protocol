@@ -172,12 +172,14 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     function _mint(address account, Decimal.decimal memory amount) internal virtual {
         require(account != address(0), "ERC20: mint to the zero address");
 
-        uint256 blockNumber = _blockNumber();
         Decimal.decimal memory balance = Decimal.decimal(balanceOf(account));
         Decimal.decimal memory newBalance = balance.addD(amount);
+        Decimal.decimal memory currentTotalSupply = Decimal.decimal(totalSupply());
+        Decimal.decimal memory newTotalSupply = currentTotalSupply.addD(amount);
 
+        uint256 blockNumber = _blockNumber();
         addPersonalBalanceCheckPoint(account, blockNumber, newBalance);
-        addTotalSupplyCheckPoint(blockNumber, Decimal.decimal(totalSupply()).addD(amount));
+        addTotalSupplyCheckPoint(blockNumber, newTotalSupply);
 
         emit Transfer(address(0), account, amount.toUint());
     }
@@ -185,11 +187,14 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     function _burn(address account, Decimal.decimal memory amount) internal virtual {
         require(account != address(0), "ERC20: burn from the zero address");
 
-        uint256 blockNumber = _blockNumber();
         Decimal.decimal memory balance = Decimal.decimal(balanceOf(account));
+        Decimal.decimal memory newBalance = balance.subD(amount);
+        Decimal.decimal memory currentTotalSupply = Decimal.decimal(totalSupply());
+        Decimal.decimal memory newTotalSupply = currentTotalSupply.subD(amount);
 
-        addPersonalBalanceCheckPoint(account, blockNumber, balance.subD(amount));
-        addTotalSupplyCheckPoint(blockNumber, Decimal.decimal(totalSupply()).subD(amount));
+        uint256 blockNumber = _blockNumber();
+        addPersonalBalanceCheckPoint(account, blockNumber, newBalance);
+        addTotalSupplyCheckPoint(blockNumber, newTotalSupply);
 
         emit Transfer(account, address(0), amount.toUint());
     }
