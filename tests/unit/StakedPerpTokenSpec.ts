@@ -42,8 +42,16 @@ describe("StakedPerpTokenSpec", () => {
         cooldownPeriod = (await stakedPerpToken.COOLDOWN_PERIOD()).toNumber()
     })
 
+    describe("assert ERC20 config", () => {
+        it("check name, symbol & decimals", async () => {
+            expect(await stakedPerpToken.name()).to.eq("Staked Perpetual")
+            expect(await stakedPerpToken.symbol()).to.eq("sPERP")
+            expect(await stakedPerpToken.decimals()).to.eq(18)
+        })
+    })
+
     describe("stake()", () => {
-        it("alice stakes 100", async () => {
+        it("alice stakes 100; her balance of sPerp should increase and event be fired", async () => {
             const blockNumber = await stakedPerpToken.mock_getCurrentBlockNumber()
             const receipt = await stakedPerpToken.stake(toDecimal(100), { from: alice })
 
@@ -195,14 +203,27 @@ describe("StakedPerpTokenSpec", () => {
             expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1700))
         })
 
-        it("force error, alice stakes 100, unstakes and then stakes 200", async () => {
+        it("alice stakes 100, unstakes and then stakes 200 in the same block", async () => {
             await stakedPerpToken.stake(toDecimal(100), { from: alice })
-
             await forwardBlockTimestamp(15)
             await stakedPerpToken.unstake({ from: alice })
+            await stakedPerpToken.stake(toDecimal(200), { from: alice })
 
+            expect(await stakedPerpToken.stakerWithdrawPendingBalance(alice)).to.eq(toFullDigit(0))
+            expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(300))
+            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1700))
+        })
+
+        it("alice stakes 100, unstakes and then stakes 200 not in the same block/after cool down period", async () => {
+            await stakedPerpToken.stake(toDecimal(100), { from: alice })
             await forwardBlockTimestamp(15)
-            await expectRevert(stakedPerpToken.stake(toDecimal(200), { from: alice }), "Need to withdraw first")
+            await stakedPerpToken.unstake({ from: alice })
+            await forwardBlockTimestamp(cooldownPeriod * 2)
+            await stakedPerpToken.stake(toDecimal(200), { from: alice })
+
+            expect(await stakedPerpToken.stakerWithdrawPendingBalance(alice)).to.eq(toFullDigit(0))
+            expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(300))
+            expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1700))
         })
 
         it("force error, alice unstakes and then unstakes again", async () => {
