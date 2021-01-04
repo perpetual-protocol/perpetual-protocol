@@ -4,12 +4,12 @@ pragma experimental ABIEncoderV2;
 
 import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import { MerkleRedeem } from "./Balancer/MerkleRedeem.sol";
+import { MerkleRedeemUpgradeSafe } from "./Balancer/MerkleRedeemUpgradeSafe.sol";
 import { Decimal } from "../utils/Decimal.sol";
 import { DecimalERC20 } from "../utils/DecimalERC20.sol";
 import { BlockContext } from "../utils/BlockContext.sol";
 
-contract PerpRewardVesting is MerkleRedeem, BlockContext {
+contract PerpRewardVesting is MerkleRedeemUpgradeSafe, BlockContext {
     using Decimal for Decimal.decimal;
     using SafeMath for uint256;
 
@@ -35,10 +35,9 @@ contract PerpRewardVesting is MerkleRedeem, BlockContext {
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variable, ables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
     uint256[50] private __gap;
 
-    function initialize(IERC20 _token, uint256 _defaultVestingPeriod) external {
+    function initialize(IERC20 _token, uint256 _defaultVestingPeriod) external initializer {
         require(address(_token) != address(0) && _defaultVestingPeriod != 0, "Invalid input");
-        __Ownable_init();
-        token = _token;
+        __MerkleRedeem_init(_token);
         defaultVestingPeriod = _defaultVestingPeriod;
     }
 

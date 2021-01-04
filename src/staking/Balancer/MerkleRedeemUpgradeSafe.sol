@@ -12,7 +12,7 @@ import { MerkleProof } from "@openzeppelin/contracts-ethereum-package/contracts/
 import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
 import { PerpFiOwnableUpgrade } from "../../utils/PerpFiOwnableUpgrade.sol";
 
-abstract contract MerkleRedeem is PerpFiOwnableUpgrade {
+abstract contract MerkleRedeemUpgradeSafe is PerpFiOwnableUpgrade {
     event Claimed(address _claimant, uint256 _balance);
 
     //**********************************************************//
@@ -36,6 +36,15 @@ abstract contract MerkleRedeem is PerpFiOwnableUpgrade {
     //
     // FUNCTIONS
     //
+
+    function __MerkleRedeem_init(IERC20 _token) internal initializer {
+        __Ownable_init();
+        __MerkleRedeem_init_unchained(_token);
+    }
+
+    function __MerkleRedeem_init_unchained(IERC20 _token) internal initializer {
+        token = _token;
+    }
 
     function disburse(address _liquidityProvider, uint256 _balance) private {
         if (_balance > 0) {
