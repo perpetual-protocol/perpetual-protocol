@@ -41,6 +41,10 @@ contract StakedPerpToken is
     //    The below state variables can not change the order    //
     //**********************************************************//
 
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+
     // Checkpointing total supply of the deposited token
     Checkpointing.History internal totalSupplyHistory;
 
@@ -70,8 +74,11 @@ contract StakedPerpToken is
     //
     function initialize(IERC20 _perpToken, IFeeRewardPool _rewardPool) public initializer {
         require(address(_perpToken) != address(0) && address(_rewardPool) != address(0), "Invalid input.");
-        __ERC20ViewOnly_init("Staked Perpetual", "sPERP");
+        __ERC20ViewOnly_init();
         __Ownable_init();
+        name = "Staked Perpetual";
+        symbol = "sPERP";
+        decimals = 18;
         perpToken = _perpToken;
         rewardPool = _rewardPool;
     }
