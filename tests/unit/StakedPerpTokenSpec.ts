@@ -278,5 +278,13 @@ describe("StakedPerpTokenSpec", () => {
             await forwardBlockTimestamp(15 * cooldownPeriod)
             await expectRevert(stakedPerpToken.withdraw({ from: alice }), "Amount is 0")
         })
+
+        it("force error, alice stakes 100, unstakes and then withdraw twice", async () => {
+            await stakedPerpToken.stake(toDecimal(100), { from: alice })
+            await stakedPerpToken.unstake({ from: alice })
+            await forwardBlockTimestamp(cooldownPeriod)
+            await stakedPerpToken.withdraw({ from: alice })
+            await expectRevert(stakedPerpToken.withdraw({ from: alice }), "Amount is 0")
+        })
     })
 })
