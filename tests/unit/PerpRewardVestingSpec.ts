@@ -158,7 +158,7 @@ describe("PerpRewardVestingSpec", () => {
             )
         })
 
-        // we do not verify if the claimed amount is valid or not; we suppose this is verified by MerkleRedeem.sol
+        // we do not verify if the claimed amount is valid or not; we suppose this is verified by MerkleRedeemUpgradeSafe.sol
         it.skip("force error, claimed amount larger than the available quota", async () => {})
     })
 
