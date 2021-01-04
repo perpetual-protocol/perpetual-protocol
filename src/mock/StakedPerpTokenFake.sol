@@ -6,7 +6,7 @@ import "../staking/StakedPerpToken.sol";
 
 contract StakedPerpTokenFake is StakedPerpToken {
     uint256 private timestamp = 1444004400;
-    uint256 private number = 10001;
+    uint256 private number = 2444004400;
 
     function mock_setBlockTimestamp(uint256 _timestamp) public {
         timestamp = _timestamp;

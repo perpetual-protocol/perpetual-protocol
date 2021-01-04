@@ -22,7 +22,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     //
     // CONSTANT
     //
-    uint256 public constant COOLDOWN_PERIOD = 120960; // a week, (7 * 24 * 60 * 60) / 5 ~= 120,960 blocks
+    uint256 public constant COOLDOWN_PERIOD = 1 weeks;
 
     //
     // EVENTS
@@ -115,7 +115,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
 
         _burn(msgSender, balance);
 
-        stakerCooldown[msgSender] = _blockNumber().add(COOLDOWN_PERIOD);
+        stakerCooldown[msgSender] = _blockTimestamp().add(COOLDOWN_PERIOD);
         stakerWithdrawPendingBalance[msgSender] = balance;
 
         // Have to update balance first
@@ -131,7 +131,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
         Decimal.decimal memory balance = stakerWithdrawPendingBalance[msgSender];
         requireNonZeroAmount(balance);
         // there won't be a case that cooldown == 0 && balance == 0
-        require(_blockNumber() >= stakerCooldown[msgSender], "Still in cooldown");
+        require(_blockTimestamp() >= stakerCooldown[msgSender], "Still in cooldown");
 
         delete stakerWithdrawPendingBalance[msgSender];
         delete stakerCooldown[msgSender];
@@ -148,11 +148,11 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     // override: ERC20
     //
     function balanceOf(address _owner) public view override returns (uint256) {
-        return _balanceOfAt(_owner, _blockTimestamp()).toUint();
+        return _balanceOfAt(_owner, _blockNumber()).toUint();
     }
 
     function totalSupply() public view override returns (uint256) {
-        return _totalSupplyAt(_blockTimestamp()).toUint();
+        return _totalSupplyAt(_blockNumber()).toUint();
     }
 
     //
@@ -172,12 +172,14 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     function _mint(address account, Decimal.decimal memory amount) internal virtual {
         require(account != address(0), "ERC20: mint to the zero address");
 
-        uint256 blockNumber = _blockNumber();
         Decimal.decimal memory balance = Decimal.decimal(balanceOf(account));
         Decimal.decimal memory newBalance = balance.addD(amount);
+        Decimal.decimal memory currentTotalSupply = Decimal.decimal(totalSupply());
+        Decimal.decimal memory newTotalSupply = currentTotalSupply.addD(amount);
 
+        uint256 blockNumber = _blockNumber();
         addPersonalBalanceCheckPoint(account, blockNumber, newBalance);
-        addTotalSupplyCheckPoint(blockNumber, Decimal.decimal(totalSupply()).addD(amount));
+        addTotalSupplyCheckPoint(blockNumber, newTotalSupply);
 
         emit Transfer(address(0), account, amount.toUint());
     }
@@ -185,11 +187,14 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     function _burn(address account, Decimal.decimal memory amount) internal virtual {
         require(account != address(0), "ERC20: burn from the zero address");
 
-        uint256 blockNumber = _blockNumber();
         Decimal.decimal memory balance = Decimal.decimal(balanceOf(account));
+        Decimal.decimal memory newBalance = balance.subD(amount);
+        Decimal.decimal memory currentTotalSupply = Decimal.decimal(totalSupply());
+        Decimal.decimal memory newTotalSupply = currentTotalSupply.subD(amount);
 
-        addPersonalBalanceCheckPoint(account, blockNumber, balance.subD(amount));
-        addTotalSupplyCheckPoint(blockNumber, Decimal.decimal(totalSupply()).subD(amount));
+        uint256 blockNumber = _blockNumber();
+        addPersonalBalanceCheckPoint(account, blockNumber, newBalance);
+        addTotalSupplyCheckPoint(blockNumber, newTotalSupply);
 
         emit Transfer(account, address(0), amount.toUint());
     }
