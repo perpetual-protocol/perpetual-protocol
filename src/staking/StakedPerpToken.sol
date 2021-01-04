@@ -152,7 +152,6 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
         return _balanceOfAt(_owner, _blockNumber).toUint();
     }
 
-    // TODO remove, replace by IERC20.totalSupply
     function totalSupplyAt(uint256 _blockNumber) external view override returns (uint256) {
         return _totalSupplyAt(_blockNumber).toUint();
     }
@@ -166,10 +165,9 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
         uint256 blockNumber = _blockNumber();
         Decimal.decimal memory balance = Decimal.decimal(balanceOf(account));
         Decimal.decimal memory newBalance = balance.addD(amount);
-        Decimal.decimal memory totalSupply = Decimal.decimal(totalSupply());
 
         addPersonalBalanceCheckPoint(account, blockNumber, newBalance);
-        addTotalSupplyCheckPoint(blockNumber, totalSupply.addD(amount));
+        addTotalSupplyCheckPoint(blockNumber, Decimal.decimal(totalSupply()).addD(amount));
 
         emit Transfer(address(0), account, amount.toUint());
     }
@@ -179,10 +177,9 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
 
         uint256 blockNumber = _blockNumber();
         Decimal.decimal memory balance = Decimal.decimal(balanceOf(account));
-        Decimal.decimal memory totalSupply = Decimal.decimal(totalSupply());
 
         addPersonalBalanceCheckPoint(account, blockNumber, balance.subD(amount));
-        addTotalSupplyCheckPoint(blockNumber, totalSupply.subD(amount));
+        addTotalSupplyCheckPoint(blockNumber, Decimal.decimal(totalSupply()).subD(amount));
 
         emit Transfer(account, address(0), amount.toUint());
     }
