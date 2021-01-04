@@ -3,11 +3,11 @@ pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
 import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
-import { ERC20UpgradeSafe } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20.sol";
 import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import { IERC20WithCheckpointing } from "./aragonone/IERC20WithCheckpointing.sol";
 import { Checkpointing } from "./aragonone/Checkpointing.sol";
 import { CheckpointingHelpers } from "./aragonone/CheckpointingHelpers.sol";
+import { ERC20ViewOnlyUpgradeSafe } from "../utils/ERC20ViewOnlyUpgradeSafe.sol";
 import { Decimal } from "../utils/Decimal.sol";
 import { DecimalERC20 } from "../utils/DecimalERC20.sol";
 import { BlockContext } from "../utils/BlockContext.sol";
@@ -16,7 +16,7 @@ import { IFeeRewardPool } from "../interface/IFeeRewardPool.sol";
 
 contract StakedPerpToken is
     IERC20WithCheckpointing,
-    ERC20UpgradeSafe,
+    ERC20ViewOnlyUpgradeSafe,
     DecimalERC20,
     PerpFiOwnableUpgrade,
     BlockContext
@@ -41,10 +41,10 @@ contract StakedPerpToken is
     //    The below state variables can not change the order    //
     //**********************************************************//
 
-    // Checkpointed total supply of the deposited token
+    // Checkpointing total supply of the deposited token
     Checkpointing.History internal totalSupplyHistory;
 
-    // Checkpointed balances of the deposited token by block number
+    // Checkpointing balances of the deposited token by block number
     mapping(address => Checkpointing.History) internal balancesHistory;
 
     // staker => the time staker can withdraw PERP
@@ -68,8 +68,9 @@ contract StakedPerpToken is
     //
     // FUNCTIONS
     //
-    function initialize(IERC20 _perpToken, IFeeRewardPool _rewardPool) public {
+    function initialize(IERC20 _perpToken, IFeeRewardPool _rewardPool) public initializer {
         require(address(_perpToken) != address(0) && address(_rewardPool) != address(0), "Invalid input.");
+        __ERC20ViewOnly_init("Staked Perpetual", "sPERP");
         __Ownable_init();
         perpToken = _perpToken;
         rewardPool = _rewardPool;
@@ -78,26 +79,38 @@ contract StakedPerpToken is
     function stake(Decimal.decimal calldata _amount) external {
         requireNonZeroAmount(_amount);
         address msgSender = _msgSender();
-        requireNonPendingBalance(msgSender);
+
+        // copy calldata amount to memory
+        Decimal.decimal memory amount = _amount;
+
+        // stake after unstake is allowed, and the states mutated by unstake() will being undo
+        if (stakerWithdrawPendingBalance[msgSender].toUint() != 0) {
+            amount = amount.addD(stakerWithdrawPendingBalance[msgSender]);
+            delete stakerWithdrawPendingBalance[msgSender];
+            delete stakerCooldown[msgSender];
+        }
 
         uint256 blockNumber = _blockNumber();
         Decimal.decimal memory balance = Decimal.decimal(balancesHistory[msgSender].latestValue());
         Decimal.decimal memory totalSupply = Decimal.decimal(totalSupplyHistory.latestValue());
-        Decimal.decimal memory newBalance = balance.addD(_amount);
+        Decimal.decimal memory newBalance = balance.addD(amount);
 
+        // if staking after unstaking, the amount to be transferred does not need to be updated
         _transferFrom(perpToken, msgSender, address(this), _amount);
         rewardPool.notifyStake(msgSender, newBalance);
-        mint(msgSender, _amount);
+        mint(msgSender, amount);
 
         addPersonalBalanceCheckPoint(msgSender, blockNumber, newBalance);
-        addTotalSupplyCheckPoint(blockNumber, totalSupply.addD(_amount));
+        addTotalSupplyCheckPoint(blockNumber, totalSupply.addD(amount));
 
         emit Staked(msgSender, _amount.toUint());
     }
 
+    // this function mutates stakerWithdrawPendingBalance, stakerCooldown, addTotalSupplyCheckPoint,
+    // addPersonalBalanceCheckPoint, burn
     function unstake() external {
         address msgSender = _msgSender();
-        requireNonPendingBalance(msgSender);
+        require(stakerWithdrawPendingBalance[msgSender].toUint() == 0, "Need to withdraw first");
 
         Decimal.decimal memory balance = Decimal.decimal(balancesHistory[msgSender].latestValue());
         requireNonZeroAmount(balance);
@@ -119,6 +132,7 @@ contract StakedPerpToken is
         address msgSender = _msgSender();
         Decimal.decimal memory balance = stakerWithdrawPendingBalance[msgSender];
         requireNonZeroAmount(balance);
+        // there won't be a case that cooldown == 0 && balance == 0
         require(_blockNumber() >= stakerCooldown[msgSender], "Still in cooldown");
 
         delete stakerWithdrawPendingBalance[msgSender];
@@ -137,25 +151,6 @@ contract StakedPerpToken is
 
     function totalSupplyAt(uint256 _blockNumber) external view override returns (uint256) {
         return _totalSupplyAt(_blockNumber).toUint();
-    }
-
-    //
-    // override: ERC20UpgradeSafe, not allowed to transfer/transferFrom/approve in StakedPerpToken
-    //
-    function transfer(address, uint256) public override returns (bool) {
-        revert("transfer() is not supported");
-    }
-
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) public override returns (bool) {
-        revert("transferFrom() is not supported");
-    }
-
-    function approve(address, uint256) public override returns (bool) {
-        revert("approve() is not supported");
     }
 
     //
@@ -192,9 +187,5 @@ contract StakedPerpToken is
 
     function requireNonZeroAmount(Decimal.decimal memory _amount) private pure {
         require(_amount.toUint() > 0, "Amount is 0");
-    }
-
-    function requireNonPendingBalance(address _staker) private view {
-        require(stakerWithdrawPendingBalance[_staker].toUint() == 0, "Need to withdraw first");
     }
 }
