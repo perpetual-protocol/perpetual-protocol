@@ -11,8 +11,9 @@ import { DecimalERC20 } from "../utils/DecimalERC20.sol";
 import { BlockContext } from "../utils/BlockContext.sol";
 import { IFeeRewardPool } from "../interface/IFeeRewardPool.sol";
 import { StakedPerpToken } from "../staking/StakedPerpToken.sol";
+import { IStakeModule } from "../interface/IStakeModule.sol";
 
-contract FeeRewardPoolL1 is IFeeRewardPool, PerpFiOwnableUpgrade, BlockContext, DecimalERC20 {
+contract FeeRewardPoolL1 is IStakeModule, IFeeRewardPool, PerpFiOwnableUpgrade, BlockContext, DecimalERC20 {
     using Decimal for Decimal.decimal;
     using SafeMath for uint256;
 
