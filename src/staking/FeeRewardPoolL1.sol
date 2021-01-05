@@ -86,6 +86,10 @@ contract FeeRewardPoolL1 is IStakeModule, IRewardRecipient, PerpFiOwnableUpgrade
         duration = DURATION;
     }
 
+    // @aduit - renaming suggestion (@phchan9)
+    // It would confuse readers a bit when `notifyStake` is called by `unstake()` in
+    // StakedPerpToken.sol. How about renaming `notifyStake` to `notifyStakeChanged`
+    // to make it more readable?
     function notifyStakeChanged(address _staker) external override onlyStakedPerpToken {
         updateReward(_staker);
     }
@@ -105,6 +109,11 @@ contract FeeRewardPoolL1 is IStakeModule, IRewardRecipient, PerpFiOwnableUpgrade
     function notifyRewardAmount(Decimal.decimal calldata _reward) external override onlyTmpRewardPool {
         require(_reward.toUint() > 0, "invalid input");
 
+        // @audit (@phchan9)
+        // Although updateReward() will update `rewardMultiplier` and `lastUpdateTime`
+        // to latest value, the following code only assign values to `lastUpdateTime` instead of
+        // using its latest value and have no usage of `rewardMultiplier`.
+        // Then, the statement `updateReward(address(0))` could be removed safely.
         updateReward(address(0));
         uint256 timestamp = _blockTimestamp();
         // there is no reward during the interval after the end of the previous period and before new rewards arrive
