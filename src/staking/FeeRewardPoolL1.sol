@@ -86,7 +86,7 @@ contract FeeRewardPoolL1 is IStakeModule, IRewardRecipient, PerpFiOwnableUpgrade
         duration = DURATION;
     }
 
-    function notifyStake(address _staker) external override onlyStakedPerpToken {
+    function notifyStakeChanged(address _staker) external override onlyStakedPerpToken {
         updateReward(_staker);
     }
 
