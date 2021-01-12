@@ -146,7 +146,7 @@ export class ContractPublisher {
                     const perp = this.externalContract.perp!
                     await this.factory
                         .create<PerpRewardVesting>(ContractName.PerpRewardVesting)
-                        .deployUpgradableContract(perp!, this.deployConfig.vestingPeriod)
+                        .deployUpgradableContract(perp!)
                 },
                 // TODO: add rewardPool as the second parameter
                 async (): Promise<void> => {
