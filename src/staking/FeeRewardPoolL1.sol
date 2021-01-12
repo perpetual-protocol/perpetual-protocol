@@ -1,3 +1,4 @@
+// source: https://github.com/k06a/Unipool/blob/master/contracts/Unipool.sol
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
@@ -43,14 +44,14 @@ contract FeeRewardPoolL1 is IStakeModule, IRewardRecipient, PerpFiOwnableUpgrade
     //    The below state variables can not change the order    //
     //**********************************************************//
 
-    mapping(address => Decimal.decimal) public stakerRewardMultiplier;
+    mapping(address => Decimal.decimal) public userRewardPerTokenPaid;
     // the actual amount of rewards a staker can get
     mapping(address => Decimal.decimal) public rewards;
 
     // the multiplier that implies how much rewards a staked token can get
-    Decimal.decimal public rewardMultiplier;
+    Decimal.decimal public rewardPerTokenStored;
     // reward rate per second
-    Decimal.decimal public rewardRateInDuration;
+    Decimal.decimal public rewardRate;
 
     // last reward notified time
     uint256 public lastUpdateTime;
@@ -105,29 +106,29 @@ contract FeeRewardPoolL1 is IStakeModule, IRewardRecipient, PerpFiOwnableUpgrade
         emit RewardWithdrawn(msgSender, reward.toUint());
     }
 
-    // assume _reward = 7, duration = 7 days and rewardRateInDuration = 1
+    // assume _reward = 7, duration = 7 days and rewardRate = 1
     function notifyRewardAmount(Decimal.decimal calldata _reward) external override onlyTmpRewardPool {
         require(_reward.toUint() > 0, "invalid input");
 
         // @audit (@phchan9)
-        // Although updateReward() will update `rewardMultiplier` and `lastUpdateTime`
+        // Although updateReward() will update `rewardPerTokenStored` and `lastUpdateTime`
         // to latest value, the following code only assign values to `lastUpdateTime` instead of
-        // using its latest value and have no usage of `rewardMultiplier`.
+        // using its latest value and have no usage of `rewardPerTokenStored`.
         // Then, the statement `updateReward(address(0))` could be removed safely.
         updateReward(address(0));
         uint256 timestamp = _blockTimestamp();
         // there is no reward during the interval after the end of the previous period and before new rewards arrive
         if (timestamp >= periodFinish) {
-            // rewardRateInDuration = 7/7 = 1
-            rewardRateInDuration = _reward.divScalar(DURATION);
+            // rewardRate = 7/7 = 1
+            rewardRate = _reward.divScalar(DURATION);
         } else {
             // assume 2 days left
             // remainingTime = 2 days
             // leftover = 1 * 2 = 2
-            // rewardRateInDuration = (7 + 2) / 7 ~= 1.28
+            // rewardRate = (7 + 2) / 7 ~= 1.28
             uint256 remainingTime = periodFinish.sub(timestamp);
-            Decimal.decimal memory leftover = rewardRateInDuration.mulScalar(remainingTime);
-            rewardRateInDuration = _reward.addD(leftover).divScalar(DURATION);
+            Decimal.decimal memory leftover = rewardRate.mulScalar(remainingTime);
+            rewardRate = _reward.addD(leftover).divScalar(DURATION);
         }
 
         // new period starts from now
@@ -146,23 +147,22 @@ contract FeeRewardPoolL1 is IStakeModule, IRewardRecipient, PerpFiOwnableUpgrade
     //
 
     function earned(address _staker) public view returns (Decimal.decimal memory) {
-        return
-            balanceOf(_staker).mulD(getRewardMultiplier().subD(stakerRewardMultiplier[_staker])).addD(rewards[_staker]);
+        return balanceOf(_staker).mulD(rewardPerToken().subD(userRewardPerTokenPaid[_staker])).addD(rewards[_staker]);
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
         return Math.min(_blockTimestamp(), periodFinish);
     }
 
-    function getRewardMultiplier() public view returns (Decimal.decimal memory) {
+    function rewardPerToken() public view returns (Decimal.decimal memory) {
         if (totalSupply().toUint() == 0) {
-            return rewardMultiplier;
+            return rewardPerTokenStored;
         }
         // lastUpdateTime = 100 (last time notifyRewardAmount())
         // lastTimeRewardApplicable() = min(timestamp = now, periodFinish = lastUpdateTime.add(DURATION)) = depends
 
         uint256 timeInterval = lastTimeRewardApplicable().sub(lastUpdateTime);
-        return rewardMultiplier.addD(rewardRateInDuration.divD(totalSupply()).mulScalar(timeInterval));
+        return rewardPerTokenStored.addD(rewardRate.divD(totalSupply()).mulScalar(timeInterval));
     }
 
     //
@@ -170,11 +170,11 @@ contract FeeRewardPoolL1 is IStakeModule, IRewardRecipient, PerpFiOwnableUpgrade
     //
 
     function updateReward(address _staker) internal {
-        rewardMultiplier = getRewardMultiplier();
+        rewardPerTokenStored = rewardPerToken();
         lastUpdateTime = lastTimeRewardApplicable();
         if (_staker != address(0)) {
             rewards[_staker] = earned(_staker);
-            stakerRewardMultiplier[_staker] = rewardMultiplier;
+            userRewardPerTokenPaid[_staker] = rewardPerTokenStored;
         }
     }
 
