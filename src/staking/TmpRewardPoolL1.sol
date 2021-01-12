@@ -39,7 +39,7 @@ contract TmpRewardPoolL1 is PerpFiOwnableUpgrade, DecimalERC20 {
         __Ownable_init();
     }
 
-    function transferToFeeRewardPool() external {
+    function transferToFeeRewardPool() public {
         require(getFeeTokenLength() != 0, "feeTokens not set yet");
 
         bool hasFee;
@@ -77,6 +77,11 @@ contract TmpRewardPoolL1 is PerpFiOwnableUpgrade, DecimalERC20 {
         bool isTokenExisted;
         for (uint256 i; i < lengthOfFeeTokens; i++) {
             if (_token == feeTokens[i]) {
+                // transfer the rest token BEFORE removing
+                if (_token.balanceOf(address(this)) > 0) {
+                    transferToFeeRewardPool();
+                }
+
                 IRewardRecipient feeRewardPool = feeRewardPoolMap[feeTokens[i]];
                 if (i != lengthOfFeeTokens - 1) {
                     feeTokens[i] = feeTokens[lengthOfFeeTokens - 1];

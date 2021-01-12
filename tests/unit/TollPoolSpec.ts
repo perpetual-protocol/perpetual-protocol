@@ -202,6 +202,17 @@ describe("tollPoolSpec", () => {
             expect(await tollPool.feeTokens(1)).to.eq(usdt.address)
         })
 
+        it("should transfer to tmpRewardPool via clientBridge before removeFeeToken", async () => {
+            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
+            await tollPool.addFeeToken(usdt.address)
+            await usdt.transfer(tollPool.address, 1)
+
+            // TODO expect tollPool call clientBridge.erc20Transfer(tmpRewardPool)
+            // let's use ethers/waffle when writing new unit test. it's hard to write unit test without mock lib
+            await tollPool.removeFeeToken(usdt.address)
+            expect(await usdt.balanceOf(tollPool.address)).eq(0)
+        })
+
         it("force error, onlyOwner", async () => {
             await tollPool.addFeeToken(usdt.address)
             await expectRevert(

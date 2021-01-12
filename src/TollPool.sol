@@ -64,7 +64,7 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
         emit TokenReceived(address(_token), _amount.toUint());
     }
 
-    function transferToTmpRewardPool() external override {
+    function transferToTmpRewardPool() public override {
         require(address(tmpRewardPoolL1) != address(0), "tmpRewardPoolL1 not yet set");
         require(feeTokens.length != 0, "feeTokens not set yet");
 
@@ -105,6 +105,10 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
         bool isTokenExisted;
         for (uint256 i; i < lengthOfFeeTokens; i++) {
             if (_token == feeTokens[i]) {
+                // transfer the rest token BEFORE removing
+                if (_token.balanceOf(address(this)) > 0) {
+                    transferToTmpRewardPool();
+                }
                 _approve(_token, address(clientBridge), Decimal.zero());
 
                 if (i != lengthOfFeeTokens - 1) {

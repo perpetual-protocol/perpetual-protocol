@@ -217,6 +217,16 @@ describe("TmpRewardPoolL1Spec", () => {
             expect(await tmpRewardPool.feeTokens(0)).to.eq(usdt.address)
         })
 
+        it("should transfer reward to FeeRewardPool before removeFeeRewardPool", async () => {
+            await tmpRewardPool.addFeeRewardPool(usdt.address, feeRewardPoolMock1.address)
+            await usdt.transfer(tmpRewardPool.address, 1)
+
+            // TODO expect tollPool call usdt.transfer(feeRewardPoolMock1), feeRewardPoolMock1.notifyRewardAmount
+            // let's use ethers/waffle when writing new unit test. it's hard to write unit test without mock lib
+            await tmpRewardPool.removeFeeRewardPool(usdt.address)
+            expect(await usdt.balanceOf(tmpRewardPool.address)).eq(0)
+        })
+
         it("force error, onlyOwner", async () => {
             await tmpRewardPool.addFeeRewardPool(usdt.address, feeRewardPoolMock1.address)
             await expectRevert(
