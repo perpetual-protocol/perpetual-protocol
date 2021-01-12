@@ -100,9 +100,9 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
 
     function removeFeeToken(IERC20 _token) external onlyOwner {
         require(address(_token) != address(0), "invalid input");
-        require(isFeeTokenExisted(_token), "token does not exist");
 
         uint256 lengthOfFeeTokens = getFeeTokenLength();
+        bool isTokenExisted;
         for (uint256 i; i < lengthOfFeeTokens; i++) {
             if (_token == feeTokens[i]) {
                 _approve(_token, address(clientBridge), Decimal.zero());
@@ -111,10 +111,12 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
                     feeTokens[i] = feeTokens[lengthOfFeeTokens - 1];
                 }
                 feeTokens.pop();
+                isTokenExisted = true;
                 emit FeeTokenRemoved(address(_token));
                 break;
             }
         }
+        require(isTokenExisted, "token does not exist");
     }
 
     //
