@@ -4,6 +4,7 @@ import { rm } from "shelljs"
 import { DeployMode } from "../scripts/common"
 import { getNpmBin } from "./helper"
 import { deploy } from "./deploy"
+import { getOpenZeppelinConfigFile } from "./path"
 
 export async function devEvm(onDeployed?: () => Promise<boolean>): Promise<void> {
     const cwd = resolve(__dirname, "..")
@@ -15,7 +16,7 @@ export async function devEvm(onDeployed?: () => Promise<boolean>): Promise<void>
     const buidlerBin = resolve(npmBin, "buidler")
 
     // remove dev file json from openzeppelin for initializing it again
-    rm("-f", "./contract/.openzeppelin/dev-*.json")
+    rm("-f", getOpenZeppelinConfigFile("localhost"))
 
     return new Promise((resolve, reject) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
