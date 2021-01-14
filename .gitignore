@@ -8,6 +8,7 @@ doc
 .env
 .serverless
 .openzeppelin/.session
+.openzeppelin/test/*
 publish/settings/test.json
 system-local.json
 
