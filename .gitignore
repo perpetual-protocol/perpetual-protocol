@@ -10,6 +10,7 @@ doc
 .openzeppelin/.session
 .openzeppelin/test/*
 publish/settings/test.json
+metadata/test.json
 system-local.json
 
 /.serverless

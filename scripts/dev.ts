@@ -31,7 +31,7 @@ export async function devEvm(onDeployed?: () => Promise<boolean>): Promise<void>
             if (data.includes("http://127.0.0.1:8545/")) {
                 try {
                     // TODO wrap it with system deployer even though we only need layer 2 for local tests.
-                    //  This is so that we could re-use the scripts for creating system.json
+                    // This is so that we could re-use the scripts for creating metadata/${stage}.json
                     // await asyncExec("buidler run --network localhost scripts/deploy.ts", { cwd, env })
                     await deploy("test", { cwd, env })
 
