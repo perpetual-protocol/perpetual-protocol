@@ -14,6 +14,7 @@ import {
 import { asyncExec } from "../scripts/helper"
 import { ContractInstanceName } from "./ContractName"
 import { SettingsDao } from "./SettingsDao"
+import { getContractMetadataFile } from "../scripts/path"
 
 export interface AccountMetadata {
     privateKey: string
@@ -66,7 +67,7 @@ export class SystemMetadataDao {
 
     async pushRemote(): Promise<void> {
         await asyncExec(
-            `aws s3 cp ./${
+            `aws s3 cp ${
                 this.metadataFileName
             } s3://metadata.perp.fi/${this.settingsDao.getStage()}.json --acl public-read --cache-control 'no-store' --profile perp`,
         )
@@ -79,8 +80,7 @@ export class SystemMetadataDao {
     setMetadata(metadata: SystemMetadata): void {
         this.systemMetadataCache = { ...metadata }
         mkdir("-p", this.buildDir)
-        ShellString(JSON.stringify(this.systemMetadataCache, null, 2)).to(`./${this.metadataFileName}`)
-        ShellString(JSON.stringify(this.systemMetadataCache, null, 2)).to(`${this.buildDir}/${this.metadataFileName}`)
+        ShellString(JSON.stringify(this.systemMetadataCache, null, 2)).to(this.metadataFileName)
     }
 
     clearMetadata(layerType: Layer): void {
@@ -94,7 +94,8 @@ export class SystemMetadataDao {
     }
 
     private get metadataFileName(): string {
-        return this.settingsDao.isLocal() ? "system-local.json" : "system.json"
+        const stage = this.settingsDao.getStage()
+        return getContractMetadataFile(stage)
     }
 
     private get buildDir(): string {
