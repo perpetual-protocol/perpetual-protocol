@@ -5,7 +5,6 @@ async function cleanContract() {
     await asyncExec("buidler clean")
     rm("-rf", "./types")
     rm("-rf", "./flattened")
-    rm("./metadata/*")
     rm("./build/*")
 }
 
