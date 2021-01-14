@@ -9,7 +9,6 @@
     "scripts": {
         "build": "ts-node --files scripts/build.ts",
         "test": "ts-node --files scripts/test.ts",
-        "test:deploy": "ts-node --files scripts/test-deploy.ts",
         "coverage": "cross-env COVERAGE=1 ts-node --files scripts/test.ts",
         "deploy": "ts-node --files scripts/deploy.ts $npm_config_stage",
         "pull-metadata": "ts-node --files scripts/pull-metadata.ts",
