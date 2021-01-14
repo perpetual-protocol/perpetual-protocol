@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { ethers } from "@nomiclabs/buidler"
 import { BuidlerRuntimeEnvironment } from "@nomiclabs/buidler/types"
-import { mkdir, mv, rm, test } from "shelljs"
+import { mkdir, mv, rm, test, cp } from "shelljs"
 import { ContractPublisher } from "../publish/ContractPublisher"
 import { SettingsDao } from "../publish/SettingsDao"
 import { SystemMetadataDao } from "../publish/SystemMetadataDao"
 import { AccountMetadata, Layer, Network, ozNetworkFile, Stage } from "./common"
-import { getOpenZeppelinDir } from "./path"
+import { getContractMetadataFile, getOpenZeppelinDir } from "./path"
 
 export async function deployLayer(
     stage: Stage,
@@ -43,6 +43,7 @@ export async function deployLayer(
     if (0 === version) {
         rm(sourceFile)
         rm(destinationFile)
+        rm(getContractMetadataFile(stage))
     }
 
     // 1. before deploying, copy from source to destination first
@@ -51,12 +52,12 @@ export async function deployLayer(
     if (!test("-e", sourceFile)) {
         mkdir("-p", stagePath)
     } else {
-        mv(sourceFile, destinationFile)
+        cp(sourceFile, destinationFile)
     }
 
     try {
         await publisher.publishContracts(batch)
     } finally {
-        mv(destinationFile, sourceFile)
+        cp(destinationFile, sourceFile)
     }
 }
