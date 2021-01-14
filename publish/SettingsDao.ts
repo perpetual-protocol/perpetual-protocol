@@ -1,6 +1,7 @@
 /* eslint-disable no-console, @typescript-eslint/no-non-null-assertion */
 import { ShellString } from "shelljs"
 import { ExternalContracts, Layer, Network, Stage, SystemDeploySettings } from "../scripts/common"
+import { getSettingsDir } from "../scripts/path"
 import production from "./settings/production.json"
 import staging from "./settings/staging.json"
 
@@ -54,7 +55,7 @@ export class SettingsDao {
 
     // TODO easy to break when rename file or directory
     private get settingsFilePath(): string {
-        return `./publish/settings/${this.stage}.json`
+        return `${getSettingsDir()}/${this.stage}.json`
     }
 
     setVersion(layerType: Layer, n: number): void {
