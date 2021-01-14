@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { ethers } from "@nomiclabs/buidler"
 import { BuidlerRuntimeEnvironment } from "@nomiclabs/buidler/types"
-import { mkdir, mv, test } from "shelljs"
+import { mkdir, mv, rm, test } from "shelljs"
 import { ContractPublisher } from "../publish/ContractPublisher"
 import { SettingsDao } from "../publish/SettingsDao"
 import { SystemMetadataDao } from "../publish/SystemMetadataDao"
@@ -22,6 +22,8 @@ export async function deployLayer(
 
     const settingsDao = new SettingsDao(stage)
     const systemMetadataDao = new SystemMetadataDao(settingsDao)
+    const version = settingsDao.getVersion(layerType)
+
     systemMetadataDao.setAccounts(layerType, accounts)
 
     const signers = await ethers.getSigners()
@@ -36,6 +38,12 @@ export async function deployLayer(
     const stagePath = `${getOpenZeppelinDir()}/${stage}`
     const sourceFile = `${stagePath}/${ozSettingsFileName}.json`
     const destinationFile = `${getOpenZeppelinDir()}/${ozSettingsFileName}.json`
+
+    // first, remove .openzeppelin/${network}.json for the initial deploy
+    if (0 === version) {
+        rm(sourceFile)
+        rm(destinationFile)
+    }
 
     // 1. before deploying, copy from source to destination first
     // 2. during deploying, open zeppelin sdk will update the destination file
