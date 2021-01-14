@@ -30,7 +30,7 @@ export class SystemMetadataDao {
         // must handle edge cases when local metadata file hasn't been created yet
         let localSystemMetadata
         try {
-            localSystemMetadata = require(`../${this.metadataFileName}`)
+            localSystemMetadata = require(this.metadataFile)
         } catch (e) {
             localSystemMetadata = {}
         }
@@ -68,7 +68,7 @@ export class SystemMetadataDao {
     async pushRemote(): Promise<void> {
         await asyncExec(
             `aws s3 cp ${
-                this.metadataFileName
+                this.metadataFile
             } s3://metadata.perp.fi/${this.settingsDao.getStage()}.json --acl public-read --cache-control 'no-store' --profile perp`,
         )
     }
@@ -80,7 +80,7 @@ export class SystemMetadataDao {
     setMetadata(metadata: SystemMetadata): void {
         this.systemMetadataCache = { ...metadata }
         mkdir("-p", this.buildDir)
-        ShellString(JSON.stringify(this.systemMetadataCache, null, 2)).to(this.metadataFileName)
+        ShellString(JSON.stringify(this.systemMetadataCache, null, 2)).to(this.metadataFile)
     }
 
     clearMetadata(layerType: Layer): void {
@@ -93,7 +93,7 @@ export class SystemMetadataDao {
         this.setMetadata(this.systemMetadataCache)
     }
 
-    private get metadataFileName(): string {
+    private get metadataFile(): string {
         const stage = this.settingsDao.getStage()
         return getContractMetadataFile(stage)
     }
