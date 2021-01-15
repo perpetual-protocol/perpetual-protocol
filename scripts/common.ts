@@ -3,6 +3,8 @@ export type Stage = "production" | "staging" | "test"
 export type Network = "homestead" | "rinkeby" | "ropsten" | "kovan" | "xdai" | "sokol" | "localhost"
 export type Layer = "layer1" | "layer2"
 
+// openzeppelin can't recognize xdai network
+// so we use this this to map the network to openzeppelin config json file name
 export const ozNetworkFile: Record<Network, string> = {
     homestead: "mainnet",
     rinkeby: "rinkeby",

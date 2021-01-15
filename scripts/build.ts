@@ -1,4 +1,3 @@
-import { buidlerArguments } from "@nomiclabs/buidler"
 import fs from "fs"
 import { resolve } from "path"
 import { ls } from "shelljs"
@@ -6,7 +5,7 @@ import { ARTIFACTS_DIR } from "../constants"
 import { SettingsDao } from "../publish/SettingsDao"
 import { SystemMetadataDao } from "../publish/SystemMetadataDao"
 import { asyncExec } from "../scripts/helper"
-import { ContractMetadata, Network } from "./common"
+import { ContractMetadata } from "./common"
 
 function printByteCodeSize(contractName: string, artifactPath: string): number {
     const jsonStr = fs.readFileSync(artifactPath, "utf8")
@@ -69,7 +68,7 @@ function generateContractMetadata(): void {
         "layer2", // for now, test stage builds put everything in layer2
         {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            network: buidlerArguments.network! as Network,
+            network: "localhost",
             contracts: map,
             accounts: [],
             externalContracts: {},

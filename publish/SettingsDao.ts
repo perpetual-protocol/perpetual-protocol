@@ -1,6 +1,7 @@
 /* eslint-disable no-console, @typescript-eslint/no-non-null-assertion */
 import { ShellString } from "shelljs"
 import { ExternalContracts, Layer, Network, Stage, SystemDeploySettings } from "../scripts/common"
+import { getSettingsDir } from "../scripts/path"
 import production from "./settings/production.json"
 import staging from "./settings/staging.json"
 
@@ -46,6 +47,10 @@ export class SettingsDao {
                         },
                     }
                 }
+
+                // test stage deploys only to layer2 and always restarts from initial version
+                this.setVersion("layer1", 0)
+                this.setVersion("layer2", 0)
                 break
             default:
                 throw new Error(`Stage not found=${stage}`)
@@ -54,7 +59,7 @@ export class SettingsDao {
 
     // TODO easy to break when rename file or directory
     private get settingsFilePath(): string {
-        return `./publish/settings/${this.stage}.json`
+        return `${getSettingsDir()}/${this.stage}.json`
     }
 
     setVersion(layerType: Layer, n: number): void {
