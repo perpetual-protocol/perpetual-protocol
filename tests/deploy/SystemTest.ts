@@ -382,7 +382,6 @@ describe.skip("SystemTest Spec", () => {
             })
 
             it("has correct config", async () => {
-                // TODO WIP
                 expect(await instance.tradeLimitRatio()).eq(ethers.utils.parseEther("0.9").toString())
                 expect(await instance.fluctuationLimitRatio()).eq(ethers.utils.parseEther("0.012").toString())
                 expect(await instance.tollRatio()).eq(ethers.utils.parseEther("0").toString())
@@ -391,7 +390,7 @@ describe.skip("SystemTest Spec", () => {
                     ethers.utils.parseEther("0.5").toString(),
                 )
                 expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
-                    ethers.utils.parseEther("1000000").toString(),
+                    ethers.utils.parseEther("2000000").toString(),
                 )
             })
         })
