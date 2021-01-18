@@ -115,8 +115,9 @@ export const YFI_USD_AMM: AmmConfig = {
 export const DOT_USD_AMM: AmmConfig = {
     deployArgs: {
         // base * price
+        // exact quote reserve amount will be overriden by the script based on the base reserve and the price upon deployment
         quoteAssetReserve: BigNumber.from(5_250_000).mul(DEFAULT_DIGITS),
-        baseAssetReserve: BigNumber.from(300_000).mul(DEFAULT_DIGITS), // 200 YFI
+        baseAssetReserve: BigNumber.from(300_000).mul(DEFAULT_DIGITS),
         tradeLimitRatio: BigNumber.from(90)
             .mul(DEFAULT_DIGITS)
             .div(100), // 90% trading limit ratio
@@ -133,8 +134,8 @@ export const DOT_USD_AMM: AmmConfig = {
             .div(10000), // 0.1%
     },
     properties: {
-        maxHoldingBaseAsset: DEFAULT_DIGITS.mul(5_000), // 5000 LINK ~= $100,000 USD
-        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(2000000), // $1M
+        maxHoldingBaseAsset: DEFAULT_DIGITS.mul(5_000), // 5000 DOT ~= $100,000 USD
+        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(2000000),
     },
 }
 
