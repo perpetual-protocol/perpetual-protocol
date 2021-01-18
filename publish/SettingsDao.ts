@@ -37,7 +37,7 @@ export class SettingsDao {
                                 network: "localhost",
                                 version: "0",
                                 externalContracts: {
-                                    foundationGovernance: "0x44883405Eb9826448d3E8eCC25889C5941E79d9b",
+                                    foundationGovernance: "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
                                     ambBridgeOnXDai: "0xc38D4991c951fE8BCE1a12bEef2046eF36b0FA4A",
                                     multiTokenMediatorOnXDai: "0xA34c65d76b997a824a5E384471bBa73b0013F5DA",
                                     usdc: "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83",
