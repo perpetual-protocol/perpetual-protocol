@@ -494,6 +494,58 @@ export class ContractPublisher {
                     await YFIUSDC.prepareUpgradeContract()
                 },
             ],
+            // batch 5
+            // deploy the fourth amm instance for new market
+            // set cap, counterParty, set open...etc
+            // transfer owner
+            // transfer proxyAdmin
+            [
+                async (): Promise<void> => {
+                    console.log("deploy LINKUSDC amm...")
+                    const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
+                    const ammContract = this.factory.createAmm(AmmInstanceName.LINKUSDC)
+                    const quoteTokenAddr = this.externalContract.usdc!
+                    await ammContract.deployUpgradableContract(
+                        this.deployConfig.ammConfigMap,
+                        l2PriceFeedContract.address!,
+                        quoteTokenAddr,
+                    )
+                },
+                async (): Promise<void> => {
+                    console.log("set LINK amm Cap...")
+                    const amm = await this.factory.createAmm(AmmInstanceName.LINKUSDC).instance()
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
+                        AmmInstanceName.LINKUSDC
+                        ].properties
+                    if (maxHoldingBaseAsset.gt(0)) {
+                        await (
+                            await amm.setCap(
+                                { d: maxHoldingBaseAsset.toString() },
+                                { d: openInterestNotionalCap.toString() },
+                            )
+                        ).wait(this.confirmations)
+                    }
+                },
+                async (): Promise<void> => {
+                    console.log("LINK amm.setCounterParty...")
+                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const amm = await this.factory.createAmm(AmmInstanceName.LINKUSDC).instance()
+                    await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("opening Amm LINKUSDC...")
+                    const LINKUSDC = await this.factory.createAmm(AmmInstanceName.LINKUSDC).instance()
+                    await (await LINKUSDC.setOpen(true)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring LINKUSDC owner to governance=${gov}...please remember to claim the ownership`,
+                    )
+                    const LINKUSDC = await this.factory.createAmm(AmmInstanceName.LINKUSDC).instance()
+                    await (await LINKUSDC.setOwner(gov)).wait(this.confirmations)
+                },
+            ],
         ],
     }
 
