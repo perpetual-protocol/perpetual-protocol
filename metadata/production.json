@@ -64,6 +64,10 @@
         "YFIUSDC": {
           "name": "Amm",
           "address": "0xd41025350582674144102B74B8248550580bb869"
+        },
+        "DOTUSDC": {
+          "name": "Amm",
+          "address": "0x6de775aaBEEedE8EFdB1a257198d56A3aC18C2FD"
         }
       },
       "accounts": [],
