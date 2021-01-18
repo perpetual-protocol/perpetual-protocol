@@ -2,6 +2,7 @@ export enum AmmInstanceName {
     BTCUSDC = "BTCUSDC",
     ETHUSDC = "ETHUSDC",
     YFIUSDC = "YFIUSDC",
+    LINKUSDC = "LINKUSDC",
 }
 
 export enum ContractName {
