@@ -387,7 +387,7 @@ describe.skip("SystemTest Spec", () => {
                 expect(await instance.tollRatio()).eq(ethers.utils.parseEther("0").toString())
                 expect(await instance.spreadRatio()).eq(ethers.utils.parseEther("0.001").toString())
                 expect((await instance.getMaxHoldingBaseAsset()).d.toString()).eq(
-                    ethers.utils.parseEther("0.5").toString(),
+                    ethers.utils.parseEther("5000").toString(),
                 )
                 expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
                     ethers.utils.parseEther("2000000").toString(),
