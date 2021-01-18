@@ -12,7 +12,7 @@
                 "ambBridgeOnEth": "0xD4075FB57fCf038bFc702c915Ef9592534bED5c1",
                 "multiTokenMediatorOnEth": "0x30F693708fc604A57F1958E3CFa059F902e6d4CB"
             },
-            "version": "5"
+            "version": "8"
         },
         "layer2": {
             "chainId": 100,
@@ -26,7 +26,7 @@
                 "tether": "0xe0B887D54e71329318a036CF50f30Dbe4444563c",
                 "usdc": "0xe0B887D54e71329318a036CF50f30Dbe4444563c"
             },
-            "version": "18"
+            "version": "40"
         }
     }
 }
