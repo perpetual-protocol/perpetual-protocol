@@ -37,9 +37,6 @@ interface IAmm {
         bool _skipFluctuationCheck
     ) external returns (Decimal.decimal memory);
 
-    function migrateLiquidity(Decimal.decimal calldata _liquidityMultiplier, Decimal.decimal calldata _priceLimitRatio)
-        external;
-
     function shutdown() external;
 
     function settleFunding() external returns (SignedDecimal.signedDecimal memory);
