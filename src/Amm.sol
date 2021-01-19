@@ -85,6 +85,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     //    The below state variables can not change the order    //
     //**********************************************************//
 
+    // DEPRECATED
     // update during every swap and calculate total amm pnl per funding period
     SignedDecimal.signedDecimal private baseAssetDeltaThisFundingPeriod;
 
@@ -274,9 +275,6 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         nextFundingTime = nextFundingTimeOnHourStart > minNextValidFundingTime
             ? nextFundingTimeOnHourStart
             : minNextValidFundingTime;
-
-        // reset funding related states
-        baseAssetDeltaThisFundingPeriod = SignedDecimal.zero();
 
         return premiumFraction;
     }
@@ -588,10 +586,6 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         return settlementPrice;
     }
 
-    function getBaseAssetDeltaThisFundingPeriod() external view override returns (SignedDecimal.signedDecimal memory) {
-        return baseAssetDeltaThisFundingPeriod;
-    }
-
     function getMaxHoldingBaseAsset() external view override returns (Decimal.decimal memory) {
         return maxHoldingBaseAsset;
     }
@@ -793,13 +787,11 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         if (_dir == Dir.ADD_TO_AMM) {
             quoteAssetReserve = quoteAssetReserve.addD(_quoteAssetAmount);
             baseAssetReserve = baseAssetReserve.subD(_baseAssetAmount);
-            baseAssetDeltaThisFundingPeriod = baseAssetDeltaThisFundingPeriod.subD(_baseAssetAmount);
             totalPositionSize = totalPositionSize.addD(_baseAssetAmount);
             cumulativeNotional = cumulativeNotional.addD(_quoteAssetAmount);
         } else {
             quoteAssetReserve = quoteAssetReserve.subD(_quoteAssetAmount);
             baseAssetReserve = baseAssetReserve.addD(_baseAssetAmount);
-            baseAssetDeltaThisFundingPeriod = baseAssetDeltaThisFundingPeriod.addD(_baseAssetAmount);
             totalPositionSize = totalPositionSize.subD(_baseAssetAmount);
             cumulativeNotional = cumulativeNotional.subD(_quoteAssetAmount);
         }
