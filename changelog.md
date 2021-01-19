@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- `Amm::migrateLiquidity`
+
 ## [1.0.4] - 2020-12-10
 ### Added
 - add `fundingPayment` to `ClearingHouse::PositionChanged` and `ClearingHouse::MarginChanged` #95
