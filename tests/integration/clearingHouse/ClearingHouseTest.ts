@@ -266,7 +266,7 @@ describe("ClearingHouse Test", () => {
         })
     })
 
-    describe("payFunding", () => {
+    describe("payFunding: when alice.size = 2 & bob.size = -1", () => {
         beforeEach(async () => {
             // given alice takes 2x long position (37.5Q) with 300 margin
             await approve(alice, clearingHouse.address, 600)
@@ -313,6 +313,25 @@ describe("ClearingHouse Test", () => {
             expect(clearingHouseQuoteTokenBalance).to.eq(toFullDigit(1501.5, +(await quoteToken.decimals())))
             const insuranceFundBaseToken = await quoteToken.balanceOf(insuranceFund.address)
             expect(insuranceFundBaseToken).to.eq(toFullDigit(4998.5, +(await quoteToken.decimals())))
+        })
+
+        it("will keep generating the same loss for amm when funding rate is positive and amm hold more long position", async () => {
+            // given the underlying twap price is 1.59, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(1.59))
+
+            // when the new fundingRate is 1% which means underlyingPrice < snapshotPrice
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+
+            // then fundingPayment will generate 1.5 * 2 loss and clearingHouse will withdraw in advanced from insuranceFund
+            // clearingHouse: 1500 + 3
+            // insuranceFund: 5000 - 3
+            const clearingHouseQuoteTokenBalance = await quoteToken.balanceOf(clearingHouse.address)
+            expect(clearingHouseQuoteTokenBalance).to.eq(toFullDigit(1503, +(await quoteToken.decimals())))
+            const insuranceFundBaseToken = await quoteToken.balanceOf(insuranceFund.address)
+            expect(insuranceFundBaseToken).to.eq(toFullDigit(4997, +(await quoteToken.decimals())))
         })
 
         it("funding rate is 1%, 1% then -1%", async () => {
