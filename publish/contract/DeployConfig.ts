@@ -11,6 +11,7 @@ export enum PriceFeedKey {
     BTC = "BTC",
     ETH = "ETH",
     YFI = "YFI",
+    DOT = "DOT",
 }
 
 // amm
@@ -112,6 +113,33 @@ export const YFI_USD_AMM: AmmConfig = {
     },
 }
 
+export const DOT_USD_AMM: AmmConfig = {
+    deployArgs: {
+        // base * price
+        // exact quote reserve amount will be overriden by the script based on the base reserve and the price upon deployment
+        quoteAssetReserve: BigNumber.from(5_250_000).mul(DEFAULT_DIGITS),
+        baseAssetReserve: BigNumber.from(300_000).mul(DEFAULT_DIGITS),
+        tradeLimitRatio: BigNumber.from(90)
+            .mul(DEFAULT_DIGITS)
+            .div(100), // 90% trading limit ratio
+        fundingPeriod: BigNumber.from(3600), // 1 hour
+        fluctuation: BigNumber.from(12)
+            .mul(DEFAULT_DIGITS)
+            .div(1000), // 1.2%
+        priceFeedKey: PriceFeedKey.DOT,
+        tollRatio: BigNumber.from(0)
+            .mul(DEFAULT_DIGITS)
+            .div(10000), // 0.0%
+        spreadRatio: BigNumber.from(10)
+            .mul(DEFAULT_DIGITS)
+            .div(10000), // 0.1%
+    },
+    properties: {
+        maxHoldingBaseAsset: DEFAULT_DIGITS.mul(5_000), // 5000 DOT ~= $100,000 USD
+        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(2000000),
+    },
+}
+
 export class DeployConfig {
     // deploy
     readonly confirmations: number
@@ -135,6 +163,7 @@ export class DeployConfig {
         [AmmInstanceName.BTCUSDC]: BTC_USD_AMM,
         [AmmInstanceName.ETHUSDC]: ETH_USD_AMM,
         [AmmInstanceName.YFIUSDC]: YFI_USD_AMM,
+        [AmmInstanceName.DOTUSDC]: DOT_USD_AMM,
     }
 
     // KeeperReward
@@ -152,6 +181,7 @@ export class DeployConfig {
                     [PriceFeedKey.BTC]: "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
                     [PriceFeedKey.ETH]: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
                     [PriceFeedKey.YFI]: "0xA027702dbb89fbd58938e4324ac03B58d812b0E1",
+                    [PriceFeedKey.DOT]: "0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734",
                 }
                 break
             case "staging":
@@ -160,6 +190,7 @@ export class DeployConfig {
                     [PriceFeedKey.BTC]: "0xECe365B379E1dD183B20fc5f022230C044d51404",
                     [PriceFeedKey.ETH]: "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
                     [PriceFeedKey.YFI]: "0xA027702dbb89fbd58938e4324ac03B58d812b0E1", // WARNING: there is no YFI/USD PriceFeed at Rinkeby
+                    [PriceFeedKey.DOT]: "0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734", // WARNING: there is no YFI/USD PriceFeed at Rinkeby
                 }
                 break
             case "test":
@@ -169,6 +200,7 @@ export class DeployConfig {
                     [PriceFeedKey.BTC]: "0xECe365B379E1dD183B20fc5f022230C044d51404",
                     [PriceFeedKey.ETH]: "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
                     [PriceFeedKey.YFI]: "0xA027702dbb89fbd58938e4324ac03B58d812b0E1",
+                    [PriceFeedKey.DOT]: "0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734",
                 }
                 break
             default:

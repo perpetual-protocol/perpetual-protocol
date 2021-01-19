@@ -545,6 +545,58 @@ export class ContractPublisher {
                 },
             ],
             // batch 5
+            // deploy the fourth amm instance for new market
+            // set cap, counterParty, set open...etc
+            // transfer owner
+            // transfer proxyAdmin
+            [
+                async (): Promise<void> => {
+                    console.log("deploy DOTUSDC amm...")
+                    const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
+                    const ammContract = this.factory.createAmm(AmmInstanceName.DOTUSDC)
+                    const quoteTokenAddr = this.externalContract.usdc!
+                    await ammContract.deployUpgradableContract(
+                        this.deployConfig.ammConfigMap,
+                        l2PriceFeedContract.address!,
+                        quoteTokenAddr,
+                    )
+                },
+                async (): Promise<void> => {
+                    console.log("set DOT amm Cap...")
+                    const amm = await this.factory.createAmm(AmmInstanceName.DOTUSDC).instance()
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
+                        AmmInstanceName.DOTUSDC
+                    ].properties
+                    if (maxHoldingBaseAsset.gt(0)) {
+                        await (
+                            await amm.setCap(
+                                { d: maxHoldingBaseAsset.toString() },
+                                { d: openInterestNotionalCap.toString() },
+                            )
+                        ).wait(this.confirmations)
+                    }
+                },
+                async (): Promise<void> => {
+                    console.log("DOT amm.setCounterParty...")
+                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const amm = await this.factory.createAmm(AmmInstanceName.DOTUSDC).instance()
+                    await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("opening Amm DOTUSDC...")
+                    const DOTUSDC = await this.factory.createAmm(AmmInstanceName.DOTUSDC).instance()
+                    await (await DOTUSDC.setOpen(true)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring DOTUSDC owner to governance=${gov}...please remember to claim the ownership`,
+                    )
+                    const DOTUSDC = await this.factory.createAmm(AmmInstanceName.DOTUSDC).instance()
+                    await (await DOTUSDC.setOwner(gov)).wait(this.confirmations)
+                },
+            ],
+            // batch 6
             [
                 async (): Promise<void> => {
                     console.log("deploying KeeperRewardL2 on layer 2...")
@@ -634,7 +686,7 @@ export class ContractPublisher {
 
         const batchStartVer = taskBatches.slice(0, batch).flat().length
         const batchEndVer = batchStartVer + tasks.length
-        console.log(`batchStartVer: ${batchStartVer}, batchEndVer: ${batchEndVer}`)
+        console.log(`layer:${this.layerType}, batchStartVer: ${batchStartVer}, batchEndVer: ${batchEndVer}`)
 
         const ver = this.settingsDao.getVersion(this.layerType)
         if (ver < batchStartVer) {

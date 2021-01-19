@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { ExecOptions } from "child_process"
-import { rm } from "shelljs"
 import { SettingsDao } from "../publish/SettingsDao"
-import { ozNetworkFile, Stage, TASK_DEPLOY_LAYER } from "./common"
+import { Stage, TASK_DEPLOY_LAYER } from "./common"
 import { asyncExec } from "./helper"
 
 export async function deploy(stage: Stage, options?: ExecOptions): Promise<void> {
@@ -14,14 +13,6 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
     if ("test" === stage) {
         settings.setVersion("layer1", 0)
         settings.setVersion("layer2", 0)
-    }
-
-    // remove .openzeppelin/${network}.json for the initial deploy
-    if (0 === settings.getVersion("layer1")) {
-        rm(`.openzeppelin/${ozNetworkFile[layer1Network]}.json`)
-    }
-    if (0 === settings.getVersion("layer2")) {
-        rm(`.openzeppelin/${ozNetworkFile[layer2Network]}.json`)
     }
 
     // #1
@@ -42,16 +33,19 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
         options,
     )
 
-    // ADD NEW MARKET
+    // ADD NEW MARKET YFI
     await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 3`, options)
     await asyncExec(
         `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 4`,
         options,
     )
 
+    // ADD NEW MARKET DOT
+    await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 5`, options)
+
     // V2
     await asyncExec(`buidler --network ${layer1Network} ${TASK_DEPLOY_LAYER} ${stage} layer1 2`, options)
-    await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 5`, options)
+    await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 6`, options)
 }
 
 /* eslint-disable no-console */
