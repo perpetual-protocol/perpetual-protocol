@@ -1762,8 +1762,8 @@ describe("ClearingHouse Test", () => {
             expect(newBaseReserve).eq("166666666666666666668")
             expect(newQuoteReserve).eq(toFullDigit(2400))
 
-            const baseAssetDelta = await amm.getBaseAssetDeltaThisFundingPeriod()
-            expect(baseAssetDelta.d).eq("-15151515151515151515")
+            // const baseAssetDelta = await amm.getBaseAssetDeltaThisFundingPeriod()
+            // expect(baseAssetDelta.d).eq("-15151515151515151515")
 
             const posAlice = await clearingHouse.getPosition(amm.address, alice)
             expect(posAlice.size).to.eq("8620689655172413793")
@@ -1801,8 +1801,8 @@ describe("ClearingHouse Test", () => {
             const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
             expect(liquidityChangedSnapshot.totalPositionSize).eq("-50420168067226890757")
 
-            const baseAssetDelta = await amm.getBaseAssetDeltaThisFundingPeriod()
-            expect(baseAssetDelta.d).eq("50420168067226890757")
+            // const baseAssetDelta = await amm.getBaseAssetDeltaThisFundingPeriod()
+            // expect(baseAssetDelta.d).eq("50420168067226890757")
 
             const posAlice = await clearingHouse.getPosition(amm.address, alice)
             expect(posAlice.size).to.eq("-11560693641618497111")
@@ -1881,8 +1881,8 @@ describe("ClearingHouse Test", () => {
             const pos = await clearingHouse.getPosition(amm.address, alice)
             expect(pos.size).to.eq("16563146997929606625")
 
-            const baseAssetDelta = await amm.getBaseAssetDeltaThisFundingPeriod()
-            expect(baseAssetDelta.d).eq("-16563146997929606625")
+            // const baseAssetDelta = await amm.getBaseAssetDeltaThisFundingPeriod()
+            // expect(baseAssetDelta.d).eq("-16563146997929606625")
         })
 
         it("add liquidity twice", async () => {
@@ -1947,8 +1947,8 @@ describe("ClearingHouse Test", () => {
             expect(posAlice.size).to.eq(toFullDigit(20))
 
             // the value of deltaBaseAsset should be equal to alice's position size
-            const deltaBaseAsset = await amm.getBaseAssetDeltaThisFundingPeriod()
-            expect(new BigNumber(deltaBaseAsset.d).abs()).to.eq("20000000000000000001")
+            // const deltaBaseAsset = await amm.getBaseAssetDeltaThisFundingPeriod()
+            // expect(new BigNumber(deltaBaseAsset.d).abs()).to.eq("20000000000000000001")
         })
 
         it("still able to migrate liquidity without any position opened", async () => {
@@ -2054,8 +2054,8 @@ describe("ClearingHouse Test", () => {
             const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
             expect(liquidityChangedSnapshot.totalPositionSize).eq("20833333333333333333")
 
-            const deltaBaseAsset = await amm.getBaseAssetDeltaThisFundingPeriod()
-            expect(await amm.getBaseAssetDeltaThisFundingPeriod()).to.eq("-20833333333333333333")
+            // const deltaBaseAsset = await amm.getBaseAssetDeltaThisFundingPeriod()
+            // expect(await amm.getBaseAssetDeltaThisFundingPeriod()).to.eq("-20833333333333333333")
 
             const posAlice = await clearingHouse.getPosition(amm.address, alice)
             expect(posAlice.size).to.eq("10204081632653061225")
@@ -2150,9 +2150,9 @@ describe("ClearingHouse Test", () => {
             const pos = await clearingHouse.getPosition(amm.address, alice)
             expect(pos.size).to.eq("4429678848283499446")
 
-            const allPos = new BigNumber(pos.size.d)
-            const deltaBaseAsset = await amm.getBaseAssetDeltaThisFundingPeriod()
-            expect(new BigNumber(deltaBaseAsset.d).abs()).to.eq(allPos.abs())
+            // const allPos = new BigNumber(pos.size.d)
+            // const deltaBaseAsset = await amm.getBaseAssetDeltaThisFundingPeriod()
+            // expect(new BigNumber(deltaBaseAsset.d).abs()).to.eq(allPos.abs())
         })
 
         it("add liquidity and open a larger reverse position", async () => {
@@ -2176,9 +2176,9 @@ describe("ClearingHouse Test", () => {
             expect(pos.size).to.eq("-4645760743321718932")
 
             // TOOO check the number
-            const allPos = new BigNumber(pos.size.d)
-            const deltaBaseAsset = await amm.getBaseAssetDeltaThisFundingPeriod()
-            expect(new BigNumber(deltaBaseAsset.d).abs()).to.eq(allPos.abs())
+            // const allPos = new BigNumber(pos.size.d)
+            // const deltaBaseAsset = await amm.getBaseAssetDeltaThisFundingPeriod()
+            // expect(new BigNumber(deltaBaseAsset.d).abs()).to.eq(allPos.abs())
         })
 
         it("add liquidity and liquidate", async () => {
@@ -2470,7 +2470,7 @@ describe("ClearingHouse Test", () => {
         })
 
         // AMM quote : base = 1000 : 100
-        describe("limitation of reducing liquidity", () => {
+        describe.skip("limitation of reducing liquidity", () => {
             it("(short) can reduce liquidity when above the limit", async () => {
                 await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(200), toDecimal(1), toDecimal(0), {
                     from: alice,

@@ -60,8 +60,8 @@ describe("Amm migrate liquidity spec", () => {
         expect(reserve[1]).eq(toFullDigit(160))
 
         // 20 * 88.89% = 17.778
-        const getBaseAssetDeltaThisFundingPeriod = await amm.getBaseAssetDeltaThisFundingPeriod()
-        expect(getBaseAssetDeltaThisFundingPeriod).eq("-17777777777777777778")
+        // const getBaseAssetDeltaThisFundingPeriod = await amm.getBaseAssetDeltaThisFundingPeriod()
+        // expect(getBaseAssetDeltaThisFundingPeriod).eq("-17777777777777777778")
 
         const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
         expect(liquidityChangedSnapshot.quoteAssetReserve).eq(toFullDigit(2500))
@@ -79,8 +79,8 @@ describe("Amm migrate liquidity spec", () => {
         expect(reserve[1]).eq(toFullDigit(40))
 
         // 20 * 133.33% = 26.66
-        const getBaseAssetDeltaThisFundingPeriod = await amm.getBaseAssetDeltaThisFundingPeriod()
-        expect(getBaseAssetDeltaThisFundingPeriod).eq("-26666666666666666667")
+        // const getBaseAssetDeltaThisFundingPeriod = await amm.getBaseAssetDeltaThisFundingPeriod()
+        // expect(getBaseAssetDeltaThisFundingPeriod).eq("-26666666666666666667")
 
         const liquidityChangedSnapshot = await amm.getLiquidityChangedSnapshots(1)
         expect(liquidityChangedSnapshot.quoteAssetReserve).eq(toFullDigit(625))
