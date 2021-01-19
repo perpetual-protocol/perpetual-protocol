@@ -51,6 +51,7 @@ describe.skip("SystemTest Spec", () => {
     const ETHUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.ETHUSDC)
     const BTCUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.BTCUSDC)
     const YFIUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.YFIUSDC)
+    const DOTUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.DOTUSDC)
     const ambBridgeL2 = settingsDao.getExternalContracts("layer2").ambBridgeOnXDai
     const multiTokenMediatorL2 = settingsDao.getExternalContracts("layer2").multiTokenMediatorOnXDai
     const usdc = settingsDao.getExternalContracts("layer2").usdc
@@ -168,6 +169,10 @@ describe.skip("SystemTest Spec", () => {
 
             it("has YFIUSDC", async () => {
                 expect(await instance.isExistedAmm(YFIUSDC.address))
+            })
+
+            it("has DOTUSDC", async () => {
+                expect(await instance.isExistedAmm(DOTUSDC.address))
             })
         })
 
@@ -350,6 +355,42 @@ describe.skip("SystemTest Spec", () => {
                 )
                 expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
                     ethers.utils.parseEther("1000000").toString(),
+                )
+            })
+        })
+
+        describe("DOTUSDC", async () => {
+            let instance: Amm
+
+            beforeEach(async () => {
+                instance = new ethers.Contract(DOTUSDC.address, AmmArtifact.abi, l2Provider) as Amm
+            })
+
+            // private
+            it.skip("has ClearingHouse", async () => {})
+
+            it("has quoteAsset", async () => {
+                expect(await instance.quoteAsset()).to.eq(usdc)
+            })
+
+            it("has L2PriceFeed", async () => {
+                expect(await instance.priceFeed()).to.eq(l2PriceFeed.address)
+            })
+
+            it("own by gov", async () => {
+                expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+            })
+
+            it("has correct config", async () => {
+                expect(await instance.tradeLimitRatio()).eq(ethers.utils.parseEther("0.9").toString())
+                expect(await instance.fluctuationLimitRatio()).eq(ethers.utils.parseEther("0.012").toString())
+                expect(await instance.tollRatio()).eq(ethers.utils.parseEther("0").toString())
+                expect(await instance.spreadRatio()).eq(ethers.utils.parseEther("0.001").toString())
+                expect((await instance.getMaxHoldingBaseAsset()).d.toString()).eq(
+                    ethers.utils.parseEther("5000").toString(),
+                )
+                expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
+                    ethers.utils.parseEther("2000000").toString(),
                 )
             })
         })

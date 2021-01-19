@@ -4,6 +4,7 @@ import { rm } from "shelljs"
 import { DeployMode } from "../scripts/common"
 import { getNpmBin } from "./helper"
 import { deploy } from "./deploy"
+import { getOpenZeppelinConfigFile } from "./path"
 
 export async function devEvm(onDeployed?: () => Promise<boolean>): Promise<void> {
     const cwd = resolve(__dirname, "..")
@@ -15,7 +16,7 @@ export async function devEvm(onDeployed?: () => Promise<boolean>): Promise<void>
     const buidlerBin = resolve(npmBin, "buidler")
 
     // remove dev file json from openzeppelin for initializing it again
-    rm("-f", "./contract/.openzeppelin/dev-*.json")
+    rm("-f", getOpenZeppelinConfigFile("localhost"))
 
     return new Promise((resolve, reject) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,7 +31,7 @@ export async function devEvm(onDeployed?: () => Promise<boolean>): Promise<void>
             if (data.includes("http://127.0.0.1:8545/")) {
                 try {
                     // TODO wrap it with system deployer even though we only need layer 2 for local tests.
-                    //  This is so that we could re-use the scripts for creating system.json
+                    // This is so that we could re-use the scripts for creating metadata/${stage}.json
                     // await asyncExec("buidler run --network localhost scripts/deploy.ts", { cwd, env })
                     await deploy("test", { cwd, env })
 
