@@ -114,4 +114,6 @@ interface IAmm {
     function getOpenInterestNotionalCap() external view returns (Decimal.decimal memory);
 
     function getLiquidityChangedSnapshots(uint256 i) external view returns (LiquidityChangedSnapshot memory);
+
+    function getBaseAssetDelta() external view returns (SignedDecimal.signedDecimal memory);
 }
