@@ -2,17 +2,17 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { BlockContext } from "./utils/BlockContext.sol";
-import { IPriceFeed } from "./interface/IPriceFeed.sol";
+import { BlockContext } from "../utils/BlockContext.sol";
+import { IPriceFeed } from "../interface/IPriceFeed.sol";
 import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
-import { Decimal } from "./utils/Decimal.sol";
-import { SignedDecimal } from "./utils/SignedDecimal.sol";
-import { MixedDecimal } from "./utils/MixedDecimal.sol";
-import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
-import { IAmm } from "./interface/IAmm.sol";
+import { Decimal } from "../utils/Decimal.sol";
+import { SignedDecimal } from "../utils/SignedDecimal.sol";
+import { MixedDecimal } from "../utils/MixedDecimal.sol";
+import { PerpFiOwnableUpgrade } from "../utils/PerpFiOwnableUpgrade.sol";
+import { IAmmV1 } from "./IAmmV1.sol";
 
-contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
+contract AmmV1 is IAmmV1, PerpFiOwnableUpgrade, BlockContext {
     using SafeMath for uint256;
     using Decimal for Decimal.decimal;
     using SignedDecimal for SignedDecimal.signedDecimal;
@@ -279,6 +279,57 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         baseAssetDeltaThisFundingPeriod = SignedDecimal.zero();
 
         return premiumFraction;
+    }
+
+    function migrateLiquidity(
+        Decimal.decimal calldata _liquidityMultiplier,
+        Decimal.decimal calldata _fluctuationLimitRatio
+    ) external override onlyOwner {
+        require(_liquidityMultiplier.toUint() != Decimal.one().toUint(), "multiplier can't be 1");
+
+        // check liquidity multiplier limit, have lower bound if position size is positive for now.
+        checkLiquidityMultiplierLimit(totalPositionSize, _liquidityMultiplier);
+        checkLiquidityMultiplierLimit(baseAssetDeltaThisFundingPeriod, _liquidityMultiplier);
+
+        // #53 fix sandwich attack during liquidity migration
+        checkFluctuationLimit(_fluctuationLimitRatio);
+
+        // get current reserve values
+        Decimal.decimal memory quoteAssetBeforeAddingLiquidity = quoteAssetReserve;
+        Decimal.decimal memory baseAssetBeforeAddingLiquidity = baseAssetReserve;
+        SignedDecimal.signedDecimal memory totalPositionSizeBefore = totalPositionSize;
+
+        // migrate liquidity
+        quoteAssetReserve = quoteAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
+        baseAssetReserve = baseAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
+
+        // MUST be called after liquidity migrated
+        // baseAssetDeltaThisFundingPeriod is total position size(of a funding period) owned by Amm
+        // That's why need to mulScalar(-1) when calculating the migrated size.
+        baseAssetDeltaThisFundingPeriod = calcBaseAssetAfterLiquidityMigration(
+            baseAssetDeltaThisFundingPeriod.mulScalar(-1),
+            quoteAssetBeforeAddingLiquidity,
+            baseAssetBeforeAddingLiquidity
+        )
+            .mulScalar(-1);
+
+        totalPositionSize = calcBaseAssetAfterLiquidityMigration(
+            totalPositionSizeBefore,
+            quoteAssetBeforeAddingLiquidity,
+            baseAssetBeforeAddingLiquidity
+        );
+
+        // update snapshot
+        liquidityChangedSnapshots.push(
+            LiquidityChangedSnapshot({
+                cumulativeNotional: cumulativeNotional,
+                quoteAssetReserve: quoteAssetReserve,
+                baseAssetReserve: baseAssetReserve,
+                totalPositionSize: totalPositionSize
+            })
+        );
+
+        emit LiquidityChanged(quoteAssetReserve.toUint(), baseAssetReserve.toUint(), cumulativeNotional.toInt());
     }
 
     function calcBaseAssetAfterLiquidityMigration(

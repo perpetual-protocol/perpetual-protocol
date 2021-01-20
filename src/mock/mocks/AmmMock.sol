@@ -92,13 +92,4 @@ contract AmmMock {
     function mockSetQuoteAssetReserve(Decimal.decimal memory _quoteAssetReserve) public {
         quoteAssetReserve = _quoteAssetReserve;
     }
-
-    function migrateLiquidity(
-        Decimal.decimal memory newQuoteReserve,
-        Decimal.decimal memory newBaseReserve,
-        Decimal.decimal memory _expansionRatio
-    ) public {
-        quoteAssetReserve = newQuoteReserve;
-        baseAssetReserve = newBaseReserve;
-    }
 }

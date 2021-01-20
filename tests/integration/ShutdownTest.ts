@@ -2,7 +2,6 @@ import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { default as BN } from "bn.js"
 import { use } from "chai"
-import { utils } from "ethers"
 import {
     AmmFakeInstance,
     ClearingHouseFakeInstance,
@@ -16,9 +15,9 @@ import {
     SupplyScheduleFakeInstance,
 } from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
-import { deployAmm, deployErc20Fake, Dir, Side } from "../helper/contract"
+import { deployAmm, deployErc20Fake, Side } from "../helper/contract"
 import { fullDeploy } from "../helper/deploy"
-import { fromDecimal, ONE_DAY, toDecimal, toFullDigit } from "../helper/number"
+import { ONE_DAY, toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 
@@ -439,146 +438,6 @@ describe("Protocol shutdown test", () => {
                     from: clearingHouse.address,
                     to: carol,
                     value: "100000000",
-                })
-            })
-
-            it("get trader's collateral back after migrate liquidity then shutdown amm and settlement price is 0", async () => {
-                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(100), toDecimal(1), toDecimal(0), {
-                    from: alice,
-                })
-                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(100), toDecimal(2), toDecimal(0), {
-                    from: bob,
-                })
-                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(100), toDecimal(1), toDecimal(0), {
-                    from: carol,
-                })
-
-                // after migrate liquidity, total position = 15.151515
-                await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
-                const totalPositionSize = await amm.totalPositionSize()
-                const dir = totalPositionSize.isNeg() ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM
-                const totalPositionNotional = await amm.getOutputPrice(dir, { d: totalPositionSize.toString() })
-
-                const chadAmount = utils.formatEther(totalPositionNotional.toString())
-                await transfer(admin, chad, chadAmount)
-                await approve(chad, clearingHouse.address, chadAmount)
-
-                // chad openPosition to make totalPosition = 0
-                await clearingHouse.openPosition(
-                    amm.address,
-                    Side.SELL,
-                    totalPositionNotional,
-                    toDecimal(1),
-                    toDecimal(0),
-                    {
-                        from: chad,
-                    },
-                )
-
-                const receipt = await amm.shutdown()
-                await expectEvent.inTransaction(receipt.tx, amm, "Shutdown", {
-                    settlementPrice: "0",
-                })
-
-                const aliceReceipt = await clearingHouse.settlePosition(amm.address, { from: alice })
-                await expectEvent.inTransaction(aliceReceipt.tx, quoteToken, "Transfer", {
-                    from: clearingHouse.address,
-                    to: alice,
-                    value: toFullDigit(100, +(await quoteToken.decimals())),
-                })
-
-                const bobReceipt = await clearingHouse.settlePosition(amm.address, { from: bob })
-                await expectEvent.inTransaction(bobReceipt.tx, quoteToken, "Transfer", {
-                    from: clearingHouse.address,
-                    to: bob,
-                    value: toFullDigit(100, +(await quoteToken.decimals())),
-                })
-
-                const carolReceipt = await clearingHouse.settlePosition(amm.address, { from: carol })
-                await expectEvent.inTransaction(carolReceipt.tx, quoteToken, "Transfer", {
-                    from: clearingHouse.address,
-                    to: carol,
-                    value: toFullDigit(100, +(await quoteToken.decimals())),
-                })
-
-                const chadReceipt = await clearingHouse.settlePosition(amm.address, { from: chad })
-                await expectEvent.inTransaction(chadReceipt.tx, quoteToken, "Transfer", {
-                    from: clearingHouse.address,
-                    to: chad,
-                    value: fromDecimal(totalPositionNotional, +(await quoteToken.decimals())),
-                })
-
-                expect(await quoteToken.balanceOf(clearingHouse.address)).eq(0)
-            })
-
-            it("get trader's collateral back after migrate liquidity ", async () => {
-                await transfer(admin, chad, 100)
-                await approve(chad, clearingHouse.address, 100)
-
-                // position size: 0.99
-                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(100), toDecimal(1), toDecimal(0), {
-                    from: alice,
-                })
-                // position size: 1.92
-                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(100), toDecimal(2), toDecimal(0), {
-                    from: bob,
-                })
-                // position size: -0.95
-                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(100), toDecimal(1), toDecimal(0), {
-                    from: carol,
-                })
-                // total position size 1.96
-
-                // Amm reserve 10200 : 98.04 --> 20400 : 196.08
-                // migrated position size = 1.94
-                await amm.migrateLiquidity(toDecimal(2), toDecimal(0))
-
-                // get -2.93 positions
-                // Amm: 20100 : 199
-                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(100), toDecimal(3), toDecimal(0), {
-                    from: chad,
-                })
-                // total position size = 1.94 + (-2.93) = -0.985
-
-                // notional value (10000(init value of original curve) * 2(migration multiplier) - 20100) = -100
-                // settle price should be -100 / -0.985 = 101.505
-                const receipt = await amm.shutdown()
-                expect(await amm.getSettlementPrice()).to.eq("101504999999999999991")
-
-                // position value = 100(open notional) / 0.956(migrated position size) = 104.6
-                // 0.956 * (101.51 - 104.6) + 100 = 97.04
-                const aliceReceipt = await clearingHouse.settlePosition(amm.address, { from: alice })
-                await expectEvent.inTransaction(aliceReceipt.tx, quoteToken, "Transfer", {
-                    from: clearingHouse.address,
-                    to: alice,
-                    value: "97039699",
-                })
-
-                // position value = 200(open notional) / 1.85(migrated position size) = 108.12
-                // 1.85 * (101.5 - 108.12) + 100 = 87.5
-                const bobReceipt = await clearingHouse.settlePosition(amm.address, { from: bob })
-                await expectEvent.inTransaction(bobReceipt.tx, quoteToken, "Transfer", {
-                    from: clearingHouse.address,
-                    to: bob,
-                    value: "87552381",
-                })
-
-                // position value = 100(open notional) / 0.93(migrated position size) = 107.76
-                // -0.93 * (101.5 - 107.76) + 100 = 105.80
-                const carolReceipt = await clearingHouse.settlePosition(amm.address, { from: carol })
-                await expectEvent.inTransaction(carolReceipt.tx, quoteToken, "Transfer", {
-                    from: clearingHouse.address,
-                    to: carol,
-                    value: "105795847",
-                })
-
-                // position value = 300(open notional) / 2.93(migrated position size) = 102.39
-                // -2.93 * (101.5 - 102.39) + 100 = 102.9
-                const chadReceipt = await clearingHouse.settlePosition(amm.address, { from: chad })
-                await expectEvent.inTransaction(chadReceipt.tx, quoteToken, "Transfer", {
-                    from: clearingHouse.address,
-                    to: chad,
-                    value: "102941176",
                 })
             })
 
