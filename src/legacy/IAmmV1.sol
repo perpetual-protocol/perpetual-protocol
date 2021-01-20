@@ -6,7 +6,7 @@ import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token
 import { Decimal } from "../utils/Decimal.sol";
 import { SignedDecimal } from "../utils/SignedDecimal.sol";
 
-interface IAmm {
+interface IAmmV1 {
     /**
      * @notice asset direction, used in getInputPrice, getOutputPrice, swapInput and swapOutput
      * @param ADD_TO_AMM add asset to Amm
@@ -36,6 +36,9 @@ interface IAmm {
         Decimal.decimal calldata _quoteAssetAmountLimit,
         bool _skipFluctuationCheck
     ) external returns (Decimal.decimal memory);
+
+    function migrateLiquidity(Decimal.decimal calldata _liquidityMultiplier, Decimal.decimal calldata _priceLimitRatio)
+        external;
 
     function shutdown() external;
 
@@ -102,6 +105,8 @@ interface IAmm {
     // can not be overridden by state variable due to type `Deciaml.decimal`
     function getSettlementPrice() external view returns (Decimal.decimal memory);
 
+    function getBaseAssetDeltaThisFundingPeriod() external view returns (SignedDecimal.signedDecimal memory);
+
     function getCumulativeNotional() external view returns (SignedDecimal.signedDecimal memory);
 
     function getMaxHoldingBaseAsset() external view returns (Decimal.decimal memory);
@@ -109,6 +114,4 @@ interface IAmm {
     function getOpenInterestNotionalCap() external view returns (Decimal.decimal memory);
 
     function getLiquidityChangedSnapshots(uint256 i) external view returns (LiquidityChangedSnapshot memory);
-
-    function getBaseAssetDelta() external view returns (SignedDecimal.signedDecimal memory);
 }

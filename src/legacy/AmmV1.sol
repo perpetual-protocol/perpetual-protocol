@@ -2,17 +2,17 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { BlockContext } from "./utils/BlockContext.sol";
-import { IPriceFeed } from "./interface/IPriceFeed.sol";
+import { BlockContext } from "../utils/BlockContext.sol";
+import { IPriceFeed } from "../interface/IPriceFeed.sol";
 import { SafeMath } from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
-import { Decimal } from "./utils/Decimal.sol";
-import { SignedDecimal } from "./utils/SignedDecimal.sol";
-import { MixedDecimal } from "./utils/MixedDecimal.sol";
-import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
-import { IAmm } from "./interface/IAmm.sol";
+import { Decimal } from "../utils/Decimal.sol";
+import { SignedDecimal } from "../utils/SignedDecimal.sol";
+import { MixedDecimal } from "../utils/MixedDecimal.sol";
+import { PerpFiOwnableUpgrade } from "../utils/PerpFiOwnableUpgrade.sol";
+import { IAmmV1 } from "./IAmmV1.sol";
 
-contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
+contract AmmV1 is IAmmV1, PerpFiOwnableUpgrade, BlockContext {
     using SafeMath for uint256;
     using Decimal for Decimal.decimal;
     using SignedDecimal for SignedDecimal.signedDecimal;
@@ -85,11 +85,10 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     //    The below state variables can not change the order    //
     //**********************************************************//
 
-    // DEPRECATED
     // update during every swap and calculate total amm pnl per funding period
     SignedDecimal.signedDecimal private baseAssetDeltaThisFundingPeriod;
 
-    // update during every swap and used when shutting amm down. it's trader's total base asset size
+    // update during every swap and used when shutting amm down
     SignedDecimal.signedDecimal public totalPositionSize;
 
     // latest funding rate = ((twap market price - twap oracle price) / twap oracle price) / 24
@@ -276,7 +275,61 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             ? nextFundingTimeOnHourStart
             : minNextValidFundingTime;
 
+        // reset funding related states
+        baseAssetDeltaThisFundingPeriod = SignedDecimal.zero();
+
         return premiumFraction;
+    }
+
+    function migrateLiquidity(
+        Decimal.decimal calldata _liquidityMultiplier,
+        Decimal.decimal calldata _fluctuationLimitRatio
+    ) external override onlyOwner {
+        require(_liquidityMultiplier.toUint() != Decimal.one().toUint(), "multiplier can't be 1");
+
+        // check liquidity multiplier limit, have lower bound if position size is positive for now.
+        checkLiquidityMultiplierLimit(totalPositionSize, _liquidityMultiplier);
+        checkLiquidityMultiplierLimit(baseAssetDeltaThisFundingPeriod, _liquidityMultiplier);
+
+        // #53 fix sandwich attack during liquidity migration
+        checkFluctuationLimit(_fluctuationLimitRatio);
+
+        // get current reserve values
+        Decimal.decimal memory quoteAssetBeforeAddingLiquidity = quoteAssetReserve;
+        Decimal.decimal memory baseAssetBeforeAddingLiquidity = baseAssetReserve;
+        SignedDecimal.signedDecimal memory totalPositionSizeBefore = totalPositionSize;
+
+        // migrate liquidity
+        quoteAssetReserve = quoteAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
+        baseAssetReserve = baseAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
+
+        // MUST be called after liquidity migrated
+        // baseAssetDeltaThisFundingPeriod is total position size(of a funding period) owned by Amm
+        // That's why need to mulScalar(-1) when calculating the migrated size.
+        baseAssetDeltaThisFundingPeriod = calcBaseAssetAfterLiquidityMigration(
+            baseAssetDeltaThisFundingPeriod.mulScalar(-1),
+            quoteAssetBeforeAddingLiquidity,
+            baseAssetBeforeAddingLiquidity
+        )
+            .mulScalar(-1);
+
+        totalPositionSize = calcBaseAssetAfterLiquidityMigration(
+            totalPositionSizeBefore,
+            quoteAssetBeforeAddingLiquidity,
+            baseAssetBeforeAddingLiquidity
+        );
+
+        // update snapshot
+        liquidityChangedSnapshots.push(
+            LiquidityChangedSnapshot({
+                cumulativeNotional: cumulativeNotional,
+                quoteAssetReserve: quoteAssetReserve,
+                baseAssetReserve: baseAssetReserve,
+                totalPositionSize: totalPositionSize
+            })
+        );
+
+        emit LiquidityChanged(quoteAssetReserve.toUint(), baseAssetReserve.toUint(), cumulativeNotional.toInt());
     }
 
     function calcBaseAssetAfterLiquidityMigration(
@@ -535,16 +588,16 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         return settlementPrice;
     }
 
+    function getBaseAssetDeltaThisFundingPeriod() external view override returns (SignedDecimal.signedDecimal memory) {
+        return baseAssetDeltaThisFundingPeriod;
+    }
+
     function getMaxHoldingBaseAsset() external view override returns (Decimal.decimal memory) {
         return maxHoldingBaseAsset;
     }
 
     function getOpenInterestNotionalCap() external view override returns (Decimal.decimal memory) {
         return openInterestNotionalCap;
-    }
-
-    function getBaseAssetDelta() external view override returns (SignedDecimal.signedDecimal memory) {
-        return totalPositionSize;
     }
 
     /**
@@ -736,11 +789,13 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         if (_dir == Dir.ADD_TO_AMM) {
             quoteAssetReserve = quoteAssetReserve.addD(_quoteAssetAmount);
             baseAssetReserve = baseAssetReserve.subD(_baseAssetAmount);
+            baseAssetDeltaThisFundingPeriod = baseAssetDeltaThisFundingPeriod.subD(_baseAssetAmount);
             totalPositionSize = totalPositionSize.addD(_baseAssetAmount);
             cumulativeNotional = cumulativeNotional.addD(_quoteAssetAmount);
         } else {
             quoteAssetReserve = quoteAssetReserve.subD(_quoteAssetAmount);
             baseAssetReserve = baseAssetReserve.addD(_baseAssetAmount);
+            baseAssetDeltaThisFundingPeriod = baseAssetDeltaThisFundingPeriod.addD(_baseAssetAmount);
             totalPositionSize = totalPositionSize.subD(_baseAssetAmount);
             cumulativeNotional = cumulativeNotional.subD(_quoteAssetAmount);
         }
