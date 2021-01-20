@@ -102,8 +102,6 @@ interface IAmm {
     // can not be overridden by state variable due to type `Deciaml.decimal`
     function getSettlementPrice() external view returns (Decimal.decimal memory);
 
-    function getBaseAssetDeltaThisFundingPeriod() external view returns (SignedDecimal.signedDecimal memory);
-
     function getCumulativeNotional() external view returns (SignedDecimal.signedDecimal memory);
 
     function getMaxHoldingBaseAsset() external view returns (Decimal.decimal memory);
@@ -111,4 +109,6 @@ interface IAmm {
     function getOpenInterestNotionalCap() external view returns (Decimal.decimal memory);
 
     function getLiquidityChangedSnapshots(uint256 i) external view returns (LiquidityChangedSnapshot memory);
+
+    function getBaseAssetDelta() external view returns (SignedDecimal.signedDecimal memory);
 }

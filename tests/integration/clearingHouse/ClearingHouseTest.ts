@@ -266,15 +266,15 @@ describe("ClearingHouse Test", () => {
         })
     })
 
-    describe("payFunding", () => {
+    describe("payFunding: when alice.size = 37.5 & bob.size = -187.5", () => {
         beforeEach(async () => {
-            // given alice takes 2x long position (37.5Q) with 300 margin
+            // given alice takes 2x long position (37.5B) with 300 margin
             await approve(alice, clearingHouse.address, 600)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(300), toDecimal(2), toDecimal(37.5), {
                 from: alice,
             })
 
-            // given bob takes 1x short position (-187.5Q) with 1200 margin
+            // given bob takes 1x short position (-187.5B) with 1200 margin
             await approve(bob, clearingHouse.address, 1200)
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1200), toDecimal(1), toDecimal(187.5), {
                 from: bob,
@@ -313,6 +313,31 @@ describe("ClearingHouse Test", () => {
             expect(clearingHouseQuoteTokenBalance).to.eq(toFullDigit(1501.5, +(await quoteToken.decimals())))
             const insuranceFundBaseToken = await quoteToken.balanceOf(insuranceFund.address)
             expect(insuranceFundBaseToken).to.eq(toFullDigit(4998.5, +(await quoteToken.decimals())))
+        })
+
+        it("will keep generating the same loss for amm when funding rate is positive and amm hold more long position", async () => {
+            // given the underlying twap price is 1.59, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(1.59))
+
+            // when the new fundingRate is 1% which means underlyingPrice < snapshotPrice, long pays short
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+
+            // same as above test case:
+            // there are only 2 traders: bob and alice
+            // alice need to pay 1% of her position size as fundingPayment (37.5 * 1% = 0.375)
+            // bob will get 1% of her position size as fundingPayment (187.5 * 1% = 1.875)
+            // ammPnl = 0.375 - 1.875 = -1.5
+            // clearingHouse payFunding twice in the same condition
+            // then fundingPayment will generate 1.5 * 2 loss and clearingHouse will withdraw in advanced from insuranceFund
+            // clearingHouse: 1500 + 3
+            // insuranceFund: 5000 - 3
+            const clearingHouseQuoteTokenBalance = await quoteToken.balanceOf(clearingHouse.address)
+            expect(clearingHouseQuoteTokenBalance).to.eq(toFullDigit(1503, +(await quoteToken.decimals())))
+            const insuranceFundBaseToken = await quoteToken.balanceOf(insuranceFund.address)
+            expect(insuranceFundBaseToken).to.eq(toFullDigit(4997, +(await quoteToken.decimals())))
         })
 
         it("funding rate is 1%, 1% then -1%", async () => {
