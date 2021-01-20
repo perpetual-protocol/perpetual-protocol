@@ -566,8 +566,8 @@ export class ContractPublisher {
                     // in normal case we don't need to do anything to the implementation contract
                     const ammImplInstance = (await ethers.getContractAt(ContractName.Amm, linkUsdcImplAddr)) as Amm
                     const wei = BigNumber.from(1)
-                    const emptyAddr = "0x0000000000000000000000000000000000000000"
-                    await ammImplInstance.initialize(wei, wei, wei, wei, emptyAddr, "", "", wei, wei, wei)
+                    const emptyAddr = "0x0000000000000000000000000000000000000001"
+                    await ammImplInstance.initialize(wei, wei, wei, wei, emptyAddr, ethers.utils.formatBytes32String(""), emptyAddr, wei, wei, wei)
                 },
             ],
 
