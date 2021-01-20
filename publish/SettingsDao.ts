@@ -47,10 +47,6 @@ export class SettingsDao {
                         },
                     }
                 }
-
-                // test stage deploys only to layer2 and always restarts from initial version
-                this.setVersion("layer1", 0)
-                this.setVersion("layer2", 0)
                 break
             default:
                 throw new Error(`Stage not found=${stage}`)

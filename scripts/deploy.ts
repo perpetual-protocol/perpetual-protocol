@@ -9,6 +9,12 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
     const layer1Network = settings.getNetwork("layer1")
     const layer2Network = settings.getNetwork("layer2")
 
+    // test stage deploys only to layer2 and always restarts from initial version
+    if ("test" === stage) {
+        settings.setVersion("layer1", 0)
+        settings.setVersion("layer2", 0)
+    }
+
     // #1
     // we have to break deployment up into multiple batches because:
     // (1) layer1 and layer2 contracts have circular dependencies
@@ -25,15 +31,31 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
         options,
     )
 
-    // #2
+    // #2 deploy the 3rd market (production=YFI, staging=SNX)
     await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 3`, options)
     await asyncExec(
         `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 4`,
         options,
     )
 
-    // #3
+    // #3 deploy the 3rd market (production=DOT, staging=LINK)
     await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 5`, options)
+
+    // #4 upgrade Amm contract (production=DOT, staging=LINK) from V1
+    await asyncExec(
+        `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 6`,
+        options,
+    )
+
+    // // #4 upgrade contract (ClearingHouse and Amm) from V1
+    // await asyncExec(
+    //     `buidler --network ${layer2Network} --config buidler.flatten.clearinghouse.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 6`,
+    //     options,
+    // )
+    // await asyncExec(
+    //     `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 7`,
+    //     options,
+    // )
 }
 
 /* eslint-disable no-console */
