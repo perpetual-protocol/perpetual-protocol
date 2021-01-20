@@ -26,6 +26,7 @@ async function healthCheck(): Promise<void> {
 
     const ammETH = instance(layer2["contracts"]["ETHUSDC"]["address"], AmmArtifact.abi) as Amm
     const ammBTC = instance(layer2["contracts"]["BTCUSDC"]["address"], AmmArtifact.abi) as Amm
+    const ammYFI = instance(layer2["contracts"]["YFIUSDC"]["address"], AmmArtifact.abi) as Amm
     const insuranceFund = instance(
         layer2["contracts"]["InsuranceFund"]["address"],
         InsuranceFundArtifact.abi,
@@ -38,10 +39,19 @@ async function healthCheck(): Promise<void> {
     console.log("========= address ============")
     console.log("insuranceFund", insuranceFund.address)
     console.log("clearingHouse", clearingHouse.address)
+
+    const ethCap = await ammETH.getOpenInterestNotionalCap()
+    const btcCap = await ammBTC.getOpenInterestNotionalCap()
+    const yfiCap = await ammYFI.getOpenInterestNotionalCap()
+    console.log(`ethCap=${ethCap.toString()}`)
+    console.log(`btcCap=${btcCap.toString()}`)
+    console.log(`yfiCap=${yfiCap.toString()}`)
     const ETHOpenInterest = await clearingHouse.openInterestNotionalMap(ammETH.address)
     console.log("open interest of ETH", utils.formatEther(ETHOpenInterest.toString()))
     const BTCOpenInterest = await clearingHouse.openInterestNotionalMap(ammBTC.address)
     console.log("open interest of BTC", utils.formatEther(BTCOpenInterest.toString()))
+    const YFIOpenInterest = await clearingHouse.openInterestNotionalMap(ammYFI.address)
+    console.log("open interest of YFI", utils.formatEther(YFIOpenInterest.toString()))
 
     console.log("========= balance ============")
     const balanceOfInsuranceFund = (await usdc.functions.balanceOf(insuranceFund.address))[0]
