@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import bre, { ethers } from "@nomiclabs/buidler"
 import { TASK_COMPILE } from "@nomiclabs/buidler/builtin-tasks/task-names"
+import { BigNumber } from "ethers"
 import { SRC_DIR } from "../constants"
 import { ExternalContracts, Layer } from "../scripts/common"
 import { flatten } from "../scripts/flatten"
 import {
+    Amm,
     AmmReader,
     ChainlinkL1,
     ClearingHouse,
@@ -516,7 +518,7 @@ export class ContractPublisher {
                     const amm = await this.factory.createAmm(AmmInstanceName.DOTUSDC).instance()
                     const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
                         AmmInstanceName.DOTUSDC
-                        ].properties
+                    ].properties
                     if (maxHoldingBaseAsset.gt(0)) {
                         await (
                             await amm.setCap(
@@ -544,6 +546,76 @@ export class ContractPublisher {
                     )
                     const DOTUSDC = await this.factory.createAmm(AmmInstanceName.DOTUSDC).instance()
                     await (await DOTUSDC.setOwner(gov)).wait(this.confirmations)
+                },
+            ],
+            // TODO change every ClearingHouse and Amm to ClearingHouseV1 and AmmV1 before this batch
+            //
+            // batch 6
+            // deploy the flattened clearingHouse and init it just in case
+            [
+                async (): Promise<void> => {
+                    const filename = `${ContractName.ClearingHouse}.sol`
+
+                    // after flatten sol file we must re-compile again
+                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                    await bre.run(TASK_COMPILE)
+
+                    // deploy clearing house implementation
+                    const clearingHouseContract = await this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const implContractAddr = await clearingHouseContract.prepareUpgradeContract()
+
+                    // in normal case we don't need to do anything to the implementation contract
+                    const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
+                    const metaTxGatewayContract = this.factory.create<MetaTxGateway>(ContractName.MetaTxGateway)
+                    const clearingHouseImplInstance = (await ethers.getContractAt(
+                        ContractName.ClearingHouse,
+                        implContractAddr,
+                    )) as ClearingHouse
+                    await clearingHouseImplInstance.initialize(
+                        this.deployConfig.initMarginRequirement,
+                        this.deployConfig.maintenanceMarginRequirement,
+                        this.deployConfig.liquidationFeeRatio,
+                        insuranceFundContract.address!,
+                        metaTxGatewayContract.address!,
+                    )
+                },
+            ],
+            // batch 7
+            // deploy the flattened amm for every amms
+            [
+                async (): Promise<void> => {
+                    const filename = `${ContractName.Amm}.sol`
+
+                    // after flatten sol file we must re-compile again
+                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                    await bre.run(TASK_COMPILE)
+
+                    // deploy amm implementation
+                    const ETHUSDC = this.factory.createAmm(AmmInstanceName.ETHUSDC)
+                    const ethUsdcImplAddr = await ETHUSDC.prepareUpgradeContract()
+
+                    const BTCUSDC = this.factory.createAmm(AmmInstanceName.BTCUSDC)
+                    const btcUsdcImplAddr = await BTCUSDC.prepareUpgradeContract()
+
+                    const SNXUSDC = this.factory.createAmm(AmmInstanceName.SNXUSDC)
+                    const snxUsdcImplAddr = await SNXUSDC.prepareUpgradeContract()
+
+                    const LINKUSDC = this.factory.createAmm(AmmInstanceName.LINKUSDC)
+                    const linkUsdcImplAddr = await LINKUSDC.prepareUpgradeContract()
+
+                    if (
+                        ethUsdcImplAddr !== btcUsdcImplAddr ||
+                        btcUsdcImplAddr !== snxUsdcImplAddr ||
+                        snxUsdcImplAddr !== linkUsdcImplAddr
+                    ) {
+                        throw new Error("Amm implementation address should be the same")
+                    }
+
+                    // in normal case we don't need to do anything to the implementation contract
+                    const ammImplInstance = (await ethers.getContractAt(ContractName.Amm, ethUsdcImplAddr)) as Amm
+                    const wei = BigNumber.from(1)
+                    const emptyAddr = "0x0000000000000000000000000000000000000000"
+                    await ammImplInstance.initialize(wei, wei, wei, wei, emptyAddr, "", "", wei, wei, wei)
                 },
             ],
         ],
