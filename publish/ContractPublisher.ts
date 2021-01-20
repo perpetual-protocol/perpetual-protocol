@@ -559,12 +559,11 @@ export class ContractPublisher {
                     await bre.run(TASK_COMPILE)
 
                     // deploy amm implementation
-                    // TODO add DOTUSDC for production
-                    const LINKUSDC = this.factory.createAmm(AmmInstanceName.LINKUSDC)
-                    const linkUsdcImplAddr = await LINKUSDC.prepareUpgradeContract()
+                    const DOTUSDC = this.factory.createAmm(AmmInstanceName.DOTUSDC)
+                    const dotUsdcImplAddr = await DOTUSDC.prepareUpgradeContract()
 
                     // in normal case we don't need to do anything to the implementation contract
-                    const ammImplInstance = (await ethers.getContractAt(ContractName.Amm, linkUsdcImplAddr)) as Amm
+                    const ammImplInstance = (await ethers.getContractAt(ContractName.Amm, dotUsdcImplAddr)) as Amm
                     const wei = BigNumber.from(1)
                     const emptyAddr = "0x0000000000000000000000000000000000000001"
                     await ammImplInstance.initialize(wei, wei, wei, wei, emptyAddr, ethers.utils.formatBytes32String(""), emptyAddr, wei, wei, wei)
