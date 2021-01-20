@@ -35,15 +35,21 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
     // #3 deploy the 3rd market (production=DOT, staging=LINK)
     await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 5`, options)
 
-    // #4 upgrade contract (ClearingHouse and Amm) from V1
+    // #4 upgrade Amm contract (production=DOT, staging=LINK) from V1
     await asyncExec(
-        `buidler --network ${layer2Network} --config buidler.flatten.clearinghouse.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 6`,
+        `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 6`,
         options,
     )
-    await asyncExec(
-        `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 7`,
-        options,
-    )
+
+    // // #4 upgrade contract (ClearingHouse and Amm) from V1
+    // await asyncExec(
+    //     `buidler --network ${layer2Network} --config buidler.flatten.clearinghouse.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 6`,
+    //     options,
+    // )
+    // await asyncExec(
+    //     `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 7`,
+    //     options,
+    // )
 }
 
 /* eslint-disable no-console */
