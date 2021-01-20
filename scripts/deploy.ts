@@ -9,6 +9,12 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
     const layer1Network = settings.getNetwork("layer1")
     const layer2Network = settings.getNetwork("layer2")
 
+    // test stage deploys only to layer2 and always restarts from initial version
+    if ("test" === stage) {
+        settings.setVersion("layer1", 0)
+        settings.setVersion("layer2", 0)
+    }
+
     // #1
     // we have to break deployment up into multiple batches because:
     // (1) layer1 and layer2 contracts have circular dependencies
