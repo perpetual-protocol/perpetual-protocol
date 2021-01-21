@@ -101,7 +101,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
             stakeModules[i].notifyStakeChanged(msgSender);
         }
 
-        emit Staked(msgSender, _amount.toUint());
+        emit Staked(msgSender, amount.toUint());
     }
 
     // this function mutates stakerWithdrawPendingBalance, stakerCooldown, addTotalSupplyCheckPoint,

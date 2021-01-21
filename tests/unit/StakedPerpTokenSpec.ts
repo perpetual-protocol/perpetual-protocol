@@ -208,11 +208,15 @@ describe("StakedPerpTokenSpec", () => {
             await stakedPerpToken.stake(toDecimal(100), { from: alice })
             await forwardBlockTimestamp(15)
             await stakedPerpToken.unstake({ from: alice })
-            await stakedPerpToken.stake(toDecimal(200), { from: alice })
+            const receipt = await stakedPerpToken.stake(toDecimal(200), { from: alice })
 
             expect(await stakedPerpToken.stakerWithdrawPendingBalance(alice)).to.eq(toFullDigit(0))
             expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(300))
             expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1700))
+
+            expectEvent(receipt, "Staked", {
+                amount: toFullDigit(300),
+            })
         })
 
         it("alice stakes 100, unstakes and then stakes 200 not in the same block/after cool down period", async () => {
@@ -220,11 +224,14 @@ describe("StakedPerpTokenSpec", () => {
             await forwardBlockTimestamp(15)
             await stakedPerpToken.unstake({ from: alice })
             await forwardBlockTimestamp(cooldownPeriod * 2)
-            await stakedPerpToken.stake(toDecimal(200), { from: alice })
+            const receipt = await stakedPerpToken.stake(toDecimal(200), { from: alice })
 
             expect(await stakedPerpToken.stakerWithdrawPendingBalance(alice)).to.eq(toFullDigit(0))
             expect(await stakedPerpToken.balanceOf(alice)).to.eq(toFullDigit(300))
             expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1700))
+            expectEvent(receipt, "Staked", {
+                amount: toFullDigit(300),
+            })
         })
 
         it("force error, alice unstakes and then unstakes again", async () => {
