@@ -11,7 +11,7 @@ contract FeeRewardPoolMock is IStakeModule, IRewardRecipient {
     event NotificationReceived(address staker);
     event FeeNotificationReceived(uint256 amount);
 
-    function notifyStake(address staker) external override {
+    function notifyStakeChanged(address staker) external override {
         emit NotificationReceived(staker);
     }
 

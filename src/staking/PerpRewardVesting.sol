@@ -13,18 +13,19 @@ contract PerpRewardVesting is MerkleRedeemUpgradeSafe, BlockContext {
     using Decimal for Decimal.decimal;
     using SafeMath for uint256;
 
+    //
+    // CONSTANT
+    //
+    uint256 private constant VESTING_PERIOD = 12 weeks;
+
     //**********************************************************//
     //    The below state variables can not change the order    //
     //**********************************************************//
     // {weekMerkleRootsIndex: timestamp}
     mapping(uint256 => uint256) public merkleRootTimestampMap;
-    mapping(uint256 => uint256) public vestingPeriodMap;
 
     // array of weekMerkleRootsIndex
     uint256[] public merkleRootIndexes;
-
-    // default is 12 weeks = 7257600 seconds
-    uint256 public defaultVestingPeriod;
 
     //**********************************************************//
     //    The above state variables can not change the order    //
@@ -35,10 +36,9 @@ contract PerpRewardVesting is MerkleRedeemUpgradeSafe, BlockContext {
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variable, ables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
     uint256[50] private __gap;
 
-    function initialize(IERC20 _token, uint256 _defaultVestingPeriod) external initializer {
-        require(address(_token) != address(0) && _defaultVestingPeriod != 0, "Invalid input");
+    function initialize(IERC20 _token) external initializer {
+        require(address(_token) != address(0), "Invalid input");
         __MerkleRedeem_init(_token);
-        defaultVestingPeriod = _defaultVestingPeriod;
     }
 
     function claimWeeks(address _account, Claim[] memory _claims) public virtual override {
@@ -63,7 +63,7 @@ contract PerpRewardVesting is MerkleRedeemUpgradeSafe, BlockContext {
         //           |
         // merkleRootTimestampMap[weeks] --> claimable
         //
-        uint256 claimableTimestamp = _blockTimestamp().sub(vestingPeriodMap[_week]);
+        uint256 claimableTimestamp = _blockTimestamp().sub(VESTING_PERIOD);
         require(claimableTimestamp >= merkleRootTimestampMap[_week], "Claiming is not yet available");
         super.claimWeek(_account, _week, _claimedBalance, _merkleProof);
     }
@@ -76,7 +76,6 @@ contract PerpRewardVesting is MerkleRedeemUpgradeSafe, BlockContext {
         super.seedAllocations(_week, _merkleRoot, _totalAllocation);
         merkleRootTimestampMap[_week] = _blockTimestamp();
         merkleRootIndexes.push(_week);
-        vestingPeriodMap[_week] = defaultVestingPeriod;
     }
 
     //

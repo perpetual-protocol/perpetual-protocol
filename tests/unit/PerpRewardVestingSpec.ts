@@ -36,9 +36,9 @@ describe("PerpRewardVestingSpec", () => {
         bob = addresses[2]
 
         perpToken = await deployPerpToken(toFullDigit(2000000))
+        perpRewardVesting = await deployPerpRewardVesting(perpToken.address)
         // 12 * 7 * 24 * 60 * 60 = 7,257,600
-        perpRewardVesting = await deployPerpRewardVesting(perpToken.address, new BN(7257600))
-        vestingPeriod = await perpRewardVesting.defaultVestingPeriod()
+        vestingPeriod = new BN(7257600)
 
         await perpToken.approve(perpRewardVesting.address, toFullDigit(2000000), { from: admin })
     })

@@ -10,7 +10,7 @@ import {
     deployMockMultiToken,
     deployTollPool,
 } from "../helper/contract"
-import { toDecimal, toFullDigit } from "../helper/number"
+import { toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 
@@ -42,36 +42,6 @@ describe("tollPoolSpec", () => {
 
         await usdt.approve(tollPool.address, toFullDigit(2000000))
         await usdc.approve(tollPool.address, toFullDigit(2000000))
-    })
-
-    describe("notifyTokenAmount()", () => {
-        beforeEach(async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
-            await tollPool.addFeeToken(usdt.address)
-        })
-
-        it("should emit event", async () => {
-            const receipt = await tollPool.notifyTokenAmount(usdt.address, toDecimal(1000))
-            expectEvent.inTransaction(receipt.tx, tollPool, "TokenReceived", {
-                token: usdt.address,
-                amount: toFullDigit(1000),
-            })
-        })
-
-        it("force error, invalid token", async () => {
-            await expectRevert(tollPool.notifyTokenAmount(tmpRewardPoolMock, toDecimal(1000)), "token does not exist")
-        })
-
-        it("force error, not called by clearingHouse", async () => {
-            await expectRevert(
-                tollPool.notifyTokenAmount(usdt.address, toDecimal(1000), { from: alice }),
-                "only clearingHouse",
-            )
-        })
-
-        it("force error, token amount is zero", async () => {
-            await expectRevert(tollPool.notifyTokenAmount(usdt.address, toDecimal(0)), "invalid input")
-        })
     })
 
     describe("transferToTmpRewardPool()", () => {
@@ -200,6 +170,17 @@ describe("tollPoolSpec", () => {
             await tollPool.addFeeToken(usdt.address)
             expect(await tollPool.feeTokens(0)).to.eq(usdc.address)
             expect(await tollPool.feeTokens(1)).to.eq(usdt.address)
+        })
+
+        it("should transfer to tmpRewardPool via clientBridge before removeFeeToken", async () => {
+            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
+            await tollPool.addFeeToken(usdt.address)
+            await usdt.transfer(tollPool.address, 1)
+
+            // TODO expect tollPool call clientBridge.erc20Transfer(tmpRewardPool)
+            // let's use ethers/waffle when writing new unit test. it's hard to write unit test without mock lib
+            await tollPool.removeFeeToken(usdt.address)
+            expect(await usdt.balanceOf(tollPool.address)).eq(0)
         })
 
         it("force error, onlyOwner", async () => {

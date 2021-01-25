@@ -44,7 +44,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     // Checkpointing total supply of the deposited token
     Checkpointing.History internal totalSupplyHistory;
 
-    // Checkpointing balances of the deposited token by block number
+    // Checkpointing balances of the deposited token by staker
     mapping(address => Checkpointing.History) internal balancesHistory;
 
     // staker => the time staker can withdraw PERP
@@ -98,10 +98,10 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
 
         // Have to update balance first
         for (uint256 i; i < stakeModules.length; i++) {
-            stakeModules[i].notifyStake(msgSender);
+            stakeModules[i].notifyStakeChanged(msgSender);
         }
 
-        emit Staked(msgSender, _amount.toUint());
+        emit Staked(msgSender, amount.toUint());
     }
 
     // this function mutates stakerWithdrawPendingBalance, stakerCooldown, addTotalSupplyCheckPoint,
@@ -120,7 +120,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
 
         // Have to update balance first
         for (uint256 i; i < stakeModules.length; i++) {
-            stakeModules[i].notifyStake(msgSender);
+            stakeModules[i].notifyStakeChanged(msgSender);
         }
 
         emit Unstaked(msgSender, balance.toUint());

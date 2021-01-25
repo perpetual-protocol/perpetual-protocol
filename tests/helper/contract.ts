@@ -380,12 +380,9 @@ export async function deployStakedPerpToken(
     return instance
 }
 
-export async function deployPerpRewardVesting(
-    perpToken: string,
-    vestingPeriod: BN,
-): Promise<PerpRewardVestingFakeInstance> {
+export async function deployPerpRewardVesting(perpToken: string): Promise<PerpRewardVestingFakeInstance> {
     const instance = await PerpRewardVesting.new()
-    await instance.initialize(perpToken, vestingPeriod)
+    await instance.initialize(perpToken)
     return instance
 }
 

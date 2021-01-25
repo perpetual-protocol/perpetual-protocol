@@ -14,7 +14,6 @@ import { ContextUpgradeSafe } from "@openzeppelin/contracts-ethereum-package/con
 // solhint-disable-next-line
 import { ReentrancyGuardUpgradeSafe } from "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
 import { OwnerPausableUpgradeSafe } from "./OwnerPausable.sol";
-import { ITollPool } from "./interface/ITollPool.sol";
 import { IAmm } from "./interface/IAmm.sol";
 import { IInsuranceFund } from "./interface/IInsuranceFund.sol";
 
@@ -179,7 +178,7 @@ contract ClearingHouse is
 
     // contract dependencies
     IInsuranceFund public insuranceFund;
-    ITollPool public tollPool;
+    address public tollPool;
 
     // designed for arbitragers who can hold unlimited positions. will be removed after guarded period
     address internal whitelist;
@@ -242,7 +241,7 @@ contract ClearingHouse is
         emit MarginRatioChanged(maintenanceMarginRatio.toUint());
     }
 
-    function setTollPool(ITollPool _tollPool) external onlyOwner {
+    function setTollPool(address _tollPool) external onlyOwner {
         tollPool = _tollPool;
     }
 
@@ -1004,11 +1003,10 @@ contract ClearingHouse is
                 _transferFrom(quoteAsset, _from, address(insuranceFund), spread);
             }
 
-            // transfer toll to tollPool, it's `stakingReserve` for now.
+            // transfer toll to TollPool
             if (hasToll) {
-                require(address(tollPool) != address(0), "Invalid tollPool");
-                _transferFrom(quoteAsset, _from, address(tollPool), toll);
-                tollPool.notifyTokenAmount(quoteAsset, toll);
+                require(tollPool != address(0), "Invalid tollPool");
+                _transferFrom(quoteAsset, _from, tollPool, toll);
             }
 
             // fee = spread + toll

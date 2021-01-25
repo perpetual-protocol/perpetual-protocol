@@ -2,5 +2,5 @@
 pragma solidity 0.6.9;
 
 interface IStakeModule {
-    function notifyStake(address staker) external;
+    function notifyStakeChanged(address staker) external;
 }
