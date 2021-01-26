@@ -68,6 +68,10 @@
         "LINKUSDC": {
           "name": "Amm",
           "address": "0xB72c27Ff766c9FFB6715D7bc5f9cE82b6862618d"
+        },
+        "SDEFIUSDC": {
+          "name": "Amm",
+          "address": "0xF6886540399Ac4055f1Cf2b9110909277F2498A1"
         }
       },
       "accounts": [],
