@@ -560,9 +560,6 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         return (quoteAssetReserve, baseAssetReserve);
     }
 
-    //@audit - no one use this anymore, can be remove (@wraecca).
-    // If we remove this, we should make reserveSnapshots private.
-    // If we need reserveSnapshots, should keep this. (@Kimi)
     function getSnapshotLen() external view returns (uint256) {
         return reserveSnapshots.length;
     }

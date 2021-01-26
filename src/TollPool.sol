@@ -6,10 +6,9 @@ import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token
 import { Decimal } from "./utils/Decimal.sol";
 import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 import { DecimalERC20 } from "./utils/DecimalERC20.sol";
-import { ITollPool } from "./interface/ITollPool.sol";
 import { ClientBridge } from "./bridge/xDai/ClientBridge.sol";
 
-contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
+contract TollPool is PerpFiOwnableUpgrade, DecimalERC20 {
     using Decimal for Decimal.decimal;
 
     //
@@ -58,13 +57,7 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
         clientBridge = _clientBridge;
     }
 
-    function notifyTokenAmount(IERC20 _token, Decimal.decimal calldata _amount) external override onlyClearingHouse {
-        require(_amount.toUint() != 0, "invalid input");
-        require(isFeeTokenExisted(_token), "token does not exist");
-        emit TokenReceived(address(_token), _amount.toUint());
-    }
-
-    function transferToTmpRewardPool() external override {
+    function transferToTmpRewardPool() public {
         require(address(tmpRewardPoolL1) != address(0), "tmpRewardPoolL1 not yet set");
         require(feeTokens.length != 0, "feeTokens not set yet");
 
@@ -100,21 +93,27 @@ contract TollPool is ITollPool, PerpFiOwnableUpgrade, DecimalERC20 {
 
     function removeFeeToken(IERC20 _token) external onlyOwner {
         require(address(_token) != address(0), "invalid input");
-        require(isFeeTokenExisted(_token), "token does not exist");
 
         uint256 lengthOfFeeTokens = getFeeTokenLength();
+        bool isTokenExisted;
         for (uint256 i; i < lengthOfFeeTokens; i++) {
             if (_token == feeTokens[i]) {
+                // transfer the rest token BEFORE removing
+                if (_token.balanceOf(address(this)) > 0) {
+                    transferToTmpRewardPool();
+                }
                 _approve(_token, address(clientBridge), Decimal.zero());
 
                 if (i != lengthOfFeeTokens - 1) {
                     feeTokens[i] = feeTokens[lengthOfFeeTokens - 1];
                 }
                 feeTokens.pop();
+                isTokenExisted = true;
                 emit FeeTokenRemoved(address(_token));
                 break;
             }
         }
+        require(isTokenExisted, "token does not exist");
     }
 
     //

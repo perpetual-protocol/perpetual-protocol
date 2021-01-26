@@ -63,12 +63,12 @@ describe("FeeRewardPoolL1Spec", () => {
 
             expect(await feeRewardPool.lastUpdateTime()).to.eq(timestamp)
 
-            // rewardRateInDuration: 86,400 / 86,400 = 1
-            expect(await feeRewardPool.rewardRateInDuration()).to.eq(toFullDigit(1))
+            // rewardRate: 86,400 / 86,400 = 1
+            expect(await feeRewardPool.rewardRate()).to.eq(toFullDigit(1))
             expect(await feeRewardPool.periodFinish()).to.eq(periodFinish)
 
-            // rewardMultiplier: totalSupply = 0, rewardMultiplier = 0, hence = 0
-            expect(await feeRewardPool.rewardMultiplier()).to.eq(0)
+            // rewardPerTokenStored: totalSupply = 0, rewardPerTokenStored = 0, hence = 0
+            expect(await feeRewardPool.rewardPerTokenStored()).to.eq(0)
         })
 
         it("first time calling notifyRewardAmount() when totalSupply is not 0", async () => {
@@ -76,8 +76,8 @@ describe("FeeRewardPoolL1Spec", () => {
             await feeRewardPool.notifyRewardAmount(toDecimal(rewardAmount), { from: tmpRewardPool })
 
             // timeInterval: periodFinish = 0, lastUpdateTime = 0, hence = 0
-            // rewardMultiplier: rewardMultiplier = 0, hence 0 + ? * 0 = 0
-            expect(await feeRewardPool.rewardMultiplier()).to.eq(0)
+            // rewardPerTokenStored: rewardPerTokenStored = 0, hence 0 + ? * 0 = 0
+            expect(await feeRewardPool.rewardPerTokenStored()).to.eq(0)
         })
 
         it("second time calling notifyRewardAmount(), the calling time == periodFinish", async () => {
@@ -91,12 +91,12 @@ describe("FeeRewardPoolL1Spec", () => {
 
             expect(await feeRewardPool.lastUpdateTime()).to.eq(timestamp.addn(ONE_DAY))
 
-            expect(await feeRewardPool.rewardRateInDuration()).to.eq(toFullDigit(2))
+            expect(await feeRewardPool.rewardRate()).to.eq(toFullDigit(2))
 
             // lastTimeRewardApplicable() = periodFinish == blockTimestamp()
             // timeInterval = ONE_DAY, totalSupply = 10 * ONE_DAY
-            // rewardMultiplier = 0 + (1 / (10 * ONE_DAY)) * ONE_DAY ~= 0.1
-            expect(await feeRewardPool.rewardMultiplier()).to.eq("99999999999964800")
+            // rewardPerTokenStored = 0 + (1 / (10 * ONE_DAY)) * ONE_DAY ~= 0.1
+            expect(await feeRewardPool.rewardPerTokenStored()).to.eq("99999999999964800")
         })
 
         it("second time calling notifyRewardAmount(), the calling time > periodFinish", async () => {
@@ -110,16 +110,16 @@ describe("FeeRewardPoolL1Spec", () => {
 
             expect(await feeRewardPool.lastUpdateTime()).to.eq(timestamp.addn(ONE_DAY + 1))
 
-            expect(await feeRewardPool.rewardRateInDuration()).to.eq(toFullDigit(2))
+            expect(await feeRewardPool.rewardRate()).to.eq(toFullDigit(2))
 
             // lastTimeRewardApplicable() = periodFinish
             // timeInterval = ONE_DAY, totalSupply = 10 * ONE_DAY
-            // rewardMultiplier = 0 + (1 / (10 * ONE_DAY)) * ONE_DAY ~= 0.1
-            expect(await feeRewardPool.rewardMultiplier()).to.eq("99999999999964800")
+            // rewardPerTokenStored = 0 + (1 / (10 * ONE_DAY)) * ONE_DAY ~= 0.1
+            expect(await feeRewardPool.rewardPerTokenStored()).to.eq("99999999999964800")
         })
 
         it("second time calling notifyRewardAmount(), the calling time < periodFinish", async () => {
-            // rewardRateInDuration: 86,400 / 86,400 = 1
+            // rewardRate: 86,400 / 86,400 = 1
             await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: tmpRewardPool })
 
             const timestamp = await feeRewardPool.mock_getCurrentTimestamp()
@@ -132,13 +132,13 @@ describe("FeeRewardPoolL1Spec", () => {
 
             // remainingTime: ONE_DAY - ONE_DAY / 4
             // leftover: 1 * (ONE_DAY * 3 / 4)
-            // rewardRateInDuration: (ONE_DAY * 2 + (ONE_DAY * 3 / 4) ) / ONE_DAY = 2.75
-            expect(await feeRewardPool.rewardRateInDuration()).to.eq(toFullDigit(2.75))
+            // rewardRate: (ONE_DAY * 2 + (ONE_DAY * 3 / 4) ) / ONE_DAY = 2.75
+            expect(await feeRewardPool.rewardRate()).to.eq(toFullDigit(2.75))
 
             // timeInterval = ONE_DAY / 4
             // totalSupply = 10 * ONE_DAY
-            // rewardMultiplier = 0 + (1 / (10 * ONE_DAY)) * (ONE_DAY / 4) ~= 0.025
-            expect(await feeRewardPool.rewardMultiplier()).to.eq("24999999999991200")
+            // rewardPerTokenStored = 0 + (1 / (10 * ONE_DAY)) * (ONE_DAY / 4) ~= 0.025
+            expect(await feeRewardPool.rewardPerTokenStored()).to.eq("24999999999991200")
         })
 
         it("force error, not called by tmpRewardPool", async () => {
@@ -150,32 +150,32 @@ describe("FeeRewardPoolL1Spec", () => {
         })
     })
 
-    describe("notifyStake()", () => {
+    describe("notifyStakeChanged()", () => {
         beforeEach(async () => {
             await stakedPerpToken.mock_setTotalSupply(toFullDigit(10 * ONE_DAY))
             await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: tmpRewardPool })
-            // rewardRateInDuration: ONE_DAY / ONE_DAY = 1
+            // rewardRate: ONE_DAY / ONE_DAY = 1
         })
 
         it("alice stakes 10% of the total sPerp", async () => {
             await forwardBlockTimestamp(ONE_DAY / 4)
 
             await stakedPerpToken.mock_setBalance(alice, toFullDigit(ONE_DAY))
-            await feeRewardPool.notifyStake(alice)
+            await feeRewardPool.notifyStakeChanged(alice)
 
             // timeInterval = ONE_DAY / 4
             // totalSupply = 10 * ONE_DAY
-            // rewardRateInDuration = 1
-            // rewardMultiplier = 0 + (1 / (10 * ONE_DAY)) * (ONE_DAY / 4) ~= 0.025
-            expect(await feeRewardPool.rewardMultiplier()).to.eq("24999999999991200")
+            // rewardRate = 1
+            // rewardPerTokenStored = 0 + (1 / (10 * ONE_DAY)) * (ONE_DAY / 4) ~= 0.025
+            expect(await feeRewardPool.rewardPerTokenStored()).to.eq("24999999999991200")
 
             // balance: ONE_DAY
-            // rewardMultiplier ~= 0.025
-            // stakerRewardMultiplier(staker) = 0 (during the calculation of rewards, this is not yet modified)
+            // rewardPerTokenStored ~= 0.025
+            // userRewardPerTokenPaid(staker) = 0 (during the calculation of rewards, this is not yet modified)
             // rewards(staker) = 0
             // ONE_DAY * 0.025 ~= 21600
             expect(await feeRewardPool.rewards(alice)).to.eq("2159999999999239680000")
-            expect(await feeRewardPool.stakerRewardMultiplier(alice)).to.eq("24999999999991200")
+            expect(await feeRewardPool.userRewardPerTokenPaid(alice)).to.eq("24999999999991200")
         })
 
         it("alice stakes 10% & bob stakes 20% at the same period and the same time", async () => {
@@ -183,20 +183,20 @@ describe("FeeRewardPoolL1Spec", () => {
 
             await stakedPerpToken.mock_setBalance(alice, toFullDigit(ONE_DAY))
             await stakedPerpToken.mock_setBalance(bob, toFullDigit(ONE_DAY * 2))
-            await feeRewardPool.notifyStake(alice)
-            await feeRewardPool.notifyStake(bob)
+            await feeRewardPool.notifyStakeChanged(alice)
+            await feeRewardPool.notifyStakeChanged(bob)
 
             // notifies alice's stake & bob's stake are the same:
             // timeInterval = ONE_DAY / 4
             // totalSupply = 10 * ONE_DAY
-            // rewardRateInDuration = 1
-            // rewardMultiplier = 0 + (1 / (10 * ONE_DAY)) * (ONE_DAY / 4) ~= 0.025
-            expect(await feeRewardPool.rewardMultiplier()).to.eq("24999999999991200")
+            // rewardRate = 1
+            // rewardPerTokenStored = 0 + (1 / (10 * ONE_DAY)) * (ONE_DAY / 4) ~= 0.025
+            expect(await feeRewardPool.rewardPerTokenStored()).to.eq("24999999999991200")
 
             // alice's rewards:
             // balance: ONE_DAY
-            // rewardMultiplier ~= 0.025
-            // stakerRewardMultiplier(staker) = 0
+            // rewardPerTokenStored ~= 0.025
+            // userRewardPerTokenPaid(staker) = 0
             // rewards(staker) = 0
             // ONE_DAY * 0.025 ~= 2160
 
@@ -206,44 +206,44 @@ describe("FeeRewardPoolL1Spec", () => {
             expect(await feeRewardPool.rewards(alice)).to.eq("2159999999999239680000")
             expect(await feeRewardPool.rewards(bob)).to.eq("4319999999998479360000")
 
-            // stakerRewardMultiplier(staker) = rewardMultiplier
-            expect(await feeRewardPool.stakerRewardMultiplier(alice)).to.eq("24999999999991200")
-            expect(await feeRewardPool.stakerRewardMultiplier(bob)).to.eq("24999999999991200")
+            // userRewardPerTokenPaid(staker) = rewardPerTokenStored
+            expect(await feeRewardPool.userRewardPerTokenPaid(alice)).to.eq("24999999999991200")
+            expect(await feeRewardPool.userRewardPerTokenPaid(bob)).to.eq("24999999999991200")
         })
 
         it("alice stakes 10% & bob stakes 20% at the same period but not exactly the same time", async () => {
             await forwardBlockTimestamp(ONE_DAY / 4)
 
             await stakedPerpToken.mock_setBalance(alice, toFullDigit(ONE_DAY))
-            await feeRewardPool.notifyStake(alice)
+            await feeRewardPool.notifyStakeChanged(alice)
 
             await forwardBlockTimestamp(ONE_DAY / 4)
 
             await stakedPerpToken.mock_setBalance(bob, toFullDigit(ONE_DAY * 2))
-            await feeRewardPool.notifyStake(bob)
+            await feeRewardPool.notifyStakeChanged(bob)
 
             // timeInterval = ONE_DAY / 2
             // totalSupply = 10 * ONE_DAY
-            // rewardRateInDuration = 1
-            // rewardMultiplier = 0 + (1 / (10 * ONE_DAY)) * (ONE_DAY / 2) ~= 0.05
-            expect(await feeRewardPool.rewardMultiplier()).to.eq("49999999999982400")
+            // rewardRate = 1
+            // rewardPerTokenStored = 0 + (1 / (10 * ONE_DAY)) * (ONE_DAY / 2) ~= 0.05
+            expect(await feeRewardPool.rewardPerTokenStored()).to.eq("49999999999982400")
 
             // alice's balances remain the same as the above case
             expect(await feeRewardPool.rewards(alice)).to.eq("2159999999999239680000")
-            expect(await feeRewardPool.stakerRewardMultiplier(alice)).to.eq("24999999999991200")
+            expect(await feeRewardPool.userRewardPerTokenPaid(alice)).to.eq("24999999999991200")
 
             // bob's rewards:
             // balance: ONE_DAY * 2
-            // rewardMultiplier ~= 0.05
-            // stakerRewardMultiplier(staker) = 0
+            // rewardPerTokenStored ~= 0.05
+            // userRewardPerTokenPaid(staker) = 0
             // rewards(staker) = 0
             // ONE_DAY * 0.025 ~= 2160
             expect(await feeRewardPool.rewards(bob)).to.eq("8639999999996958720000")
-            expect(await feeRewardPool.stakerRewardMultiplier(bob)).to.eq("49999999999982400")
+            expect(await feeRewardPool.userRewardPerTokenPaid(bob)).to.eq("49999999999982400")
         })
     })
 
-    describe("notifyRewardAmount() & notifyStake() in multiple periods", () => {
+    describe("notifyRewardAmount() & notifyStakeChanged() in multiple periods", () => {
         beforeEach(async () => {
             await stakedPerpToken.mock_setTotalSupply(toFullDigit(10 * ONE_DAY))
             await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: tmpRewardPool })
@@ -252,56 +252,56 @@ describe("FeeRewardPoolL1Spec", () => {
             // alice stakes 10%
             await forwardBlockTimestamp(ONE_DAY / 4)
             await stakedPerpToken.mock_setBalance(alice, toFullDigit(ONE_DAY))
-            await feeRewardPool.notifyStake(alice)
+            await feeRewardPool.notifyStakeChanged(alice)
             // rewards(alice) ~= 2160
-            // rewardMultiplier ~= 0.025
+            // rewardPerTokenStored ~= 0.025
             // lastUpdateTime = original value + ONE_DAY / 4
         })
 
         it("alice stakes 10% twice in two periods", async () => {
             await forwardBlockTimestamp((ONE_DAY * 3) / 4)
             await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY * 2), { from: tmpRewardPool })
-            // rewardRateInDuration = 2
+            // rewardRate = 2
 
             // lastUpdateTime = original value + ONE_DAY / 4
             // timeInterval = ONE_DAY * 3 / 4
             // totalSupply = 10 * ONE_DAY
-            // rewardRateInDuration = 1 (during the calculation this value is not changed yet)
-            // rewardMultiplier ~= 0.025 + (1 / 10 * ONE_DAY) * 3 * ONE_DAY / 4 ~= 0.1
-            expect(await feeRewardPool.rewardMultiplier()).to.eq("99999999999964800")
+            // rewardRate = 1 (during the calculation this value is not changed yet)
+            // rewardPerTokenStored ~= 0.025 + (1 / 10 * ONE_DAY) * 3 * ONE_DAY / 4 ~= 0.1
+            expect(await feeRewardPool.rewardPerTokenStored()).to.eq("99999999999964800")
 
             await forwardBlockTimestamp(ONE_DAY / 5)
             await stakedPerpToken.mock_setBalance(alice, toFullDigit(ONE_DAY * 2))
-            await feeRewardPool.notifyStake(alice)
+            await feeRewardPool.notifyStakeChanged(alice)
 
             // timeInterval = ONE_DAY / 5
             // totalSupply = 10 * ONE_DAY
-            // rewardRateInDuration = 2
-            // rewardMultiplier ~= 0.1 + (2 / 10 * ONE_DAY) * ONE_DAY / 5 ~= 0.14
-            expect(await feeRewardPool.rewardMultiplier()).to.eq("139999999999950720")
+            // rewardRate = 2
+            // rewardPerTokenStored ~= 0.1 + (2 / 10 * ONE_DAY) * ONE_DAY / 5 ~= 0.14
+            expect(await feeRewardPool.rewardPerTokenStored()).to.eq("139999999999950720")
 
             // balance: ONE_DAY * 2
-            // rewardMultiplier ~= 0.14
-            // stakerRewardMultiplier(staker) ~= 0.025
+            // rewardPerTokenStored ~= 0.14
+            // userRewardPerTokenPaid(staker) ~= 0.025
             // rewards(staker) ~= 2160
             // ONE_DAY * 2 * (0.14 - 0.025) + 2160 ~= 22032
             expect(await feeRewardPool.rewards(alice)).to.eq("22031999999992244736000")
 
-            expect(await feeRewardPool.stakerRewardMultiplier(alice)).to.eq("139999999999950720")
+            expect(await feeRewardPool.userRewardPerTokenPaid(alice)).to.eq("139999999999950720")
         })
 
         // TODO
         it.skip("alice stakes 10% & bob stakes 20% at one period of the same time, and then alice stakes 10% again in the next period", async () => {
             await stakedPerpToken.mock_setBalance(bob, toFullDigit(ONE_DAY * 2))
-            await feeRewardPool.notifyStake(bob)
+            await feeRewardPool.notifyStakeChanged(bob)
 
             await forwardBlockTimestamp((ONE_DAY * 3) / 4)
             await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY * 2), { from: tmpRewardPool })
-            // rewardRateInDuration: ONE_DAY * 2 / ONE_DAY = 2
+            // rewardRate: ONE_DAY * 2 / ONE_DAY = 2
 
             await forwardBlockTimestamp(ONE_DAY / 5)
             await stakedPerpToken.mock_setBalance(alice, toFullDigit(ONE_DAY * 2))
-            await feeRewardPool.notifyStake(alice)
+            await feeRewardPool.notifyStakeChanged(alice)
         })
     })
 
@@ -311,13 +311,13 @@ describe("FeeRewardPoolL1Spec", () => {
             await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: tmpRewardPool })
         })
 
-        it("alice withdraws reward right after notifyStake()", async () => {
+        it("alice withdraws reward right after notifyStakeChanged()", async () => {
             await forwardBlockTimestamp(ONE_DAY / 4)
 
             await stakedPerpToken.mock_setBalance(alice, toFullDigit(ONE_DAY))
-            await feeRewardPool.notifyStake(alice)
+            await feeRewardPool.notifyStakeChanged(alice)
             // rewards(alice) ~= 2160
-            // rewardMultiplier ~= 0.025
+            // rewardPerTokenStored ~= 0.025
             // lastUpdateTime = original value + ONE_DAY / 4
 
             const receipt = await feeRewardPool.withdrawReward({ from: alice })
@@ -331,9 +331,9 @@ describe("FeeRewardPoolL1Spec", () => {
             expect(await usdt.balanceOf(alice)).to.eq("2159999999999239680000")
 
             // timeInterval = 0
-            // rewardMultiplier ~= 0.025 + 0 ~= 0.025
-            expect(await feeRewardPool.rewardMultiplier()).to.eq("24999999999991200")
-            expect(await feeRewardPool.stakerRewardMultiplier(alice)).to.eq("24999999999991200")
+            // rewardPerTokenStored ~= 0.025 + 0 ~= 0.025
+            expect(await feeRewardPool.rewardPerTokenStored()).to.eq("24999999999991200")
+            expect(await feeRewardPool.userRewardPerTokenPaid(alice)).to.eq("24999999999991200")
         })
 
         // TODO
@@ -341,12 +341,12 @@ describe("FeeRewardPoolL1Spec", () => {
             await forwardBlockTimestamp(ONE_DAY / 4)
 
             await stakedPerpToken.mock_setBalance(alice, toFullDigit(ONE_DAY))
-            await feeRewardPool.notifyStake(alice)
+            await feeRewardPool.notifyStakeChanged(alice)
 
             await forwardBlockTimestamp(ONE_DAY / 4)
 
             await stakedPerpToken.mock_setBalance(bob, toFullDigit(ONE_DAY * 2))
-            await feeRewardPool.notifyStake(bob)
+            await feeRewardPool.notifyStakeChanged(bob)
 
             await forwardBlockTimestamp(ONE_DAY / 4)
         })
