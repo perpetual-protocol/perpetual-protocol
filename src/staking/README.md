@@ -11,18 +11,18 @@
                             |  notifyStake(staker, amount)
                             ▼ 
                     --------------------                                 
-    withdrawReward  |                  |       transfer        ---------------------
-   <--------------- |  feeRewardPool   |  <------------------  |                   |                        keeper
- stakers            |                  |   notifyRewardAmount  |   TmpRewardPool   |  <------------------------
-                    --------------------                       |                   |   transferToFeeRewardPool
-                                                               ---------------------
+    withdrawReward  |                  |       transfer        ----------------------------
+   <--------------- |  feeRewardPool   |  <------------------  |                          |           keeper
+ stakers            |                  |   notifyRewardAmount  | FeeTokenPoolDispatcherL1 |  <------------------------
+                    --------------------                       |                          |   transferToFeeRewardPool
+                                                               ----------------------------
                                                                          ▲
                                                                          |
                                         _________________________________|
                                         | 
     =================================== | ===========================================================
                                         | 
-                                        | transferToTmpRewardPool()
+                                        | transferToFeeTokenPoolDispatcher()
                                 ---------------                       -----------------
                                 |             |        transfer       |               |
                                 |  tollPool   |  <------------------  | clearingHouse |

@@ -15,7 +15,7 @@ describe("FeeRewardPoolL1Spec", () => {
     let admin: string
     let alice: string
     let bob: string
-    let tmpRewardPool: string
+    let feeTokenPoolDispatcher: string
     let stakedPerpToken: StakedPerpTokenMockInstance
     let feeRewardPool: FeeRewardPoolL1FakeInstance
     let usdt: ERC20FakeInstance
@@ -34,11 +34,11 @@ describe("FeeRewardPoolL1Spec", () => {
         admin = addresses[0]
         alice = addresses[1]
         bob = addresses[2]
-        tmpRewardPool = addresses[3]
+        feeTokenPoolDispatcher = addresses[3]
 
         usdt = await deployErc20Fake(toFullDigit(2000000))
         stakedPerpToken = await deployStakedPerpTokenMock()
-        feeRewardPool = await deployFeeRewardPoolL1(usdt.address, stakedPerpToken.address, tmpRewardPool)
+        feeRewardPool = await deployFeeRewardPoolL1(usdt.address, stakedPerpToken.address, feeTokenPoolDispatcher)
 
         await feeRewardPool.mock_setStakedPerpTokenAddr(admin)
         await usdt.transfer(feeRewardPool.address, toFullDigit(20000))
@@ -56,7 +56,9 @@ describe("FeeRewardPoolL1Spec", () => {
             const periodFinish = timestamp.addn(ONE_DAY)
 
             const rewardAmount = ONE_DAY
-            const receipt = await feeRewardPool.notifyRewardAmount(toDecimal(rewardAmount), { from: tmpRewardPool })
+            const receipt = await feeRewardPool.notifyRewardAmount(toDecimal(rewardAmount), {
+                from: feeTokenPoolDispatcher,
+            })
             expectEvent.inTransaction(receipt.tx, feeRewardPool, "RewardTransferred", {
                 amount: toFullDigit(rewardAmount),
             })
@@ -73,7 +75,7 @@ describe("FeeRewardPoolL1Spec", () => {
 
         it("first time calling notifyRewardAmount() when totalSupply is not 0", async () => {
             const rewardAmount = ONE_DAY
-            await feeRewardPool.notifyRewardAmount(toDecimal(rewardAmount), { from: tmpRewardPool })
+            await feeRewardPool.notifyRewardAmount(toDecimal(rewardAmount), { from: feeTokenPoolDispatcher })
 
             // timeInterval: periodFinish = 0, lastUpdateTime = 0, hence = 0
             // rewardPerTokenStored: rewardPerTokenStored = 0, hence 0 + ? * 0 = 0
@@ -81,13 +83,13 @@ describe("FeeRewardPoolL1Spec", () => {
         })
 
         it("second time calling notifyRewardAmount(), the calling time == periodFinish", async () => {
-            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: tmpRewardPool })
+            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: feeTokenPoolDispatcher })
 
             const timestamp = await feeRewardPool.mock_getCurrentTimestamp()
             await forwardBlockTimestamp(ONE_DAY)
 
             const rewardAmount = ONE_DAY * 2
-            await feeRewardPool.notifyRewardAmount(toDecimal(rewardAmount), { from: tmpRewardPool })
+            await feeRewardPool.notifyRewardAmount(toDecimal(rewardAmount), { from: feeTokenPoolDispatcher })
 
             expect(await feeRewardPool.lastUpdateTime()).to.eq(timestamp.addn(ONE_DAY))
 
@@ -100,13 +102,13 @@ describe("FeeRewardPoolL1Spec", () => {
         })
 
         it("second time calling notifyRewardAmount(), the calling time > periodFinish", async () => {
-            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: tmpRewardPool })
+            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: feeTokenPoolDispatcher })
 
             const timestamp = await feeRewardPool.mock_getCurrentTimestamp()
             await forwardBlockTimestamp(ONE_DAY + 1)
 
             const rewardAmount = ONE_DAY * 2
-            await feeRewardPool.notifyRewardAmount(toDecimal(rewardAmount), { from: tmpRewardPool })
+            await feeRewardPool.notifyRewardAmount(toDecimal(rewardAmount), { from: feeTokenPoolDispatcher })
 
             expect(await feeRewardPool.lastUpdateTime()).to.eq(timestamp.addn(ONE_DAY + 1))
 
@@ -120,13 +122,13 @@ describe("FeeRewardPoolL1Spec", () => {
 
         it("second time calling notifyRewardAmount(), the calling time < periodFinish", async () => {
             // rewardRate: 86,400 / 86,400 = 1
-            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: tmpRewardPool })
+            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: feeTokenPoolDispatcher })
 
             const timestamp = await feeRewardPool.mock_getCurrentTimestamp()
             await forwardBlockTimestamp(ONE_DAY / 4)
 
             const rewardAmount = ONE_DAY * 2
-            await feeRewardPool.notifyRewardAmount(toDecimal(rewardAmount), { from: tmpRewardPool })
+            await feeRewardPool.notifyRewardAmount(toDecimal(rewardAmount), { from: feeTokenPoolDispatcher })
 
             expect(await feeRewardPool.lastUpdateTime()).to.eq(timestamp.addn(ONE_DAY / 4))
 
@@ -141,19 +143,25 @@ describe("FeeRewardPoolL1Spec", () => {
             expect(await feeRewardPool.rewardPerTokenStored()).to.eq("24999999999991200")
         })
 
-        it("force error, not called by tmpRewardPool", async () => {
-            await expectRevert(feeRewardPool.notifyRewardAmount(toDecimal(100), { from: alice }), "only tmpRewardPool")
+        it("force error, not called by feeTokenPoolDispatcher", async () => {
+            await expectRevert(
+                feeRewardPool.notifyRewardAmount(toDecimal(100), { from: alice }),
+                "only feeTokenPoolDispatcher",
+            )
         })
 
         it("force error, token amount is zero", async () => {
-            await expectRevert(feeRewardPool.notifyRewardAmount(toDecimal(0), { from: tmpRewardPool }), "invalid input")
+            await expectRevert(
+                feeRewardPool.notifyRewardAmount(toDecimal(0), { from: feeTokenPoolDispatcher }),
+                "invalid input",
+            )
         })
     })
 
     describe("notifyStakeChanged()", () => {
         beforeEach(async () => {
             await stakedPerpToken.mock_setTotalSupply(toFullDigit(10 * ONE_DAY))
-            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: tmpRewardPool })
+            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: feeTokenPoolDispatcher })
             // rewardRate: ONE_DAY / ONE_DAY = 1
         })
 
@@ -246,7 +254,7 @@ describe("FeeRewardPoolL1Spec", () => {
     describe("notifyRewardAmount() & notifyStakeChanged() in multiple periods", () => {
         beforeEach(async () => {
             await stakedPerpToken.mock_setTotalSupply(toFullDigit(10 * ONE_DAY))
-            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: tmpRewardPool })
+            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: feeTokenPoolDispatcher })
             // lastUpdateTime = original value
 
             // alice stakes 10%
@@ -260,7 +268,7 @@ describe("FeeRewardPoolL1Spec", () => {
 
         it("alice stakes 10% twice in two periods", async () => {
             await forwardBlockTimestamp((ONE_DAY * 3) / 4)
-            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY * 2), { from: tmpRewardPool })
+            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY * 2), { from: feeTokenPoolDispatcher })
             // rewardRate = 2
 
             // lastUpdateTime = original value + ONE_DAY / 4
@@ -296,7 +304,7 @@ describe("FeeRewardPoolL1Spec", () => {
             await feeRewardPool.notifyStakeChanged(bob)
 
             await forwardBlockTimestamp((ONE_DAY * 3) / 4)
-            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY * 2), { from: tmpRewardPool })
+            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY * 2), { from: feeTokenPoolDispatcher })
             // rewardRate: ONE_DAY * 2 / ONE_DAY = 2
 
             await forwardBlockTimestamp(ONE_DAY / 5)
@@ -308,7 +316,7 @@ describe("FeeRewardPoolL1Spec", () => {
     describe("withdrawReward()", () => {
         beforeEach(async () => {
             await stakedPerpToken.mock_setTotalSupply(toFullDigit(10 * ONE_DAY))
-            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: tmpRewardPool })
+            await feeRewardPool.notifyRewardAmount(toDecimal(ONE_DAY), { from: feeTokenPoolDispatcher })
         })
 
         it("alice withdraws reward right after notifyStakeChanged()", async () => {
@@ -353,24 +361,6 @@ describe("FeeRewardPoolL1Spec", () => {
 
         it("force error, rewards is 0", async () => {
             await expectRevert(feeRewardPool.withdrawReward({ from: alice }), "reward is 0")
-        })
-    })
-
-    describe("setDuration()", () => {
-        it("duration should be updated", async () => {
-            await feeRewardPool.setDuration(toFullDigit(20))
-            expect(await feeRewardPool.duration()).to.eq(toFullDigit(20))
-        })
-
-        it("force error, onlyOwner", async () => {
-            await expectRevert(
-                feeRewardPool.setDuration(20, { from: alice }),
-                "PerpFiOwnableUpgrade: caller is not the owner",
-            )
-        })
-
-        it("force error, duration is 0", async () => {
-            await expectRevert(feeRewardPool.setDuration(0), "invalid input")
         })
     })
 })

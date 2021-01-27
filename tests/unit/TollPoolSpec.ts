@@ -19,7 +19,7 @@ const EMPTY_ADDRESS = "0x0000000000000000000000000000000000000000"
 describe("tollPoolSpec", () => {
     let admin: string
     let alice: string
-    let tmpRewardPoolMock: string
+    let feeTokenPoolDispatcherMock: string
     let tokenMediator: MultiTokenMediatorMockInstance
     let tollPool: TollPoolInstance
     let usdt: ERC20FakeInstance
@@ -29,7 +29,7 @@ describe("tollPoolSpec", () => {
         const addresses = await web3.eth.getAccounts()
         admin = addresses[0]
         alice = addresses[1]
-        tmpRewardPoolMock = addresses[2]
+        feeTokenPoolDispatcherMock = addresses[2]
 
         usdt = await deployErc20Fake(toFullDigit(2000000))
         usdc = await deployErc20Fake(toFullDigit(2000000))
@@ -44,86 +44,94 @@ describe("tollPoolSpec", () => {
         await usdc.approve(tollPool.address, toFullDigit(2000000))
     })
 
-    describe("transferToTmpRewardPool()", () => {
-        beforeEach(async () => {})
-
-        it("tmpRewardPool should receive all the balance of one token in the tollPool contract", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
+    describe("transferToFeeTokenPoolDispatcher()", () => {
+        it("should receive all the balance of one token in the tollPool contract", async () => {
+            await tollPool.setFeeTokenPoolDispatcher(feeTokenPoolDispatcherMock)
             await tollPool.addFeeToken(usdt.address)
             await tollPool.addFeeToken(usdc.address)
 
             await usdt.transfer(tollPool.address, toFullDigit(1000))
-            const receipt = await tollPool.transferToTmpRewardPool({ from: admin })
+            const receipt = await tollPool.transferToFeeTokenPoolDispatcher({ from: admin })
             expectEvent.inTransaction(receipt.tx, tollPool, "TokenTransferred")
             expect(await usdt.balanceOf(tokenMediator.address)).to.eq(toFullDigit(1000))
         })
 
-        it("tmpRewardPool should receive all the balances of tokens in the tollPool contract", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
+        it("should receive all the balances of tokens in the tollPool contract", async () => {
+            await tollPool.setFeeTokenPoolDispatcher(feeTokenPoolDispatcherMock)
             await tollPool.addFeeToken(usdt.address)
             await tollPool.addFeeToken(usdc.address)
 
             await usdt.transfer(tollPool.address, toFullDigit(1000))
             await usdc.transfer(tollPool.address, toFullDigit(2000))
 
-            const receipt = await tollPool.transferToTmpRewardPool({ from: admin })
-            expectEvent.inTransaction(receipt.tx, tollPool, "TokenTransferred")
+            const receipt = await tollPool.transferToFeeTokenPoolDispatcher({ from: admin })
+            expectEvent.inTransaction(receipt.tx, tollPool, "TokenTransferred", {
+                token: usdt.address,
+                amount: toFullDigit(1000),
+            })
+            // expectEvent.inTransaction(receipt.tx, tollPool, "TokenTransferred", {
+            //     token: usdc.address,
+            //     amount: toFullDigit(2000),
+            // })
             expect(await usdt.balanceOf(tokenMediator.address)).to.eq(toFullDigit(1000))
             expect(await usdc.balanceOf(tokenMediator.address)).to.eq(toFullDigit(2000))
         })
 
-        it("tmpRewardPool should receive usdt but not usdc, since the balance of usdc is 0", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
+        it("should receive usdt but not usdc, since the balance of usdc is 0", async () => {
+            await tollPool.setFeeTokenPoolDispatcher(feeTokenPoolDispatcherMock)
             await tollPool.addFeeToken(usdt.address)
             await tollPool.addFeeToken(usdc.address)
 
             await usdt.transfer(tollPool.address, toFullDigit(1000))
-            await tollPool.transferToTmpRewardPool({ from: admin })
+            await tollPool.transferToFeeTokenPoolDispatcher({ from: admin })
             expect(await usdt.balanceOf(tokenMediator.address)).to.eq(toFullDigit(1000))
         })
 
-        it("force error, tmpRewardPoolL1 not yet set", async () => {
-            await expectRevert(tollPool.transferToTmpRewardPool(), "tmpRewardPoolL1 not yet set")
+        it("force error, feeTokenPoolDispatcherL1 not yet set", async () => {
+            await expectRevert(tollPool.transferToFeeTokenPoolDispatcher(), "feeTokenPoolDispatcherL1 not yet set")
         })
 
         it("force error, feeTokens not yet set", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
-            await expectRevert(tollPool.transferToTmpRewardPool(), "feeTokens not set yet")
+            await tollPool.setFeeTokenPoolDispatcher(feeTokenPoolDispatcherMock)
+            await expectRevert(tollPool.transferToFeeTokenPoolDispatcher(), "feeTokens not set yet")
         })
 
         it("force error, the amount of all registered token is zero", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
+            await tollPool.setFeeTokenPoolDispatcher(feeTokenPoolDispatcherMock)
             await tollPool.addFeeToken(usdt.address)
-            await expectRevert(tollPool.transferToTmpRewardPool(), "fee is now zero")
+            await expectRevert(tollPool.transferToFeeTokenPoolDispatcher(), "fee is now zero")
         })
     })
 
-    describe("setTmpRewardPool()", () => {
-        it("tmpRewardPool should be set", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
-            expect(await tollPool.tmpRewardPoolL1()).to.eq(tmpRewardPoolMock)
+    describe("setFeeTokenPoolDispatcher()", () => {
+        it("feeTokenPoolDispatcher should be set", async () => {
+            await tollPool.setFeeTokenPoolDispatcher(feeTokenPoolDispatcherMock)
+            expect(await tollPool.feeTokenPoolDispatcherL1()).to.eq(feeTokenPoolDispatcherMock)
         })
 
-        it("tmpRewardPool should be updated", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
-            await tollPool.setTmpRewardPool(alice)
-            expect(await tollPool.tmpRewardPoolL1()).to.eq(alice)
+        it("feeTokenPoolDispatcher should be updated", async () => {
+            await tollPool.setFeeTokenPoolDispatcher(feeTokenPoolDispatcherMock)
+            await tollPool.setFeeTokenPoolDispatcher(alice)
+            expect(await tollPool.feeTokenPoolDispatcherL1()).to.eq(alice)
         })
 
         it("force error, onlyOwner", async () => {
             await expectRevert(
-                tollPool.setTmpRewardPool(EMPTY_ADDRESS, { from: alice }),
+                tollPool.setFeeTokenPoolDispatcher(EMPTY_ADDRESS, { from: alice }),
                 "PerpFiOwnableUpgrade: caller is not the owner",
             )
         })
 
         it("force error, input is zero address", async () => {
-            await expectRevert(tollPool.setTmpRewardPool(EMPTY_ADDRESS), "invalid input")
+            await expectRevert(tollPool.setFeeTokenPoolDispatcher(EMPTY_ADDRESS), "invalid input")
         })
 
-        it("force error, tmpRewardPool already existed", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
-            await expectRevert(tollPool.setTmpRewardPool(tmpRewardPoolMock), "input is the same as the current one")
+        it("force error, feeTokenPoolDispatcher already existed", async () => {
+            await tollPool.setFeeTokenPoolDispatcher(feeTokenPoolDispatcherMock)
+            await expectRevert(
+                tollPool.setFeeTokenPoolDispatcher(feeTokenPoolDispatcherMock),
+                "input is the same as the current one",
+            )
         })
     })
 
@@ -150,7 +158,7 @@ describe("tollPoolSpec", () => {
         })
 
         it("force error, input is zero address", async () => {
-            await expectRevert(tollPool.addFeeToken(EMPTY_ADDRESS), "invalid input")
+            await expectRevert(tollPool.addFeeToken(EMPTY_ADDRESS), "token is already existed")
         })
     })
 
@@ -172,12 +180,12 @@ describe("tollPoolSpec", () => {
             expect(await tollPool.feeTokens(1)).to.eq(usdt.address)
         })
 
-        it("should transfer to tmpRewardPool via clientBridge before removeFeeToken", async () => {
-            await tollPool.setTmpRewardPool(tmpRewardPoolMock)
+        it("should transfer to feeTokenPoolDispatcher via clientBridge before removeFeeToken", async () => {
+            await tollPool.setFeeTokenPoolDispatcher(feeTokenPoolDispatcherMock)
             await tollPool.addFeeToken(usdt.address)
             await usdt.transfer(tollPool.address, 1)
 
-            // TODO expect tollPool call clientBridge.erc20Transfer(tmpRewardPool)
+            // TODO expect tollPool call clientBridge.erc20Transfer(feeTokenPoolDispatcher)
             // let's use ethers/waffle when writing new unit test. it's hard to write unit test without mock lib
             await tollPool.removeFeeToken(usdt.address)
             expect(await usdt.balanceOf(tollPool.address)).eq(0)
@@ -197,7 +205,7 @@ describe("tollPoolSpec", () => {
 
         it("force error, input is zero address", async () => {
             await tollPool.addFeeToken(usdt.address)
-            await expectRevert(tollPool.removeFeeToken(EMPTY_ADDRESS), "invalid input")
+            await expectRevert(tollPool.removeFeeToken(EMPTY_ADDRESS), "token does not exist")
         })
     })
 })
