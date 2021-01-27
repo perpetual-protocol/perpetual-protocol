@@ -619,9 +619,9 @@ export class ContractPublisher {
             // transfer proxyAdmin
             [
                 async (): Promise<void> => {
-                    console.log("deploy SDEFIUSDC amm...")
+                    console.log("deploy SNXUSDC amm...")
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.SDEFIUSDC)
+                    const ammContract = this.factory.createAmm(AmmInstanceName.SNXUSDC)
                     const quoteTokenAddr = this.externalContract.usdc!
                     await ammContract.deployUpgradableContract(
                         this.deployConfig.ammConfigMap,
@@ -630,10 +630,10 @@ export class ContractPublisher {
                     )
                 },
                 async (): Promise<void> => {
-                    console.log("set SDEFI amm Cap...")
-                    const amm = await this.factory.createAmm(AmmInstanceName.SDEFIUSDC).instance()
+                    console.log("set SNX amm Cap...")
+                    const amm = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
                     const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
-                        AmmInstanceName.SDEFIUSDC
+                        AmmInstanceName.SNXUSDC
                     ].properties
                     if (maxHoldingBaseAsset.gt(0)) {
                         await (
@@ -645,26 +645,25 @@ export class ContractPublisher {
                     }
                 },
                 async (): Promise<void> => {
-                    console.log("SDEFI amm.setCounterParty...")
+                    console.log("SNX amm.setCounterParty...")
                     const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    const amm = await this.factory.createAmm(AmmInstanceName.SDEFIUSDC).instance()
+                    const amm = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
                     await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
-                    console.log("opening Amm SDEFIUSDC...")
-                    const SDEFIUSDC = await this.factory.createAmm(AmmInstanceName.SDEFIUSDC).instance()
-                    await (await SDEFIUSDC.setOpen(true)).wait(this.confirmations)
+                    console.log("opening Amm SNXUSDC...")
+                    const SNXUSDC = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
+                    await (await SNXUSDC.setOpen(true)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     const gov = this.externalContract.foundationGovernance!
                     console.log(
-                        `transferring SDEFIUSDC owner to governance=${gov}...please remember to claim the ownership`,
+                        `transferring SNXUSDC owner to governance=${gov}...please remember to claim the ownership`,
                     )
-                    const SDEFIUSDC = await this.factory.createAmm(AmmInstanceName.SDEFIUSDC).instance()
-                    await (await SDEFIUSDC.setOwner(gov)).wait(this.confirmations)
+                    const SNXUSDC = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
+                    await (await SNXUSDC.setOwner(gov)).wait(this.confirmations)
                 },
             ],
-            // TODO: remember to make proxy upgrade to correct flatterened AMM
         ],
     }
 
