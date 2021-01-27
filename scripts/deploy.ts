@@ -42,10 +42,6 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
 
     // ADD NEW MARKET DOT
     await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 5`, options)
-
-    // V2
-    await asyncExec(`buidler --network ${layer1Network} ${TASK_DEPLOY_LAYER} ${stage} layer1 2`, options)
-    await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 6`, options)
 }
 
 /* eslint-disable no-console */

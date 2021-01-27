@@ -11,14 +11,9 @@ import {
     ClearingHouseViewer,
     ClientBridge,
     InsuranceFund,
-    KeeperRewardL1,
-    KeeperRewardL2,
     L2PriceFeed,
     MetaTxGateway,
-    PerpRewardVesting,
     RootBridge,
-    StakedPerpToken,
-    TollPool,
 } from "../types/ethers"
 import { ContractWrapperFactory } from "./contract/ContractWrapperFactory"
 import { DeployConfig, PriceFeedKey } from "./contract/DeployConfig"
@@ -116,51 +111,6 @@ export class ContractPublisher {
                     await OzContractDeployer.transferProxyAdminOwnership(governance)
                     console.log(`${this.layerType} contract deployment finished.`)
                 },
-            ],
-            // V1 END
-            // batch 2
-            [
-                async (): Promise<void> => {
-                    console.log("deploying KeeperReward on layer 1...")
-                    const perp = this.externalContract.perp!
-                    await this.factory
-                        .create<KeeperRewardL1>(ContractName.KeeperRewardL1)
-                        .deployUpgradableContract(perp!)
-                },
-                async (): Promise<void> => {
-                    console.log("keeperRewardL1.setKeeperFunctions()")
-                    const keeperRewardL1 = await this.factory
-                        .create<KeeperRewardL1>(ContractName.KeeperRewardL1)
-                        .instance()
-                    const chainlinkL1 = this.factory.create<ChainlinkL1>(ContractName.ChainlinkL1)
-                    await (
-                        await keeperRewardL1.setKeeperFunctions(
-                            ["0xf463e18e"], // bytes4(keccak("updateLatestRoundData(bytes32)"))
-                            [chainlinkL1.address!],
-                            [this.deployConfig.keeperRewardOnL1],
-                        )
-                    ).wait(this.confirmations)
-                },
-                async (): Promise<void> => {
-                    console.log("deploying PerpRewardVesting on layer 1...")
-                    const perp = this.externalContract.perp!
-                    await this.factory
-                        .create<PerpRewardVesting>(ContractName.PerpRewardVesting)
-                        .deployUpgradableContract(perp!)
-                },
-                // TODO: add rewardPool as the second parameter
-                async (): Promise<void> => {
-                    console.log("deploying StakedPerpToken on layer 1...")
-                    const perp = this.externalContract.perp!
-                    await this.factory
-                        .create<StakedPerpToken>(ContractName.StakedPerpToken)
-                        .deployUpgradableContract(perp!, perp)
-                },
-                async (): Promise<void> => {
-                    console.log("deploying TmpRewardPool on layer 1...")
-                    await this.factory.create<StakedPerpToken>(ContractName.TmpRewardPoolL1).deployUpgradableContract()
-                },
-                // TODO: addFeeRewardPool
             ],
         ],
         layer2: [
@@ -594,64 +544,6 @@ export class ContractPublisher {
                     )
                     const DOTUSDC = await this.factory.createAmm(AmmInstanceName.DOTUSDC).instance()
                     await (await DOTUSDC.setOwner(gov)).wait(this.confirmations)
-                },
-            ],
-            // batch 6
-            [
-                async (): Promise<void> => {
-                    console.log("deploying KeeperRewardL2 on layer 2...")
-                    const perp = this.externalContract.perp!
-                    await this.factory
-                        .create<KeeperRewardL2>(ContractName.KeeperRewardL2)
-                        .deployUpgradableContract(perp!)
-                },
-                async (): Promise<void> => {
-                    console.log("keeperRewardL2 setKeeperFunctions...")
-                    const keeperRewardL2 = await this.factory
-                        .create<KeeperRewardL2>(ContractName.KeeperRewardL2)
-                        .instance()
-                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    await (
-                        await keeperRewardL2.setKeeperFunctions(
-                            ["0x3e09fa10"], // bytes4(keccak("payFunding(address)"))
-                            [clearingHouseContract.address!],
-                            [this.deployConfig.keeperRewardOnL2],
-                        )
-                    ).wait(this.confirmations)
-                },
-                async (): Promise<void> => {
-                    console.log("deploying TollPool on layer 2...")
-                    const clearingHouse = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    const clientBridge = this.factory.create<ClientBridge>(ContractName.ClientBridge)
-                    await this.factory
-                        .create<TollPool>(ContractName.TollPool)
-                        .deployUpgradableContract(clearingHouse.address!, clientBridge.address!)
-                },
-                async (): Promise<void> => {
-                    console.log("tollPool addFeeToken & setTmpRewardPool...")
-                    const tollPool = await this.factory.create<TollPool>(ContractName.TollPool).instance()
-
-                    // TODO: should get tmpRewardPoolL1 instead of RootBridge
-                    const tmpRewardPoolL1 = this.systemMetadataDao.getContractMetadata(
-                        "layer1",
-                        ContractName.TmpRewardPoolL1,
-                    ).address
-
-                    const usdc = this.externalContract.usdc!
-
-                    // TODO local npm run dev will fail due to ERC20.approve() during addFeeToken
-                    await tollPool.addFeeToken(usdc)
-
-                    await tollPool.setTmpRewardPool(tmpRewardPoolL1)
-                },
-                // TODO may not work if owner is multi-sig wallet
-                async (): Promise<void> => {
-                    console.log("clearingHouse setTollPool...")
-                    const tollPool = this.factory.create<TollPool>(ContractName.TollPool)
-                    const clearingHouse = await this.factory
-                        .create<ClearingHouse>(ContractName.ClearingHouse)
-                        .instance()
-                    await (await clearingHouse.setTollPool(tollPool.address!)).wait(this.confirmations)
                 },
             ],
         ],
