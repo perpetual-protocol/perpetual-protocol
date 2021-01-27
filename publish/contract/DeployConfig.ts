@@ -11,6 +11,7 @@ export enum PriceFeedKey {
     ETH = "ETH",
     YFI = "YFI",
     DOT = "DOT",
+    SDEFI = "sDEFI",
 }
 
 // amm
@@ -139,6 +140,33 @@ export const DOT_USD_AMM: AmmConfig = {
     },
 }
 
+export const SDEFI_USD_AMM: AmmConfig = {
+    deployArgs: {
+        // base * price
+        // exact quote reserve amount will be overriden by the script based on the base reserve and the price upon deployment
+        quoteAssetReserve: BigNumber.from(5_000_000).mul(DEFAULT_DIGITS),
+        baseAssetReserve: BigNumber.from(600).mul(DEFAULT_DIGITS),
+        tradeLimitRatio: BigNumber.from(90)
+            .mul(DEFAULT_DIGITS)
+            .div(100), // 90% trading limit ratio
+        fundingPeriod: BigNumber.from(3600), // 1 hour
+        fluctuation: BigNumber.from(12)
+            .mul(DEFAULT_DIGITS)
+            .div(1000), // 1.2%
+        priceFeedKey: PriceFeedKey.SDEFI,
+        tollRatio: BigNumber.from(0)
+            .mul(DEFAULT_DIGITS)
+            .div(10000), // 0.0%
+        spreadRatio: BigNumber.from(10)
+            .mul(DEFAULT_DIGITS)
+            .div(10000), // 0.1%
+    },
+    properties: {
+        maxHoldingBaseAsset: DEFAULT_DIGITS.mul(12), // 12 sDEFI ~= $100,000 USD
+        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
+    },
+}
+
 export class DeployConfig {
     // deploy
     readonly confirmations: number
@@ -163,6 +191,7 @@ export class DeployConfig {
         [AmmInstanceName.ETHUSDC]: ETH_USD_AMM,
         [AmmInstanceName.YFIUSDC]: YFI_USD_AMM,
         [AmmInstanceName.DOTUSDC]: DOT_USD_AMM,
+        [AmmInstanceName.SDEFIUSDC]: SDEFI_USD_AMM,
     }
 
     constructor(stage: Stage) {
@@ -183,6 +212,7 @@ export class DeployConfig {
                     [PriceFeedKey.ETH]: "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
                     [PriceFeedKey.YFI]: "0xA027702dbb89fbd58938e4324ac03B58d812b0E1", // WARNING: there is no YFI/USD PriceFeed at Rinkeby
                     [PriceFeedKey.DOT]: "0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734", // WARNING: there is no YFI/USD PriceFeed at Rinkeby
+                    [PriceFeedKey.SDEFI]: "0x0630521aC362bc7A19a4eE44b57cE72Ea34AD01c",
                 }
                 break
             case "test":

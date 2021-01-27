@@ -5,6 +5,7 @@ export enum AmmInstanceName {
     DOTUSDC = "DOTUSDC",
     SNXUSDC = "SNXUSDC",
     LINKUSDC = "LINKUSDC",
+    SDEFIUSDC = "SDEFIUSDC",
 }
 
 export enum ContractName {

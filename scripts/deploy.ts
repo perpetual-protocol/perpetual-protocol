@@ -52,6 +52,9 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
         `buidler --network ${layer2Network} --config buidler.flatten.clearinghouse.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 7`,
         options,
     )
+
+    // #6 deploy the market (production=SNX, staging=sDEFI)
+    await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 8`, options)
 }
 
 /* eslint-disable no-console */
