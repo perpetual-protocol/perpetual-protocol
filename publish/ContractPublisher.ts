@@ -1,24 +1,21 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import bre, { ethers } from "@nomiclabs/buidler"
 import { TASK_COMPILE } from "@nomiclabs/buidler/builtin-tasks/task-names"
+import { BigNumber } from "ethers"
 import { SRC_DIR } from "../constants"
 import { ExternalContracts, Layer } from "../scripts/common"
 import { flatten } from "../scripts/flatten"
 import {
+    Amm,
     AmmReader,
     ChainlinkL1,
     ClearingHouse,
     ClearingHouseViewer,
     ClientBridge,
     InsuranceFund,
-    KeeperRewardL1,
-    KeeperRewardL2,
     L2PriceFeed,
     MetaTxGateway,
-    PerpRewardVesting,
     RootBridge,
-    StakedPerpToken,
-    TollPool,
 } from "../types/ethers"
 import { ContractWrapperFactory } from "./contract/ContractWrapperFactory"
 import { DeployConfig, PriceFeedKey } from "./contract/DeployConfig"
@@ -116,51 +113,6 @@ export class ContractPublisher {
                     await OzContractDeployer.transferProxyAdminOwnership(governance)
                     console.log(`${this.layerType} contract deployment finished.`)
                 },
-            ],
-            // V1 END
-            // batch 2
-            [
-                async (): Promise<void> => {
-                    console.log("deploying KeeperReward on layer 1...")
-                    const perp = this.externalContract.perp!
-                    await this.factory
-                        .create<KeeperRewardL1>(ContractName.KeeperRewardL1)
-                        .deployUpgradableContract(perp!)
-                },
-                async (): Promise<void> => {
-                    console.log("keeperRewardL1.setKeeperFunctions()")
-                    const keeperRewardL1 = await this.factory
-                        .create<KeeperRewardL1>(ContractName.KeeperRewardL1)
-                        .instance()
-                    const chainlinkL1 = this.factory.create<ChainlinkL1>(ContractName.ChainlinkL1)
-                    await (
-                        await keeperRewardL1.setKeeperFunctions(
-                            ["0xf463e18e"], // bytes4(keccak("updateLatestRoundData(bytes32)"))
-                            [chainlinkL1.address!],
-                            [this.deployConfig.keeperRewardOnL1],
-                        )
-                    ).wait(this.confirmations)
-                },
-                async (): Promise<void> => {
-                    console.log("deploying PerpRewardVesting on layer 1...")
-                    const perp = this.externalContract.perp!
-                    await this.factory
-                        .create<PerpRewardVesting>(ContractName.PerpRewardVesting)
-                        .deployUpgradableContract(perp!)
-                },
-                // TODO: add rewardPool as the second parameter
-                async (): Promise<void> => {
-                    console.log("deploying StakedPerpToken on layer 1...")
-                    const perp = this.externalContract.perp!
-                    await this.factory
-                        .create<StakedPerpToken>(ContractName.StakedPerpToken)
-                        .deployUpgradableContract(perp!, perp)
-                },
-                async (): Promise<void> => {
-                    console.log("deploying TmpRewardPool on layer 1...")
-                    await this.factory.create<StakedPerpToken>(ContractName.TmpRewardPoolL1).deployUpgradableContract()
-                },
-                // TODO: addFeeRewardPool
             ],
         ],
         layer2: [
@@ -597,63 +549,122 @@ export class ContractPublisher {
                 },
             ],
             // batch 6
+            // deploy the flattened amm for DOT (production), or LINK (staging)
+            // cant prepare upgrade for other amm due to openzeppelin upgrade sdk issue
+            // https://github.com/OpenZeppelin/openzeppelin-upgrades/issues/175
             [
                 async (): Promise<void> => {
-                    console.log("deploying KeeperRewardL2 on layer 2...")
-                    const perp = this.externalContract.perp!
-                    await this.factory
-                        .create<KeeperRewardL2>(ContractName.KeeperRewardL2)
-                        .deployUpgradableContract(perp!)
-                },
-                async (): Promise<void> => {
-                    console.log("keeperRewardL2 setKeeperFunctions...")
-                    const keeperRewardL2 = await this.factory
-                        .create<KeeperRewardL2>(ContractName.KeeperRewardL2)
-                        .instance()
-                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    await (
-                        await keeperRewardL2.setKeeperFunctions(
-                            ["0x3e09fa10"], // bytes4(keccak("payFunding(address)"))
-                            [clearingHouseContract.address!],
-                            [this.deployConfig.keeperRewardOnL2],
-                        )
-                    ).wait(this.confirmations)
-                },
-                async (): Promise<void> => {
-                    console.log("deploying TollPool on layer 2...")
-                    const clearingHouse = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    const clientBridge = this.factory.create<ClientBridge>(ContractName.ClientBridge)
-                    await this.factory
-                        .create<TollPool>(ContractName.TollPool)
-                        .deployUpgradableContract(clearingHouse.address!, clientBridge.address!)
-                },
-                async (): Promise<void> => {
-                    console.log("tollPool addFeeToken & setTmpRewardPool...")
-                    const tollPool = await this.factory.create<TollPool>(ContractName.TollPool).instance()
+                    const filename = `${ContractName.Amm}.sol`
 
-                    // TODO: should get tmpRewardPoolL1 instead of RootBridge
-                    const tmpRewardPoolL1 = this.systemMetadataDao.getContractMetadata(
-                        "layer1",
-                        ContractName.TmpRewardPoolL1,
-                    ).address
+                    // after flatten sol file we must re-compile again
+                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                    await bre.run(TASK_COMPILE)
 
-                    const usdc = this.externalContract.usdc!
+                    // deploy amm implementation
+                    const DOTUSDC = this.factory.createAmm(AmmInstanceName.DOTUSDC)
+                    const dotUsdcImplAddr = await DOTUSDC.prepareUpgradeContract()
 
-                    // TODO local npm run dev will fail due to ERC20.approve() during addFeeToken
-                    await tollPool.addFeeToken(usdc)
-
-                    await tollPool.setTmpRewardPool(tmpRewardPoolL1)
-                },
-                // TODO may not work if owner is multi-sig wallet
-                async (): Promise<void> => {
-                    console.log("clearingHouse setTollPool...")
-                    const tollPool = this.factory.create<TollPool>(ContractName.TollPool)
-                    const clearingHouse = await this.factory
-                        .create<ClearingHouse>(ContractName.ClearingHouse)
-                        .instance()
-                    await (await clearingHouse.setTollPool(tollPool.address!)).wait(this.confirmations)
+                    // in normal case we don't need to do anything to the implementation contract
+                    const ammImplInstance = (await ethers.getContractAt(ContractName.Amm, dotUsdcImplAddr)) as Amm
+                    const wei = BigNumber.from(1)
+                    const emptyAddr = "0x0000000000000000000000000000000000000001"
+                    await ammImplInstance.initialize(
+                        wei,
+                        wei,
+                        wei,
+                        wei,
+                        emptyAddr,
+                        ethers.utils.formatBytes32String(""),
+                        emptyAddr,
+                        wei,
+                        wei,
+                        wei,
+                    )
                 },
             ],
+            // batch 7
+            // deploy the flattened clearingHouse and init it just in case
+            [
+                async (): Promise<void> => {
+                    const filename = `${ContractName.ClearingHouse}.sol`
+
+                    // after flatten sol file we must re-compile again
+                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                    await bre.run(TASK_COMPILE)
+
+                    // deploy clearing house implementation
+                    const clearingHouseContract = await this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const implContractAddr = await clearingHouseContract.prepareUpgradeContract()
+
+                    // in normal case we don't need to do anything to the implementation contract
+                    const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
+                    const metaTxGatewayContract = this.factory.create<MetaTxGateway>(ContractName.MetaTxGateway)
+                    const clearingHouseImplInstance = (await ethers.getContractAt(
+                        ContractName.ClearingHouse,
+                        implContractAddr,
+                    )) as ClearingHouse
+                    await clearingHouseImplInstance.initialize(
+                        this.deployConfig.initMarginRequirement,
+                        this.deployConfig.maintenanceMarginRequirement,
+                        this.deployConfig.liquidationFeeRatio,
+                        insuranceFundContract.address!,
+                        metaTxGatewayContract.address!,
+                    )
+                },
+            ],
+            // batch 8
+            // deploy the new amm instance for new market
+            // set cap, counterParty, set open...etc
+            // transfer owner
+            // transfer proxyAdmin
+            [
+                async (): Promise<void> => {
+                    console.log("deploy SDEFIUSDC amm...")
+                    const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
+                    const ammContract = this.factory.createAmm(AmmInstanceName.SDEFIUSDC)
+                    const quoteTokenAddr = this.externalContract.usdc!
+                    await ammContract.deployUpgradableContract(
+                        this.deployConfig.ammConfigMap,
+                        l2PriceFeedContract.address!,
+                        quoteTokenAddr,
+                    )
+                },
+                async (): Promise<void> => {
+                    console.log("set SDEFI amm Cap...")
+                    const amm = await this.factory.createAmm(AmmInstanceName.SDEFIUSDC).instance()
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
+                        AmmInstanceName.SDEFIUSDC
+                    ].properties
+                    if (maxHoldingBaseAsset.gt(0)) {
+                        await (
+                            await amm.setCap(
+                                { d: maxHoldingBaseAsset.toString() },
+                                { d: openInterestNotionalCap.toString() },
+                            )
+                        ).wait(this.confirmations)
+                    }
+                },
+                async (): Promise<void> => {
+                    console.log("SDEFI amm.setCounterParty...")
+                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const amm = await this.factory.createAmm(AmmInstanceName.SDEFIUSDC).instance()
+                    await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("opening Amm SDEFIUSDC...")
+                    const SDEFIUSDC = await this.factory.createAmm(AmmInstanceName.SDEFIUSDC).instance()
+                    await (await SDEFIUSDC.setOpen(true)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring SDEFIUSDC owner to governance=${gov}...please remember to claim the ownership`,
+                    )
+                    const SDEFIUSDC = await this.factory.createAmm(AmmInstanceName.SDEFIUSDC).instance()
+                    await (await SDEFIUSDC.setOwner(gov)).wait(this.confirmations)
+                },
+            ],
+            // TODO: remember to make proxy upgrade to correct flatterened AMM
         ],
     }
 

@@ -2,24 +2,32 @@
 pragma solidity 0.6.9;
 pragma experimental ABIEncoderV2;
 
-import { BlockContext } from "./utils/BlockContext.sol";
+import { BlockContext } from "../utils/BlockContext.sol";
 import { BaseRelayRecipient } from "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol";
-import { Decimal } from "./utils/Decimal.sol";
-import { SignedDecimal } from "./utils/SignedDecimal.sol";
-import { MixedDecimal } from "./utils/MixedDecimal.sol";
-import { DecimalERC20 } from "./utils/DecimalERC20.sol";
+import { Decimal } from "../utils/Decimal.sol";
+import { SignedDecimal } from "../utils/SignedDecimal.sol";
+import { MixedDecimal } from "../utils/MixedDecimal.sol";
+import { DecimalERC20 } from "../utils/DecimalERC20.sol";
 import { ContextUpgradeSafe } from "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
 // prettier-ignore
 // solhint-disable-next-line
 import { ReentrancyGuardUpgradeSafe } from "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
-import { OwnerPausableUpgradeSafe } from "./OwnerPausable.sol";
-import { IAmm } from "./interface/IAmm.sol";
-import { IInsuranceFund } from "./interface/IInsuranceFund.sol";
+import { OwnerPausableUpgradeSafe } from "../OwnerPausable.sol";
+import { IMultiTokenRewardRecipient } from "../interface/IMultiTokenRewardRecipient.sol";
+import { IAmmV1 } from "./IAmmV1.sol";
+
+interface IInsuranceFund {
+    function withdraw(IERC20 _quoteToken, Decimal.decimal calldata _amount) external;
+
+    function isExistedAmm(IAmmV1 _amm) external view returns (bool);
+
+    function getAllAmms() external view returns (IAmmV1[] memory);
+}
 
 // note BaseRelayRecipient must come after OwnerPausableUpgradeSafe so its _msgSender() takes precedence
 // (yes, the ordering is reversed comparing to Python)
-contract ClearingHouse is
+contract ClearingHouseV1 is
     DecimalERC20,
     OwnerPausableUpgradeSafe,
     ReentrancyGuardUpgradeSafe,
@@ -178,7 +186,7 @@ contract ClearingHouse is
 
     // contract dependencies
     IInsuranceFund public insuranceFund;
-    address public tollPool;
+    IMultiTokenRewardRecipient public feePool;
 
     // designed for arbitragers who can hold unlimited positions. will be removed after guarded period
     address internal whitelist;
@@ -241,8 +249,8 @@ contract ClearingHouse is
         emit MarginRatioChanged(maintenanceMarginRatio.toUint());
     }
 
-    function setTollPool(address _tollPool) external onlyOwner {
-        tollPool = _tollPool;
+    function setFeePool(IMultiTokenRewardRecipient _feePool) external onlyOwner {
+        feePool = _feePool;
     }
 
     /**
@@ -259,7 +267,7 @@ contract ClearingHouse is
      * @param _amm IAmm address
      * @param _addedMargin added margin in 18 digits
      */
-    function addMargin(IAmm _amm, Decimal.decimal calldata _addedMargin) external whenNotPaused() nonReentrant() {
+    function addMargin(IAmmV1 _amm, Decimal.decimal calldata _addedMargin) external whenNotPaused() nonReentrant() {
         // check condition
         requireAmm(_amm, true);
         requireNonZeroInput(_addedMargin);
@@ -281,7 +289,11 @@ contract ClearingHouse is
      * @param _amm IAmm address
      * @param _removedMargin removed margin in 18 digits
      */
-    function removeMargin(IAmm _amm, Decimal.decimal calldata _removedMargin) external whenNotPaused() nonReentrant() {
+    function removeMargin(IAmmV1 _amm, Decimal.decimal calldata _removedMargin)
+        external
+        whenNotPaused()
+        nonReentrant()
+    {
         // check condition
         requireAmm(_amm, true);
         requireNonZeroInput(_removedMargin);
@@ -317,7 +329,7 @@ contract ClearingHouse is
      * @notice settle all the positions when amm is shutdown. The settlement price is according to IAmm.settlementPrice
      * @param _amm IAmm address
      */
-    function settlePosition(IAmm _amm) external nonReentrant() {
+    function settlePosition(IAmmV1 _amm) external nonReentrant() {
         // check condition
         requireAmm(_amm, false);
 
@@ -397,7 +409,7 @@ contract ClearingHouse is
      * @param _baseAssetAmountLimit minimum base asset amount expected to get to prevent from slippage.
      */
     function openPosition(
-        IAmm _amm,
+        IAmmV1 _amm,
         Side _side,
         Decimal.decimal calldata _quoteAssetAmount,
         Decimal.decimal calldata _leverage,
@@ -477,7 +489,7 @@ contract ClearingHouse is
      * @notice close all the positions
      * @param _amm IAmm address
      */
-    function closePosition(IAmm _amm, Decimal.decimal calldata _quoteAssetAmountLimit)
+    function closePosition(IAmmV1 _amm, Decimal.decimal calldata _quoteAssetAmountLimit)
         external
         whenNotPaused()
         nonReentrant()
@@ -531,7 +543,7 @@ contract ClearingHouse is
      * @param _amm IAmm address
      * @param _trader trader address
      */
-    function liquidate(IAmm _amm, address _trader) external nonReentrant() {
+    function liquidate(IAmmV1 _amm, address _trader) external nonReentrant() {
         // check conditions
         requireAmm(_amm, true);
         requireMoreMarginRatio(getMarginRatio(_amm, _trader), maintenanceMarginRatio, false);
@@ -606,8 +618,11 @@ contract ClearingHouse is
      * @notice if funding rate is positive, traders with long position pay traders with short position and vice versa.
      * @param _amm IAmm address
      */
-    function payFunding(IAmm _amm) external {
+    function payFunding(IAmmV1 _amm) external {
         requireAmm(_amm, true);
+
+        // must copy the baseAssetDeltaThisFundingPeriod before settle funding
+        SignedDecimal.signedDecimal memory baseAssetDeltaThisFundingPeriod = _amm.getBaseAssetDeltaThisFundingPeriod();
 
         SignedDecimal.signedDecimal memory premiumFraction = _amm.settleFunding();
         ammMap[address(_amm)].cumulativePremiumFractions.push(
@@ -615,18 +630,18 @@ contract ClearingHouse is
         );
 
         // funding payment = premium fraction * position
-        // eg. if alice takes 10 long position, totalPositionSize = 10
+        // eg. if alice takes 10 long position, baseAssetDeltaThisFundingPeriod = -10
         // if premiumFraction is positive: long pay short, amm get positive funding payment
         // if premiumFraction is negative: short pay long, amm get negative funding payment
-        // if totalPositionSize.side * premiumFraction > 0, funding payment is positive which means profit
-        SignedDecimal.signedDecimal memory totalTraderPositionSize = _amm.getBaseAssetDelta();
-        SignedDecimal.signedDecimal memory ammFundingPaymentProfit = premiumFraction.mulD(totalTraderPositionSize);
+        // if position side * premiumFraction > 0, funding payment is negative which means loss
+        SignedDecimal.signedDecimal memory ammFundingPaymentLoss =
+            premiumFraction.mulD(baseAssetDeltaThisFundingPeriod);
 
         IERC20 quoteAsset = _amm.quoteAsset();
-        if (ammFundingPaymentProfit.toInt() < 0) {
-            insuranceFund.withdraw(quoteAsset, ammFundingPaymentProfit.abs());
+        if (ammFundingPaymentLoss.toInt() > 0) {
+            insuranceFund.withdraw(quoteAsset, ammFundingPaymentLoss.abs());
         } else {
-            transferToInsuranceFund(quoteAsset, ammFundingPaymentProfit.abs());
+            transferToInsuranceFund(quoteAsset, ammFundingPaymentLoss.abs());
         }
     }
 
@@ -634,7 +649,7 @@ contract ClearingHouse is
      * @notice adjust msg.sender's position when liquidity migration happened
      * @param _amm Amm address
      */
-    function adjustPosition(IAmm _amm) external {
+    function adjustPosition(IAmmV1 _amm) external {
         adjustPositionForLiquidityChanged(_amm, _msgSender());
     }
 
@@ -649,7 +664,7 @@ contract ClearingHouse is
      * @param _trader trader address
      * @return margin ratio in 18 digits
      */
-    function getMarginRatio(IAmm _amm, address _trader) public view returns (SignedDecimal.signedDecimal memory) {
+    function getMarginRatio(IAmmV1 _amm, address _trader) public view returns (SignedDecimal.signedDecimal memory) {
         Position memory position = getPosition(_amm, _trader);
         requirePositionSize(position.size);
         requireNonZeroInput(position.openNotional);
@@ -672,7 +687,7 @@ contract ClearingHouse is
      * @param _trader trader address
      * @return struct Position
      */
-    function getPosition(IAmm _amm, address _trader) public view returns (Position memory) {
+    function getPosition(IAmmV1 _amm, address _trader) public view returns (Position memory) {
         Position memory pos = getUnadjustedPosition(_amm, _trader);
         uint256 latestLiquidityIndex = _amm.getLiquidityHistoryLength().sub(1);
         if (pos.liquidityHistoryIndex == latestLiquidityIndex) {
@@ -691,7 +706,7 @@ contract ClearingHouse is
      * @return unrealizedPnl unrealized Pnl
      */
     function getPositionNotionalAndUnrealizedPnl(
-        IAmm _amm,
+        IAmmV1 _amm,
         address _trader,
         PnlCalcOption _pnlCalcOption
     ) public view returns (Decimal.decimal memory positionNotional, SignedDecimal.signedDecimal memory unrealizedPnl) {
@@ -699,7 +714,7 @@ contract ClearingHouse is
         Decimal.decimal memory positionSizeAbs = position.size.abs();
         if (positionSizeAbs.toUint() != 0) {
             bool isShortPosition = position.size.toInt() < 0;
-            IAmm.Dir dir = isShortPosition ? IAmm.Dir.REMOVE_FROM_AMM : IAmm.Dir.ADD_TO_AMM;
+            IAmmV1.Dir dir = isShortPosition ? IAmmV1.Dir.REMOVE_FROM_AMM : IAmmV1.Dir.ADD_TO_AMM;
             if (_pnlCalcOption == PnlCalcOption.TWAP) {
                 positionNotional = _amm.getOutputTwap(dir, positionSizeAbs);
             } else {
@@ -719,7 +734,7 @@ contract ClearingHouse is
      * @param _amm IAmm address
      * @return latest cumulative premium fraction in 18 digits
      */
-    function getLatestCumulativePremiumFraction(IAmm _amm) public view returns (SignedDecimal.signedDecimal memory) {
+    function getLatestCumulativePremiumFraction(IAmmV1 _amm) public view returns (SignedDecimal.signedDecimal memory) {
         uint256 len = ammMap[address(_amm)].cumulativePremiumFractions.length;
         if (len > 0) {
             return ammMap[address(_amm)].cumulativePremiumFractions[len - 1];
@@ -730,14 +745,14 @@ contract ClearingHouse is
     // INTERNAL FUNCTIONS
     //
 
-    function enterRestrictionMode(IAmm _amm) internal {
+    function enterRestrictionMode(IAmmV1 _amm) internal {
         uint256 blockNumber = _blockNumber();
         ammMap[address(_amm)].lastRestrictionBlock = blockNumber;
         emit RestrictionModeEntered(address(_amm), blockNumber);
     }
 
     function setPosition(
-        IAmm _amm,
+        IAmmV1 _amm,
         address _trader,
         Position memory _position
     ) internal {
@@ -750,7 +765,7 @@ contract ClearingHouse is
         positionStorage.liquidityHistoryIndex = _position.liquidityHistoryIndex;
     }
 
-    function clearPosition(IAmm _amm, address _trader) internal {
+    function clearPosition(IAmmV1 _amm, address _trader) internal {
         // keep the record in order to retain the last updated block number
         ammMap[address(_amm)].positionMap[_trader] = Position({
             size: SignedDecimal.zero(),
@@ -764,7 +779,7 @@ contract ClearingHouse is
 
     // only called from openPosition and closeAndOpenReversePosition. caller need to ensure there's enough marginRatio
     function internalIncreasePosition(
-        IAmm _amm,
+        IAmmV1 _amm,
         Side _side,
         Decimal.decimal memory _openNotional,
         Decimal.decimal memory _minPositionSize,
@@ -818,7 +833,7 @@ contract ClearingHouse is
     }
 
     function openReversePosition(
-        IAmm _amm,
+        IAmmV1 _amm,
         Side _side,
         Decimal.decimal memory _quoteAssetAmount,
         Decimal.decimal memory _leverage,
@@ -885,7 +900,7 @@ contract ClearingHouse is
     }
 
     function closeAndOpenReversePosition(
-        IAmm _amm,
+        IAmmV1 _amm,
         Side _side,
         Decimal.decimal memory _quoteAssetAmount,
         Decimal.decimal memory _leverage,
@@ -933,7 +948,7 @@ contract ClearingHouse is
     }
 
     function internalClosePosition(
-        IAmm _amm,
+        IAmmV1 _amm,
         address _trader,
         Decimal.decimal memory _quoteAssetAmountLimit,
         bool _skipFluctuationCheck
@@ -958,7 +973,7 @@ contract ClearingHouse is
         positionResp.fundingPayment = fundingPayment;
         positionResp.marginToVault = MixedDecimal.fromDecimal(remainMargin).mulScalar(-1);
         positionResp.exchangedQuoteAssetAmount = _amm.swapOutput(
-            oldPositionSize.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
+            oldPositionSize.toInt() > 0 ? IAmmV1.Dir.ADD_TO_AMM : IAmmV1.Dir.REMOVE_FROM_AMM,
             oldPositionSize.abs(),
             _quoteAssetAmountLimit,
             _skipFluctuationCheck
@@ -970,15 +985,15 @@ contract ClearingHouse is
     }
 
     function swapInput(
-        IAmm _amm,
+        IAmmV1 _amm,
         Side _side,
         Decimal.decimal memory _inputAmount,
         Decimal.decimal memory _minOutputAmount
     ) internal returns (SignedDecimal.signedDecimal memory) {
-        IAmm.Dir dir = (_side == Side.BUY) ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM;
+        IAmmV1.Dir dir = (_side == Side.BUY) ? IAmmV1.Dir.ADD_TO_AMM : IAmmV1.Dir.REMOVE_FROM_AMM;
         SignedDecimal.signedDecimal memory outputAmount =
             MixedDecimal.fromDecimal(_amm.swapInput(dir, _inputAmount, _minOutputAmount));
-        if (IAmm.Dir.REMOVE_FROM_AMM == dir) {
+        if (IAmmV1.Dir.REMOVE_FROM_AMM == dir) {
             return outputAmount.mulScalar(-1);
         }
         return outputAmount;
@@ -986,7 +1001,7 @@ contract ClearingHouse is
 
     function transferFee(
         address _from,
-        IAmm _amm,
+        IAmmV1 _amm,
         Decimal.decimal memory _positionNotional
     ) internal returns (Decimal.decimal memory) {
         (Decimal.decimal memory toll, Decimal.decimal memory spread) = _amm.calcFee(_positionNotional);
@@ -1000,10 +1015,11 @@ contract ClearingHouse is
                 _transferFrom(quoteAsset, _from, address(insuranceFund), spread);
             }
 
-            // transfer toll to TollPool
+            // transfer toll to feePool, it's `stakingReserve` for now.
             if (hasToll) {
-                require(tollPool != address(0), "Invalid tollPool");
-                _transferFrom(quoteAsset, _from, tollPool, toll);
+                require(address(feePool) != address(0), "Invalid FeePool");
+                _transferFrom(quoteAsset, _from, address(feePool), toll);
+                feePool.notifyTokenAmount(quoteAsset, toll);
             }
 
             // fee = spread + toll
@@ -1055,7 +1071,7 @@ contract ClearingHouse is
     /**
      * @dev assume this will be removes soon once the guarded period has ended. caller need to ensure amm exist
      */
-    function updateOpenInterestNotional(IAmm _amm, SignedDecimal.signedDecimal memory _amount) internal {
+    function updateOpenInterestNotional(IAmmV1 _amm, SignedDecimal.signedDecimal memory _amount) internal {
         // when cap = 0 means no cap
         uint256 cap = _amm.getOpenInterestNotionalCap().toUint();
         address ammAddr = address(_amm);
@@ -1078,7 +1094,7 @@ contract ClearingHouse is
     // INTERNAL VIEW FUNCTIONS
     //
 
-    function adjustPositionForLiquidityChanged(IAmm _amm, address _trader) internal returns (Position memory) {
+    function adjustPositionForLiquidityChanged(IAmmV1 _amm, address _trader) internal returns (Position memory) {
         Position memory unadjustedPosition = getUnadjustedPosition(_amm, _trader);
         if (unadjustedPosition.size.toInt() == 0) {
             return unadjustedPosition;
@@ -1102,7 +1118,7 @@ contract ClearingHouse is
     }
 
     function calcPositionAfterLiquidityMigration(
-        IAmm _amm,
+        IAmmV1 _amm,
         Position memory _position,
         uint256 _latestLiquidityIndex
     ) internal view returns (Position memory) {
@@ -1113,7 +1129,7 @@ contract ClearingHouse is
 
         // get the change in Amm notional value
         // notionalDelta = current cumulative notional - cumulative notional of last snapshot
-        IAmm.LiquidityChangedSnapshot memory lastSnapshot =
+        IAmmV1.LiquidityChangedSnapshot memory lastSnapshot =
             _amm.getLiquidityChangedSnapshots(_position.liquidityHistoryIndex);
         SignedDecimal.signedDecimal memory notionalDelta =
             _amm.getCumulativeNotional().subD(lastSnapshot.cumulativeNotional);
@@ -1125,7 +1141,7 @@ contract ClearingHouse is
         if (notionalDelta.toInt() != 0) {
             Decimal.decimal memory baseAssetWorth =
                 _amm.getInputPriceWithReserves(
-                    notionalDelta.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
+                    notionalDelta.toInt() > 0 ? IAmmV1.Dir.ADD_TO_AMM : IAmmV1.Dir.REMOVE_FROM_AMM,
                     notionalDelta.abs(),
                     lastSnapshot.quoteAssetReserve,
                     lastSnapshot.baseAssetReserve
@@ -1153,7 +1169,7 @@ contract ClearingHouse is
     }
 
     function calcRemainMarginWithFundingPayment(
-        IAmm _amm,
+        IAmmV1 _amm,
         Position memory _oldPosition,
         SignedDecimal.signedDecimal memory _marginDelta
     )
@@ -1186,7 +1202,7 @@ contract ClearingHouse is
         }
     }
 
-    function getUnadjustedPosition(IAmm _amm, address _trader) public view returns (Position memory position) {
+    function getUnadjustedPosition(IAmmV1 _amm, address _trader) public view returns (Position memory position) {
         position = ammMap[address(_amm)].positionMap[_trader];
     }
 
@@ -1201,7 +1217,7 @@ contract ClearingHouse is
     //
     // REQUIRE FUNCTIONS
     //
-    function requireAmm(IAmm _amm, bool _open) private view {
+    function requireAmm(IAmmV1 _amm, bool _open) private view {
         require(insuranceFund.isExistedAmm(_amm), "amm not found");
         require(_open == _amm.open(), _open ? "amm was closed" : "amm is open");
     }
@@ -1214,7 +1230,7 @@ contract ClearingHouse is
         require(_size.toInt() != 0, "positionSize is 0");
     }
 
-    function requireNotRestrictionMode(IAmm _amm) private view {
+    function requireNotRestrictionMode(IAmmV1 _amm) private view {
         uint256 currentBlock = _blockNumber();
         if (currentBlock == ammMap[address(_amm)].lastRestrictionBlock) {
             require(getUnadjustedPosition(_amm, _msgSender()).blockNumber != currentBlock, "only one action allowed");
