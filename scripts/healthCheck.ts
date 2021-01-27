@@ -27,6 +27,8 @@ async function healthCheck(): Promise<void> {
     const ammETH = instance(layer2["contracts"]["ETHUSDC"]["address"], AmmArtifact.abi) as Amm
     const ammBTC = instance(layer2["contracts"]["BTCUSDC"]["address"], AmmArtifact.abi) as Amm
     const ammYFI = instance(layer2["contracts"]["YFIUSDC"]["address"], AmmArtifact.abi) as Amm
+    const ammDOT = instance(layer2["contracts"]["DOTUSDC"]["address"], AmmArtifact.abi) as Amm
+    const ammSNX = instance(layer2["contracts"]["SNXUSDC"]["address"], AmmArtifact.abi) as Amm
     const insuranceFund = instance(
         layer2["contracts"]["InsuranceFund"]["address"],
         InsuranceFundArtifact.abi,
@@ -43,15 +45,23 @@ async function healthCheck(): Promise<void> {
     const ethCap = await ammETH.getOpenInterestNotionalCap()
     const btcCap = await ammBTC.getOpenInterestNotionalCap()
     const yfiCap = await ammYFI.getOpenInterestNotionalCap()
+    const dotCap = await ammDOT.getOpenInterestNotionalCap()
+    const snxCap = await ammSNX.getOpenInterestNotionalCap()
     console.log(`ethCap=${ethCap.toString()}`)
     console.log(`btcCap=${btcCap.toString()}`)
     console.log(`yfiCap=${yfiCap.toString()}`)
+    console.log(`dotCap=${dotCap.toString()}`)
+    console.log(`snxCap=${snxCap.toString()}`)
     const ETHOpenInterest = await clearingHouse.openInterestNotionalMap(ammETH.address)
     console.log("open interest of ETH", utils.formatEther(ETHOpenInterest.toString()))
     const BTCOpenInterest = await clearingHouse.openInterestNotionalMap(ammBTC.address)
     console.log("open interest of BTC", utils.formatEther(BTCOpenInterest.toString()))
     const YFIOpenInterest = await clearingHouse.openInterestNotionalMap(ammYFI.address)
     console.log("open interest of YFI", utils.formatEther(YFIOpenInterest.toString()))
+    const DOTOpenInterest = await clearingHouse.openInterestNotionalMap(ammDOT.address)
+    console.log("open interest of DOT", utils.formatEther(DOTOpenInterest.toString()))
+    const SNXOpenInterest = await clearingHouse.openInterestNotionalMap(ammSNX.address)
+    console.log("open interest of SNX", utils.formatEther(SNXOpenInterest.toString()))
 
     console.log("========= balance ============")
     const balanceOfInsuranceFund = (await usdc.functions.balanceOf(insuranceFund.address))[0]
