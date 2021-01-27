@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import bre, { ethers } from "@nomiclabs/buidler"
 import { TASK_COMPILE } from "@nomiclabs/buidler/builtin-tasks/task-names"
+import { BigNumber } from "ethers"
 import { SRC_DIR } from "../constants"
 import { ExternalContracts, Layer } from "../scripts/common"
 import { flatten } from "../scripts/flatten"
 import {
+    Amm,
     AmmReader,
     ChainlinkL1,
     ClearingHouse,
@@ -546,6 +548,123 @@ export class ContractPublisher {
                     await (await DOTUSDC.setOwner(gov)).wait(this.confirmations)
                 },
             ],
+            // batch 6
+            // deploy the flattened amm for DOT (production), or LINK (staging)
+            // cant prepare upgrade for other amm due to openzeppelin upgrade sdk issue
+            // https://github.com/OpenZeppelin/openzeppelin-upgrades/issues/175
+            [
+                async (): Promise<void> => {
+                    const filename = `${ContractName.Amm}.sol`
+
+                    // after flatten sol file we must re-compile again
+                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                    await bre.run(TASK_COMPILE)
+
+                    // deploy amm implementation
+                    const DOTUSDC = this.factory.createAmm(AmmInstanceName.DOTUSDC)
+                    const dotUsdcImplAddr = await DOTUSDC.prepareUpgradeContract()
+
+                    // in normal case we don't need to do anything to the implementation contract
+                    const ammImplInstance = (await ethers.getContractAt(ContractName.Amm, dotUsdcImplAddr)) as Amm
+                    const wei = BigNumber.from(1)
+                    const emptyAddr = "0x0000000000000000000000000000000000000001"
+                    await ammImplInstance.initialize(
+                        wei,
+                        wei,
+                        wei,
+                        wei,
+                        emptyAddr,
+                        ethers.utils.formatBytes32String(""),
+                        emptyAddr,
+                        wei,
+                        wei,
+                        wei,
+                    )
+                },
+            ],
+            // batch 7
+            // deploy the flattened clearingHouse and init it just in case
+            [
+                async (): Promise<void> => {
+                    const filename = `${ContractName.ClearingHouse}.sol`
+
+                    // after flatten sol file we must re-compile again
+                    await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                    await bre.run(TASK_COMPILE)
+
+                    // deploy clearing house implementation
+                    const clearingHouseContract = await this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const implContractAddr = await clearingHouseContract.prepareUpgradeContract()
+
+                    // in normal case we don't need to do anything to the implementation contract
+                    const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
+                    const metaTxGatewayContract = this.factory.create<MetaTxGateway>(ContractName.MetaTxGateway)
+                    const clearingHouseImplInstance = (await ethers.getContractAt(
+                        ContractName.ClearingHouse,
+                        implContractAddr,
+                    )) as ClearingHouse
+                    await clearingHouseImplInstance.initialize(
+                        this.deployConfig.initMarginRequirement,
+                        this.deployConfig.maintenanceMarginRequirement,
+                        this.deployConfig.liquidationFeeRatio,
+                        insuranceFundContract.address!,
+                        metaTxGatewayContract.address!,
+                    )
+                },
+            ],
+            // batch 8
+            // deploy the new amm instance for new market
+            // set cap, counterParty, set open...etc
+            // transfer owner
+            // transfer proxyAdmin
+            [
+                async (): Promise<void> => {
+                    console.log("deploy SDEFIUSDC amm...")
+                    const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
+                    const ammContract = this.factory.createAmm(AmmInstanceName.SDEFIUSDC)
+                    const quoteTokenAddr = this.externalContract.usdc!
+                    await ammContract.deployUpgradableContract(
+                        this.deployConfig.ammConfigMap,
+                        l2PriceFeedContract.address!,
+                        quoteTokenAddr,
+                    )
+                },
+                async (): Promise<void> => {
+                    console.log("set SDEFI amm Cap...")
+                    const amm = await this.factory.createAmm(AmmInstanceName.SDEFIUSDC).instance()
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
+                        AmmInstanceName.SDEFIUSDC
+                    ].properties
+                    if (maxHoldingBaseAsset.gt(0)) {
+                        await (
+                            await amm.setCap(
+                                { d: maxHoldingBaseAsset.toString() },
+                                { d: openInterestNotionalCap.toString() },
+                            )
+                        ).wait(this.confirmations)
+                    }
+                },
+                async (): Promise<void> => {
+                    console.log("SDEFI amm.setCounterParty...")
+                    const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const amm = await this.factory.createAmm(AmmInstanceName.SDEFIUSDC).instance()
+                    await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("opening Amm SDEFIUSDC...")
+                    const SDEFIUSDC = await this.factory.createAmm(AmmInstanceName.SDEFIUSDC).instance()
+                    await (await SDEFIUSDC.setOpen(true)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring SDEFIUSDC owner to governance=${gov}...please remember to claim the ownership`,
+                    )
+                    const SDEFIUSDC = await this.factory.createAmm(AmmInstanceName.SDEFIUSDC).instance()
+                    await (await SDEFIUSDC.setOwner(gov)).wait(this.confirmations)
+                },
+            ],
+            // TODO: remember to make proxy upgrade to correct flatterened AMM
         ],
     }
 

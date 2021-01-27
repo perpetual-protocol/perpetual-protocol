@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- add `Amm::getBaseAssetDelta()`
 - add `StakedPerpToken.sol` for staking; inherit from `aragonone/Checkpointing.sol` #105 
 - add `PerpRewardVesting.sol` for distributing staking reward; inherit from `Balancer/MerkleRedeem.sol` #106
 - add `TollPool.sol` for distributing toll #113
@@ -17,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - rename `ClearingHouse` interface from `feePool` to `tollPool`
 - rename `ClearingHouse` interface from `setFeePool` to `setTollPool`
+### Removed
+- remove `Amm::migrateLiquidity()`
 
 ## [1.0.4] - 2020-12-10
 ### Added
