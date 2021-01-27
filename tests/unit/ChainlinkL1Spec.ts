@@ -73,9 +73,11 @@ describe("chainlinkL1 Spec", () => {
         })
 
         it("getAggregator with existed aggregator key", async () => {
+            expect(await chainlinkL1.decimalMap(stringToBytes32("ETH"))).eq(0)
             await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkAggregator.address)
             expect(fromBytes32(await chainlinkL1.priceFeedKeys(0))).eq("ETH")
             expect(await chainlinkL1.getAggregator(stringToBytes32("ETH"))).eq(chainlinkAggregator.address)
+            expect(await chainlinkL1.decimalMap(stringToBytes32("ETH"))).eq(8)
         })
 
         it("getAggregator with non-existed aggregator key", async () => {
@@ -84,13 +86,18 @@ describe("chainlinkL1 Spec", () => {
         })
 
         it("add multi aggregators", async () => {
+            const chainlinkAggregator1 = await deployChainlinkAggregatorMock()
+            const chainlinkAggregator2 = await deployChainlinkAggregatorMock()
             await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkAggregator.address)
-            await chainlinkL1.addAggregator(stringToBytes32("BTC"), addresses[1])
-            await chainlinkL1.addAggregator(stringToBytes32("LINK"), addresses[2])
+            await chainlinkL1.addAggregator(stringToBytes32("BTC"), chainlinkAggregator1.address)
+            await chainlinkL1.addAggregator(stringToBytes32("LINK"), chainlinkAggregator2.address)
+
             expect(fromBytes32(await chainlinkL1.priceFeedKeys(0))).eq("ETH")
             expect(await chainlinkL1.getAggregator(stringToBytes32("ETH"))).eq(chainlinkAggregator.address)
+            expect(await chainlinkL1.decimalMap(stringToBytes32("ETH"))).eq(8)
             expect(fromBytes32(await chainlinkL1.priceFeedKeys(2))).eq("LINK")
-            expect(await chainlinkL1.getAggregator(stringToBytes32("LINK"))).eq(addresses[2])
+            expect(await chainlinkL1.getAggregator(stringToBytes32("LINK"))).eq(chainlinkAggregator2.address)
+            expect(await chainlinkL1.decimalMap(stringToBytes32("LINK"))).eq(8)
         })
 
         it("force error, addAggregator with zero address", async () => {
@@ -106,6 +113,7 @@ describe("chainlinkL1 Spec", () => {
         it("remove 1 aggregator when there's only 1", async () => {
             await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkAggregator.address)
             await chainlinkL1.removeAggregator(stringToBytes32("ETH"))
+            expect(await chainlinkL1.decimalMap(stringToBytes32("ETH"))).eq(0)
 
             // cant use expectRevert because the error message is different between CI and local env
             let error
