@@ -11,7 +11,7 @@ library AddressArray {
     }
 
     function remove(address[] storage addrArray, address addr) internal returns (address) {
-        if (addr == address(0) || !isExisted(addrArray, addr)) {
+        if (addr == address(0)) {
             return address(0);
         }
 

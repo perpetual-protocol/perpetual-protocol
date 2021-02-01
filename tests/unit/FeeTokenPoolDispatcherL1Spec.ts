@@ -159,7 +159,7 @@ describe("FeeTokenPoolDispatcherL1Spec", () => {
         })
 
         it("force error, feeRewardPool is zero address", async () => {
-            await expectRevert(feeTokenPoolDispatcher.addFeeRewardPool(EMPTY_ADDRESS), "invalid input")
+            await expectRevert.unspecified(feeTokenPoolDispatcher.addFeeRewardPool(EMPTY_ADDRESS))
         })
 
         it("force error, feeToken is already existed", async () => {

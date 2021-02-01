@@ -326,14 +326,11 @@ describe("StakedPerpTokenSpec", () => {
         })
 
         it("force error, stakeModule is already existed", async () => {
-            await expectRevert(
-                stakedPerpToken.addStakeModule(feeRewardPoolMock1.address),
-                "stakeModule is already existed",
-            )
+            await expectRevert(stakedPerpToken.addStakeModule(feeRewardPoolMock1.address), "invalid input")
         })
 
         it("force error, input is zero address", async () => {
-            await expectRevert(stakedPerpToken.addStakeModule(EMPTY_ADDRESS), "stakeModule is already existed")
+            await expectRevert(stakedPerpToken.addStakeModule(EMPTY_ADDRESS), "invalid input")
         })
     })
 
