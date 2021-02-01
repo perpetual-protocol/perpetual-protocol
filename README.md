@@ -53,5 +53,37 @@ it.only("admin open amm", async () => { ... }
 
 Test cases can be found in the `./tests` folder.
 
+## Deploy contracts on rinkeby without versioning
+
+Deploy contracts on rinkeby without versioning requires two environment variables: WEB3_RINKEBY_ENDPOINT & RINKEBY_MNEMONIC.
+
+Once these two variables are set, the deployment script is needed. For example, we want to deploy the "PerpRewardVesting" contract, and the deploy script should be similar to this code snippet:
+
+```typescript
+import { ethers, upgrades } from "@nomiclabs/buidler"
+import { ContractName } from "../publish/ContractName"
+
+async function main() {
+    const perpAddress = "0xaFfB148304D38947193785D194972a7d0d9b7F68"
+    const options = {
+        unsafeAllowCustomTypes: true,
+    }
+    const Vesting = await ethers.getContractFactory(ContractName.PerpRewardVesting)
+    const instance = await upgrades.deployProxy(Vesting, [perpAddress], options)
+    await instance.deployed()
+}
+
+main()
+
+```
+
+execute the below commands:
+
+```shell
+./node_modules/.bin/buidler --network rinkeby run scripts/deploy-reward-vesting.ts 
+```
+
+And the contract should be deployed on rinkeby, and the file ".openzeppelin/rinkeby.json" is modified with new contract addresses, but the changes can be ignored for testing purposes.
+
 ## License 
 GPL3.0 or later
