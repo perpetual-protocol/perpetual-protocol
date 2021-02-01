@@ -54,14 +54,18 @@ contract PerpRewardVesting is MerkleRedeemUpgradeSafe, BlockContext {
         bytes32[] memory _merkleProof
     ) public virtual override {
         //
-        //         claimableTimestamp      now
-        //                  +----------------+
-        //                  | vesting period |
-        //  ---------+------+---+------------+--
-        //           |          |
-        //           | merkleRootTimestampMap[weeks+1] --> non-claimable
-        //           |
-        // merkleRootTimestampMap[weeks] --> claimable
+        //                      +----------------+
+        //                      | vesting period |
+        //           +----------------+----------+
+        //           | vesting period |          |
+        //  ---------+------+---+-----+------+---+
+        //           |          |     |     now  |
+        //           |        week2   |          merkleRootTimestampMap[week1]
+        //           |                |
+        //         week1              merkleRootTimestampMap[week1]
+        //
+        //  week1 -> claimable
+        //  week2 -> non-claimable
         //
         require(
             _blockTimestamp() >= merkleRootTimestampMap[_week] && merkleRootTimestampMap[_week] > 0,
