@@ -45,6 +45,10 @@ describe("tollPoolSpec", () => {
     })
 
     describe("transferToFeeTokenPoolDispatcher()", () => {
+        it("can't add empty token", async () => {
+            await expectRevert(tollPool.addFeeToken(EMPTY_ADDRESS), "invalid input")
+        })
+
         it("should receive all the balance of one token in the tollPool contract", async () => {
             await tollPool.setFeeTokenPoolDispatcher(feeTokenPoolDispatcherMock)
             await tollPool.addFeeToken(usdt.address)
@@ -154,11 +158,11 @@ describe("tollPoolSpec", () => {
 
         it("force error, token is already existed", async () => {
             await tollPool.addFeeToken(usdt.address)
-            await expectRevert(tollPool.addFeeToken(usdt.address), "token is already existed")
+            await expectRevert(tollPool.addFeeToken(usdt.address), "invalid input")
         })
 
         it("force error, input is zero address", async () => {
-            await expectRevert(tollPool.addFeeToken(EMPTY_ADDRESS), "token is already existed")
+            await expectRevert(tollPool.addFeeToken(EMPTY_ADDRESS), "invalid input")
         })
     })
 

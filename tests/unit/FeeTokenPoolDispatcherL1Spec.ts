@@ -164,10 +164,7 @@ describe("FeeTokenPoolDispatcherL1Spec", () => {
 
         it("force error, feeToken is already existed", async () => {
             await feeTokenPoolDispatcher.addFeeRewardPool(feeRewardPoolMock1.address)
-            await expectRevert(
-                feeTokenPoolDispatcher.addFeeRewardPool(feeRewardPoolMock1.address),
-                "token is already existed",
-            )
+            await expectRevert(feeTokenPoolDispatcher.addFeeRewardPool(feeRewardPoolMock1.address), "invalid input")
         })
     })
 

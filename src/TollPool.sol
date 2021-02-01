@@ -83,7 +83,7 @@ contract TollPool is PerpFiOwnableUpgrade, DecimalERC20 {
 
     function addFeeToken(IERC20 _token) external onlyOwner {
         require(feeTokens.length <= TOKEN_AMOUNT_LIMIT, "exceed token amount limit");
-        require(feeTokens.add(address(_token)), "token is already existed");
+        require(feeTokens.add(address(_token)), "invalid input");
 
         emit FeeTokenAdded(address(_token));
     }
