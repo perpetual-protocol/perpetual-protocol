@@ -35,7 +35,7 @@ contract ChainlinkL1 is PerpFiOwnableUpgrade, BlockContext {
     //**********************************************************//
 
     //◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤ add state variables below ◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤//
-
+    mapping(bytes32 => uint8) public decimalMap;
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
     uint256[50] private __gap;
 
@@ -66,6 +66,7 @@ contract ChainlinkL1 is PerpFiOwnableUpgrade, BlockContext {
             priceFeedKeys.push(_priceFeedKey);
         }
         priceFeedMap[_priceFeedKey] = AggregatorV3Interface(_aggregator);
+        decimalMap[_priceFeedKey] = AggregatorV3Interface(_aggregator).decimals();
     }
 
     function removeAggregator(bytes32 _priceFeedKey) external onlyOwner {
@@ -80,6 +81,8 @@ contract ChainlinkL1 is PerpFiOwnableUpgrade, BlockContext {
                     priceFeedKeys[i] = priceFeedKeys[length - 1];
                 }
                 priceFeedKeys.pop();
+                delete decimalMap[_priceFeedKey];
+                delete prevTimestampMap[_priceFeedKey];
                 break;
             }
         }
@@ -94,14 +97,17 @@ contract ChainlinkL1 is PerpFiOwnableUpgrade, BlockContext {
     //
 
     function updateLatestRoundData(bytes32 _priceFeedKey) external {
-        AggregatorV3Interface aggregator = getAggregator(_priceFeedKey);
+        AggregatorV3Interface aggregator = priceFeedMap[_priceFeedKey];
         requireNonEmptyAddress(address(aggregator));
 
         (uint80 roundId, int256 price, , uint256 timestamp, ) = aggregator.latestRoundData();
-        require(timestamp > prevTimestampMap[_priceFeedKey], "incorrect timestamp");
+        require(timestamp > 0 && timestamp > prevTimestampMap[_priceFeedKey], "incorrect timestamp");
         require(price >= 0, "negative answer");
 
-        uint8 decimals = aggregator.decimals();
+        uint8 decimals = decimalMap[_priceFeedKey];
+        if (decimals == 0) {
+            decimals = decimalMap[_priceFeedKey] = aggregator.decimals();
+        }
 
         Decimal.decimal memory decimalPrice = Decimal.decimal(formatDecimals(uint256(price), decimals));
         bytes32 messageId =

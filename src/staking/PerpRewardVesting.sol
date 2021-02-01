@@ -54,17 +54,23 @@ contract PerpRewardVesting is MerkleRedeemUpgradeSafe, BlockContext {
         bytes32[] memory _merkleProof
     ) public virtual override {
         //
-        //         claimableTimestamp      now
-        //                  +----------------+
-        //                  | vesting period |
-        //  ---------+------+---+------------+--
-        //           |          |
-        //           | merkleRootTimestampMap[weeks+1] --> non-claimable
-        //           |
-        // merkleRootTimestampMap[weeks] --> claimable
+        //                      +----------------+
+        //                      | vesting period |
+        //           +----------------+----------+
+        //           | vesting period |          |
+        //  ---------+------+---+-----+------+---+
+        //           |          |     |     now  |
+        //           |        week2   |          merkleRootTimestampMap[week1]
+        //           |                |
+        //         week1              merkleRootTimestampMap[week1]
         //
-        uint256 claimableTimestamp = _blockTimestamp().sub(VESTING_PERIOD);
-        require(claimableTimestamp >= merkleRootTimestampMap[_week], "Claiming is not yet available");
+        //  week1 -> claimable
+        //  week2 -> non-claimable
+        //
+        require(
+            _blockTimestamp() >= merkleRootTimestampMap[_week] && merkleRootTimestampMap[_week] > 0,
+            "Invalid claim"
+        );
         super.claimWeek(_account, _week, _claimedBalance, _merkleProof);
     }
 
@@ -72,9 +78,9 @@ contract PerpRewardVesting is MerkleRedeemUpgradeSafe, BlockContext {
         uint256 _week,
         bytes32 _merkleRoot,
         uint256 _totalAllocation
-    ) public virtual override onlyOwner {
+    ) public override onlyOwner {
         super.seedAllocations(_week, _merkleRoot, _totalAllocation);
-        merkleRootTimestampMap[_week] = _blockTimestamp();
+        merkleRootTimestampMap[_week] = _blockTimestamp().add(VESTING_PERIOD);
         merkleRootIndexes.push(_week);
     }
 
