@@ -10,11 +10,6 @@ import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
     using SafeMath for uint256;
 
-    modifier onlyBridge() {
-        require(_msgSender() == ambBridge, "!ambBridge");
-        _;
-    }
-
     event PriceFeedDataSet(bytes32 key, uint256 price, uint256 timestamp, uint256 roundId);
 
     struct PriceData {
@@ -44,6 +39,7 @@ contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
     //**********************************************************//
 
     //◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤ add state variables below ◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤//
+    address public priceFeedSource;
 
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
     uint256[50] private __gap;
@@ -78,8 +74,13 @@ contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
     }
 
     function setRootBridge(address _rootBridge) external onlyOwner {
-        require(_rootBridge != address(0), "addr is empty");
+        requireNonEmptyAddress(_rootBridge);
         rootBridge = _rootBridge;
+    }
+
+    function setPriceFeedSource(address _priceFeedSource) external onlyOwner {
+        requireNonEmptyAddress(_priceFeedSource);
+        priceFeedSource = _priceFeedSource;
     }
 
     //
@@ -91,8 +92,12 @@ contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
         uint256 _price,
         uint256 _timestamp,
         uint256 _roundId
-    ) external override onlyBridge {
-        require(IAMB(ambBridge).messageSender() == rootBridge, "sender not RootBridge");
+    ) external override {
+        address msgSender = _msgSender();
+        require(msgSender == ambBridge || msgSender == priceFeedSource, "not a legal sender");
+        if (msgSender == ambBridge) {
+            require(IAMB(ambBridge).messageSender() == rootBridge, "sender not RootBridge");
+        }
         requireKeyExisted(_priceFeedKey, true);
         require(_timestamp > getLatestTimestamp(_priceFeedKey), "incorrect timestamp");
 
@@ -226,6 +231,14 @@ contract L2PriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
 
     function isExistedKey(bytes32 _priceFeedKey) private view returns (bool) {
         return priceFeedMap[_priceFeedKey].registered;
+    }
+
+    //
+    // REQUIRE FUNCTIONS
+    //
+
+    function requireNonEmptyAddress(address _addr) internal pure {
+        require(_addr != address(0), "empty address");
     }
 
     function requireKeyExisted(bytes32 _key, bool _existed) private view {
