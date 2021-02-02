@@ -19,12 +19,11 @@ import {
 } from "../types/ethers"
 import { ContractWrapperFactory } from "./contract/ContractWrapperFactory"
 import { DeployConfig, PriceFeedKey } from "./contract/DeployConfig"
-import { AmmInstanceName, ContractName } from "./ContractName"
+import { DeployTask } from "./contract/DeployUtil"
+import { ContractName, LegacyAmmInstanceName } from "./ContractName"
 import { OzContractDeployer } from "./OzContractDeployer"
 import { SettingsDao } from "./SettingsDao"
 import { SystemMetadataDao } from "./SystemMetadataDao"
-
-export type DeployTask = () => Promise<void>
 
 /* eslint-disable no-console */
 export class ContractPublisher {
@@ -194,11 +193,12 @@ export class ContractPublisher {
                 },
                 async (): Promise<void> => {
                     console.log("deploy ETHUSDC amm...")
+                    const ammName = LegacyAmmInstanceName.ETHUSDC
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.ETHUSDC)
+                    const ammContract = this.factory.createAmm(ammName)
                     const quoteTokenAddr = this.externalContract.usdc!
                     await ammContract.deployUpgradableContract(
-                        this.deployConfig.ammConfigMap,
+                        this.deployConfig.legacyAmmConfigMap[ammName].deployArgs,
                         l2PriceFeedContract.address!,
                         quoteTokenAddr,
                     )
@@ -206,10 +206,11 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("deploy BTCUSDC amm...")
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.BTCUSDC)
+                    const ammName = LegacyAmmInstanceName.BTCUSDC
+                    const ammContract = this.factory.createAmm(ammName)
                     const quoteTokenAddr = this.externalContract.usdc!
                     await ammContract.deployUpgradableContract(
-                        this.deployConfig.ammConfigMap,
+                        this.deployConfig.legacyAmmConfigMap[ammName].deployArgs,
                         l2PriceFeedContract.address!,
                         quoteTokenAddr,
                     )
@@ -250,9 +251,9 @@ export class ContractPublisher {
                 },
                 async (): Promise<void> => {
                     console.log("set ETH amm Cap...")
-                    const amm = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
-                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
-                        AmmInstanceName.ETHUSDC
+                    const amm = await this.factory.createAmm(LegacyAmmInstanceName.ETHUSDC).instance()
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.legacyAmmConfigMap[
+                        LegacyAmmInstanceName.ETHUSDC
                     ].properties
                     if (maxHoldingBaseAsset.gt(0)) {
                         await (
@@ -266,21 +267,21 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("ETH amm.setCounterParty...")
                     const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    const amm = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
+                    const amm = await this.factory.createAmm(LegacyAmmInstanceName.ETHUSDC).instance()
                     await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     console.log("insuranceFund.add ETH amm...")
                     const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.ETHUSDC)
+                    const ammContract = this.factory.createAmm(LegacyAmmInstanceName.ETHUSDC)
                     const insuranceFund = await insuranceFundContract.instance()
                     await (await insuranceFund.addAmm(ammContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     console.log("set BTC amm Cap...")
-                    const amm = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
-                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
-                        AmmInstanceName.BTCUSDC
+                    const amm = await this.factory.createAmm(LegacyAmmInstanceName.BTCUSDC).instance()
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.legacyAmmConfigMap[
+                        LegacyAmmInstanceName.BTCUSDC
                     ].properties
                     if (maxHoldingBaseAsset.gt(0)) {
                         await (
@@ -294,13 +295,13 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("BTC amm.setCounterParty...")
                     const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    const amm = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
+                    const amm = await this.factory.createAmm(LegacyAmmInstanceName.BTCUSDC).instance()
                     await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     console.log("insuranceFund.add BTC amm...")
                     const insuranceFundContract = this.factory.create<InsuranceFund>(ContractName.InsuranceFund)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.BTCUSDC)
+                    const ammContract = this.factory.createAmm(LegacyAmmInstanceName.BTCUSDC)
                     const insuranceFund = await insuranceFundContract.instance()
                     await (await insuranceFund.addAmm(ammContract.address!)).wait(this.confirmations)
                 },
@@ -315,12 +316,12 @@ export class ContractPublisher {
                 },
                 async (): Promise<void> => {
                     console.log("opening Amm ETHUSDC...")
-                    const ethUsdc = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
+                    const ethUsdc = await this.factory.createAmm(LegacyAmmInstanceName.ETHUSDC).instance()
                     await (await ethUsdc.setOpen(true)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     console.log("opening Amm BTCUSDC...")
-                    const btcUsdc = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
+                    const btcUsdc = await this.factory.createAmm(LegacyAmmInstanceName.BTCUSDC).instance()
                     await (await btcUsdc.setOpen(true)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
@@ -374,7 +375,7 @@ export class ContractPublisher {
                     console.log(
                         `transferring ETHUSDC owner to governance=${gov}...please remember to claim the ownership`,
                     )
-                    const ETHUSDC = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
+                    const ETHUSDC = await this.factory.createAmm(LegacyAmmInstanceName.ETHUSDC).instance()
                     await (await ETHUSDC.setOwner(gov)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
@@ -382,7 +383,7 @@ export class ContractPublisher {
                     console.log(
                         `transferring BTCUSDC owner to governance=${gov}...please remember to claim the ownership`,
                     )
-                    const BTCUSDC = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
+                    const BTCUSDC = await this.factory.createAmm(LegacyAmmInstanceName.BTCUSDC).instance()
                     await (await BTCUSDC.setOwner(gov)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
@@ -422,10 +423,10 @@ export class ContractPublisher {
                     await bre.run(TASK_COMPILE)
 
                     // deploy amm implementation
-                    const ETHUSDC = this.factory.createAmm(AmmInstanceName.ETHUSDC)
+                    const ETHUSDC = this.factory.createAmm(LegacyAmmInstanceName.ETHUSDC)
                     await ETHUSDC.prepareUpgradeContract()
 
-                    const BTCUSDC = this.factory.createAmm(AmmInstanceName.BTCUSDC)
+                    const BTCUSDC = this.factory.createAmm(LegacyAmmInstanceName.BTCUSDC)
                     await BTCUSDC.prepareUpgradeContract()
                 },
             ],
@@ -438,19 +439,20 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("deploy YFIUSDC amm...")
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.YFIUSDC)
+                    const ammName = LegacyAmmInstanceName.YFIUSDC
+                    const ammContract = this.factory.createAmm(ammName)
                     const quoteTokenAddr = this.externalContract.usdc!
                     await ammContract.deployUpgradableContract(
-                        this.deployConfig.ammConfigMap,
+                        this.deployConfig.legacyAmmConfigMap[ammName].deployArgs,
                         l2PriceFeedContract.address!,
                         quoteTokenAddr,
                     )
                 },
                 async (): Promise<void> => {
                     console.log("set YFI amm Cap...")
-                    const amm = await this.factory.createAmm(AmmInstanceName.YFIUSDC).instance()
-                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
-                        AmmInstanceName.YFIUSDC
+                    const amm = await this.factory.createAmm(LegacyAmmInstanceName.YFIUSDC).instance()
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.legacyAmmConfigMap[
+                        LegacyAmmInstanceName.YFIUSDC
                     ].properties
                     if (maxHoldingBaseAsset.gt(0)) {
                         await (
@@ -464,12 +466,12 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("YFI amm.setCounterParty...")
                     const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    const amm = await this.factory.createAmm(AmmInstanceName.YFIUSDC).instance()
+                    const amm = await this.factory.createAmm(LegacyAmmInstanceName.YFIUSDC).instance()
                     await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     console.log("opening Amm YFIUSDC...")
-                    const YFIUSDC = await this.factory.createAmm(AmmInstanceName.YFIUSDC).instance()
+                    const YFIUSDC = await this.factory.createAmm(LegacyAmmInstanceName.YFIUSDC).instance()
                     await (await YFIUSDC.setOpen(true)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
@@ -477,7 +479,7 @@ export class ContractPublisher {
                     console.log(
                         `transferring YFIUSDC owner to governance=${gov}...please remember to claim the ownership`,
                     )
-                    const YFIUSDC = await this.factory.createAmm(AmmInstanceName.YFIUSDC).instance()
+                    const YFIUSDC = await this.factory.createAmm(LegacyAmmInstanceName.YFIUSDC).instance()
                     await (await YFIUSDC.setOwner(gov)).wait(this.confirmations)
                 },
             ],
@@ -492,7 +494,7 @@ export class ContractPublisher {
                     await bre.run(TASK_COMPILE)
 
                     // deploy amm implementation
-                    const YFIUSDC = this.factory.createAmm(AmmInstanceName.YFIUSDC)
+                    const YFIUSDC = this.factory.createAmm(LegacyAmmInstanceName.YFIUSDC)
                     await YFIUSDC.prepareUpgradeContract()
                 },
             ],
@@ -505,19 +507,20 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("deploy DOTUSDC amm...")
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.DOTUSDC)
+                    const ammName = LegacyAmmInstanceName.DOTUSDC
+                    const ammContract = this.factory.createAmm(ammName)
                     const quoteTokenAddr = this.externalContract.usdc!
                     await ammContract.deployUpgradableContract(
-                        this.deployConfig.ammConfigMap,
+                        this.deployConfig.legacyAmmConfigMap[ammName].deployArgs,
                         l2PriceFeedContract.address!,
                         quoteTokenAddr,
                     )
                 },
                 async (): Promise<void> => {
                     console.log("set DOT amm Cap...")
-                    const amm = await this.factory.createAmm(AmmInstanceName.DOTUSDC).instance()
-                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
-                        AmmInstanceName.DOTUSDC
+                    const amm = await this.factory.createAmm(LegacyAmmInstanceName.DOTUSDC).instance()
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.legacyAmmConfigMap[
+                        LegacyAmmInstanceName.DOTUSDC
                     ].properties
                     if (maxHoldingBaseAsset.gt(0)) {
                         await (
@@ -531,12 +534,12 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("DOT amm.setCounterParty...")
                     const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    const amm = await this.factory.createAmm(AmmInstanceName.DOTUSDC).instance()
+                    const amm = await this.factory.createAmm(LegacyAmmInstanceName.DOTUSDC).instance()
                     await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     console.log("opening Amm DOTUSDC...")
-                    const DOTUSDC = await this.factory.createAmm(AmmInstanceName.DOTUSDC).instance()
+                    const DOTUSDC = await this.factory.createAmm(LegacyAmmInstanceName.DOTUSDC).instance()
                     await (await DOTUSDC.setOpen(true)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
@@ -544,7 +547,7 @@ export class ContractPublisher {
                     console.log(
                         `transferring DOTUSDC owner to governance=${gov}...please remember to claim the ownership`,
                     )
-                    const DOTUSDC = await this.factory.createAmm(AmmInstanceName.DOTUSDC).instance()
+                    const DOTUSDC = await this.factory.createAmm(LegacyAmmInstanceName.DOTUSDC).instance()
                     await (await DOTUSDC.setOwner(gov)).wait(this.confirmations)
                 },
             ],
@@ -561,7 +564,7 @@ export class ContractPublisher {
                     await bre.run(TASK_COMPILE)
 
                     // deploy amm implementation
-                    const DOTUSDC = this.factory.createAmm(AmmInstanceName.DOTUSDC)
+                    const DOTUSDC = this.factory.createAmm(LegacyAmmInstanceName.DOTUSDC)
                     const dotUsdcImplAddr = await DOTUSDC.prepareUpgradeContract()
 
                     // in normal case we don't need to do anything to the implementation contract
@@ -621,19 +624,19 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("deploy SNXUSDC amm...")
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.SNXUSDC)
+                    const ammContract = this.factory.createAmm(LegacyAmmInstanceName.SNXUSDC)
                     const quoteTokenAddr = this.externalContract.usdc!
                     await ammContract.deployUpgradableContract(
-                        this.deployConfig.ammConfigMap,
+                        this.deployConfig.legacyAmmConfigMap[LegacyAmmInstanceName.SDEFIUSDC].deployArgs,
                         l2PriceFeedContract.address!,
                         quoteTokenAddr,
                     )
                 },
                 async (): Promise<void> => {
                     console.log("set SNX amm Cap...")
-                    const amm = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
-                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
-                        AmmInstanceName.SNXUSDC
+                    const amm = await this.factory.createAmm(LegacyAmmInstanceName.SNXUSDC).instance()
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.legacyAmmConfigMap[
+                        LegacyAmmInstanceName.SNXUSDC
                     ].properties
                     if (maxHoldingBaseAsset.gt(0)) {
                         await (
@@ -647,12 +650,12 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("SNX amm.setCounterParty...")
                     const clearingHouseContract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
-                    const amm = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
+                    const amm = await this.factory.createAmm(LegacyAmmInstanceName.SNXUSDC).instance()
                     await (await amm.setCounterParty(clearingHouseContract.address!)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
                     console.log("opening Amm SNXUSDC...")
-                    const SNXUSDC = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
+                    const SNXUSDC = await this.factory.createAmm(LegacyAmmInstanceName.SNXUSDC).instance()
                     await (await SNXUSDC.setOpen(true)).wait(this.confirmations)
                 },
                 async (): Promise<void> => {
@@ -660,7 +663,7 @@ export class ContractPublisher {
                     console.log(
                         `transferring SNXUSDC owner to governance=${gov}...please remember to claim the ownership`,
                     )
-                    const SNXUSDC = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
+                    const SNXUSDC = await this.factory.createAmm(LegacyAmmInstanceName.SNXUSDC).instance()
                     await (await SNXUSDC.setOwner(gov)).wait(this.confirmations)
                 },
             ],
