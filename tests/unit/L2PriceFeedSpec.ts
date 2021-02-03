@@ -131,6 +131,32 @@ describe("L2PriceFeed Spec", () => {
             await expectEvent.inTransaction(r.tx, l2PriceFeed, "PriceFeedDataSet")
         })
 
+        it("priceFeedSource should be able to setLatestData", async () => {
+            // change msg sender to chainlinkL2, to verify that it should be failed to set data
+            const chainlinkL2 = addresses[1]
+            await l2PriceFeed.mockSetMsgSender(chainlinkL2)
+            const currentTime = await l2PriceFeed.mock_getCurrentTimestamp()
+            const dataTimestamp = currentTime.addn(15)
+            await expectRevert(
+                l2PriceFeed.setLatestData(toBytes32("ETH"), toFullDigit(400), dataTimestamp, 1),
+                "not a legal sender",
+            )
+
+            // set price feed source,
+            await l2PriceFeed.mockSetMsgSender(admin)
+            await l2PriceFeed.setPriceFeedSource(chainlinkL2)
+
+            // change msg sender to chainlinkL2 again
+            await l2PriceFeed.mockSetMsgSender(chainlinkL2)
+            const r = await l2PriceFeed.setLatestData(toBytes32("ETH"), toFullDigit(400), dataTimestamp, 1)
+            await expectEvent.inTransaction(r.tx, l2PriceFeed, "PriceFeedDataSet", {
+                key: new BN(toBytes32("ETH")),
+                price: toFullDigit(400),
+                timestamp: dataTimestamp,
+                roundId: "1",
+            })
+        })
+
         it("force error, get data with no price feed data", async () => {
             await l2PriceFeed.mockSetMsgSender(admin)
             expect(await l2PriceFeed.getPriceFeedLength(toBytes32("ETH"))).eq(0)
