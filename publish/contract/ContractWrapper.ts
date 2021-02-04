@@ -4,7 +4,7 @@
 import { ethers } from "@nomiclabs/buidler"
 import { Contract } from "ethers"
 import { Layer } from "../../scripts/common"
-import { ContractInstanceName, ContractName } from "../ContractName"
+import { ContractInstanceName } from "../ContractName"
 import { OzContractDeployer } from "../OzContractDeployer"
 import { SystemMetadataDao } from "../SystemMetadataDao"
 
@@ -14,7 +14,7 @@ export class ContractWrapper<T extends Contract> {
     constructor(
         protected readonly layerType: Layer,
         protected readonly systemMetadataDao: SystemMetadataDao,
-        protected readonly contractFileName: ContractName,
+        protected readonly contractFileName: ContractInstanceName,
         protected contractInstanceName: ContractInstanceName,
         readonly confirmations: number = 1,
     ) {
