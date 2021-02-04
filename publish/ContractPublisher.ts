@@ -31,7 +31,20 @@ export class ContractPublisher {
     readonly factory: ContractWrapperFactory
     readonly deployConfig: DeployConfig
     protected taskBatchesMap: Record<Layer, DeployTask[][]> = {
-        layer1: [
+        layer1: [],
+        layer2: [],
+    }
+
+    constructor(
+        readonly layerType: Layer,
+        readonly settingsDao: SettingsDao,
+        readonly systemMetadataDao: SystemMetadataDao,
+    ) {
+        this.externalContract = settingsDao.getExternalContracts(layerType)
+        this.deployConfig = new DeployConfig(settingsDao.stage)
+        this.factory = new ContractWrapperFactory(layerType, systemMetadataDao, this.deployConfig.confirmations)
+
+        this.taskBatchesMap.layer1 = [
             // batch 0
             [
                 async (): Promise<void> => {
@@ -113,8 +126,9 @@ export class ContractPublisher {
                     console.log(`${this.layerType} contract deployment finished.`)
                 },
             ],
-        ],
-        layer2: [
+        ]
+
+        this.taskBatchesMap.layer2 = [
             // batch 0
             [
                 async (): Promise<void> => {
@@ -667,17 +681,7 @@ export class ContractPublisher {
                     await (await SNXUSDC.setOwner(gov)).wait(this.confirmations)
                 },
             ],
-        ],
-    }
-
-    constructor(
-        readonly layerType: Layer,
-        readonly settingsDao: SettingsDao,
-        readonly systemMetadataDao: SystemMetadataDao,
-    ) {
-        this.externalContract = settingsDao.getExternalContracts(layerType)
-        this.deployConfig = new DeployConfig(settingsDao.stage)
-        this.factory = new ContractWrapperFactory(layerType, systemMetadataDao, this.deployConfig.confirmations)
+        ]
     }
 
     get confirmations(): number {
