@@ -15,10 +15,8 @@ export class AmmContractWrapper extends ContractWrapper<Amm> {
         ammDeployArgs: AmmDeployArgs,
         priceFeedAddress: string,
         quoteAssetAddress: string,
-        fetchPrice = true,
     ): Promise<Amm> {
         const {
-            quoteAssetReserve,
             baseAssetReserve,
             tradeLimitRatio,
             fundingPeriod,
@@ -28,12 +26,9 @@ export class AmmContractWrapper extends ContractWrapper<Amm> {
             spreadRatio,
         } = ammDeployArgs
 
-        let updatedQuoteAssetReserve: BigNumber = quoteAssetReserve
-        if (fetchPrice) {
-            const price = await this.coinGecko.fetchUsdPrice(priceFeedKey)
-            const priceInWei = utils.parseEther(price)
-            updatedQuoteAssetReserve = baseAssetReserve.mul(priceInWei).div(BigNumber.from(10).pow(18))
-        }
+        const updatedQuoteAssetReserve = baseAssetReserve.mul(priceInWei).div(BigNumber.from(10).pow(18))
+        const price = await this.coinGecko.fetchUsdPrice(priceFeedKey)
+        const priceInWei = utils.parseEther(price)
 
         const priceFeedKeyBytes = ethers.utils.formatBytes32String(priceFeedKey.toString())
         const args = [

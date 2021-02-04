@@ -3,10 +3,8 @@ import { Stage } from "../../scripts/common"
 import { LegacyAmmInstanceName } from "../ContractName"
 
 // TODO replace by ethers format
-const DEFAULT_DIGITS = BigNumber.from(10).pow(18)
+export const DEFAULT_DIGITS = BigNumber.from(10).pow(18)
 const WEEK = BigNumber.from(7 * 24 * 60 * 60)
-const DEFAULT_AMM_QUOTE_ASSET_RESERVE = BigNumber.from(5_000_000).mul(DEFAULT_DIGITS)
-const DEFAULT_AMM_BASE_ASSET_RESERVE = BigNumber.from(600).mul(DEFAULT_DIGITS)
 const DEFAULT_AMM_TRADE_LIMIT_RATIO = BigNumber.from(90)
     .mul(DEFAULT_DIGITS)
     .div(100) // 90% trading limit ratio
@@ -192,40 +190,36 @@ export const SNX_USD_AMM: AmmConfig = {
 export function makeAmmConfig(
     name: string,
     priceFeedKey: string,
-    deployArgs: Partial<AmmDeployArgs>,
-    props: Partial<AmmProperties>,
+    baseAssetReserve: BigNumber,
+    maxHoldingBaseAsset: BigNumber,
+    openInterestNotionalCap: BigNumber,
+    restDeployArgs?: Partial<AmmDeployArgs>,
 ): AmmConfig {
     const config: AmmConfig = {
         name,
         deployArgs: {
             // base * price
             // exact quote reserve amount will be overriden by the script based on the base reserve and the price upon deployment
-            quoteAssetReserve: DEFAULT_AMM_QUOTE_ASSET_RESERVE,
-            baseAssetReserve: DEFAULT_AMM_BASE_ASSET_RESERVE,
+            baseAssetReserve,
+            quoteAssetReserve: BigNumber.from(0),
             tradeLimitRatio: DEFAULT_AMM_TRADE_LIMIT_RATIO,
             fundingPeriod: DEFAULT_AMM_FUNDING_PERIOD,
             fluctuation: DEFAULT_AMM_FLUCTUATION,
             priceFeedKey: priceFeedKey,
-            tollRatio: BigNumber.from(0)
-                .mul(DEFAULT_DIGITS)
-                .div(10000), // 0.0%
-            spreadRatio: BigNumber.from(10)
-                .mul(DEFAULT_DIGITS)
-                .div(10000), // 0.1%
+            tollRatio: DEFAULT_AMM_TOLL_RATIO,
+            spreadRatio: DEFAULT_AMM_SPREAD_RATIO, // 0.1%
         },
         properties: {
-            maxHoldingBaseAsset: DEFAULT_DIGITS.mul(12), // 12 sDEFI ~= $100,000 USD
-            openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
+            maxHoldingBaseAsset,
+            openInterestNotionalCap,
         },
     }
 
-    config.deployArgs = {
-        ...config.deployArgs,
-        ...deployArgs,
-    }
-    config.properties = {
-        ...config.properties,
-        ...props,
+    if (restDeployArgs) {
+        config.deployArgs = {
+            ...config.deployArgs,
+            ...restDeployArgs,
+        }
     }
 
     return config

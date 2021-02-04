@@ -6,7 +6,7 @@ import { AmmConfig } from "./DeployConfig"
 
 export type DeployTask = () => Promise<void>
 
-export function createAmmDeployBatch(
+export function makeAmmDeployBatch(
     ammConfig: AmmConfig,
     factory: ContractWrapperFactory,
     externalContract: ExternalContracts,
