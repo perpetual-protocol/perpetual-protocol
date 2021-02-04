@@ -1,19 +1,19 @@
 import { web3 } from "@nomiclabs/buidler"
-import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
+import { expectRevert } from "@openzeppelin/test-helpers"
 import { expect, use } from "chai"
-import { ChainlinkL1MockInstance, ChainlinkL2Instance, L2PriceFeedMockInstance } from "../../types/truffle"
+import { ChainlinkL1MockInstance, ChainlinkL2FakeInstance } from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
-import { deployChainlinkL2, deployL2MockPriceFeed } from "../helper/contract"
+import { deployChainlinkL2 } from "../helper/contract"
 import { deployChainlinkL1Mock } from "../helper/mockContract"
 import { toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 
 describe("chainlinkL2 Spec", () => {
+    const CHAINLINK_DECIMAL = 8
+
     let addresses: string[]
-    let admin: string
-    let chainlinkL2!: ChainlinkL2Instance
-    let l2PriceFeedMock!: L2PriceFeedMockInstance
+    let chainlinkL2!: ChainlinkL2FakeInstance
     let chainlinkMock1!: ChainlinkL1MockInstance
     let chainlinkMock2!: ChainlinkL1MockInstance
     let chainlinkMock3!: ChainlinkL1MockInstance
@@ -21,13 +21,11 @@ describe("chainlinkL2 Spec", () => {
 
     beforeEach(async () => {
         addresses = await web3.eth.getAccounts()
-        admin = addresses[0]
         chainlinkMock1 = await deployChainlinkL1Mock()
         chainlinkMock2 = await deployChainlinkL1Mock()
         chainlinkMock3 = await deployChainlinkL1Mock()
 
-        l2PriceFeedMock = await deployL2MockPriceFeed(toFullDigit(10))
-        chainlinkL2 = await deployChainlinkL2(l2PriceFeedMock.address)
+        chainlinkL2 = await deployChainlinkL2()
     })
 
     function stringToBytes32(str: string): string {
@@ -38,28 +36,12 @@ describe("chainlinkL2 Spec", () => {
         return web3.utils.hexToUtf8(str)
     }
 
-    describe("setPriceFeed()", () => {
-        it("set the address of PriceFeedL2", async () => {
-            const receipt = await chainlinkL2.setPriceFeed(admin)
-            await expectEvent.inTransaction(receipt.tx, chainlinkL2, "PriceFeedChanged", { priceFeed: admin })
-            expect(await chainlinkL2.priceFeedAddress()).eq(admin)
-        })
-
-        it("force error, PriceFeedL2 address cannot be address(0)", async () => {
-            await expectRevert(chainlinkL2.setPriceFeed(EMPTY_ADDRESS), "empty address")
-        })
-    })
-
     describe("addAggregator", () => {
         it("getAggregator with existed aggregator key", async () => {
             await chainlinkL2.addAggregator(stringToBytes32("ETH"), chainlinkMock1.address)
             expect(fromBytes32(await chainlinkL2.priceFeedKeys(0))).eq("ETH")
             expect(await chainlinkL2.getAggregator(stringToBytes32("ETH"))).eq(chainlinkMock1.address)
-
-            const ethAggregator = await chainlinkL2.aggregatorMap(stringToBytes32("ETH"))
-            expect(ethAggregator[0]).eq(chainlinkMock1.address)
-            expect(ethAggregator[1]).eq(8)
-            expect(ethAggregator[2]).not.eq(0)
+            expect(await chainlinkL2.priceFeedDecimalMap(stringToBytes32("ETH"))).eq(8)
         })
 
         it("getAggregator with non-existed aggregator key", async () => {
@@ -109,48 +91,111 @@ describe("chainlinkL2 Spec", () => {
         })
     })
 
-    describe("updateLatestRoundData()", () => {
+    describe("twap", () => {
         beforeEach(async () => {
             await chainlinkL2.addAggregator(stringToBytes32("ETH"), chainlinkMock1.address)
-            await chainlinkMock1.mockAddAnswer(8, 12345678, 1, 144000000000, 1)
+            const currentTime = await chainlinkL2.mock_getCurrentTimestamp()
+            await chainlinkMock1.mockAddAnswer(0, toFullDigit(400, CHAINLINK_DECIMAL), currentTime, currentTime, 0)
+            const firstTimestamp = currentTime.addn(15)
+            await chainlinkMock1.mockAddAnswer(
+                1,
+                toFullDigit(405, CHAINLINK_DECIMAL),
+                firstTimestamp,
+                firstTimestamp,
+                1,
+            )
+            const secondTimestamp = firstTimestamp.addn(15)
+            await chainlinkMock1.mockAddAnswer(
+                2,
+                toFullDigit(410, CHAINLINK_DECIMAL),
+                secondTimestamp,
+                secondTimestamp,
+                2,
+            )
+            const thirdTimestamp = secondTimestamp.addn(15)
+            await chainlinkL2.mock_setBlockTimestamp(thirdTimestamp)
         })
 
-        it("get latest data", async () => {
-            const receipt = await chainlinkL2.updateLatestRoundData(stringToBytes32("ETH"))
+        // aggregator's answer
+        // timestamp(base + 0)  : 400
+        // timestamp(base + 15) : 405
+        // timestamp(base + 30) : 410
+        // now = base + 45
+        //
+        //  --+------+-----+-----+-----+-----+-----+
+        //          base                          now
 
-            await expectEvent.inTransaction(receipt.tx, chainlinkL2, "PriceUpdated", {
-                price: "123456780000000000",
-                timestamp: "144000000000",
-                roundId: "8",
-            })
-
-            // price: chainlink default is 8 digit, the value from our contract will be converted to 18 digits
-            await expectEvent.inTransaction(receipt.tx, l2PriceFeedMock, "PriceFeedDataSet", {
-                price: "123456780000000000",
-                timestamp: "144000000000",
-                roundId: "8",
-            })
+        it("twap price", async () => {
+            const price = await chainlinkL2.getTwapPrice(stringToBytes32("ETH"), 45)
+            expect(price).to.eq(toFullDigit(405))
         })
 
-        // expectRevert section
-        it("force error, get non-existing aggregator", async () => {
-            const _wrongPriceFeedKey = "Ha"
-            await expectRevert(chainlinkL2.updateLatestRoundData(stringToBytes32(_wrongPriceFeedKey)), "empty address")
+        it("asking interval more than aggregator has", async () => {
+            const price = await chainlinkL2.getTwapPrice(stringToBytes32("ETH"), 46)
+            expect(price).to.eq(toFullDigit(405))
         })
 
-        it("force error, timestamp equal to 0", async () => {
-            await chainlinkMock1.mockAddAnswer(8, 41, 1, 0, 1)
-            await expectRevert(chainlinkL2.updateLatestRoundData(stringToBytes32("ETH")), "incorrect timestamp")
+        it("asking interval less than aggregator has", async () => {
+            const price = await chainlinkL2.getTwapPrice(stringToBytes32("ETH"), 44)
+            expect(price).to.eq("405113636360000000000")
         })
 
-        it("force error, same timestamp as previous", async () => {
-            // first update should pass
-            await chainlinkL2.updateLatestRoundData(stringToBytes32("ETH"))
-            const aggregators = await chainlinkL2.aggregatorMap(stringToBytes32("ETH"))
-            // index 2 is timestamp
-            expect(aggregators[2]).eq("144000000000")
-            // second update with the same timestamp should fail
-            await expectRevert(chainlinkL2.updateLatestRoundData(stringToBytes32("ETH")), "incorrect timestamp")
+        it("given variant price period", async () => {
+            const currentTime = await chainlinkL2.mock_getCurrentTimestamp()
+            await chainlinkMock1.mockAddAnswer(
+                4,
+                toFullDigit(420, CHAINLINK_DECIMAL),
+                currentTime.addn(30),
+                currentTime.addn(30),
+                4,
+            )
+            await chainlinkL2.mock_setBlockTimestamp(currentTime.addn(50))
+
+            // twap price should be (400 * 15) + (405 * 15) + (410 * 45) + (420 * 20) / 95 = 409.74
+            const price = await chainlinkL2.getTwapPrice(stringToBytes32("ETH"), 95)
+            expect(price).to.eq("409736842100000000000")
+        })
+
+        it("latest price update time is earlier than the request, return the latest price", async () => {
+            const currentTime = await chainlinkL2.mock_getCurrentTimestamp()
+            await chainlinkL2.mock_setBlockTimestamp(currentTime.addn(100))
+
+            // latest update time is base + 30, but now is base + 145 and asking for (now - 45)
+            // should return the latest price directly
+            const price = await chainlinkL2.getTwapPrice(stringToBytes32("ETH"), 45)
+            expect(price).to.eq(toFullDigit(410))
+        })
+
+        it("force error, interval is zero", async () => {
+            await expectRevert(chainlinkL2.getTwapPrice(stringToBytes32("ETH"), 0), "interval can't be 0")
+        })
+    })
+
+    describe("getPreviousPrice/getPreviousTimestamp", () => {
+        beforeEach(async () => {
+            await chainlinkL2.addAggregator(stringToBytes32("ETH"), chainlinkMock1.address)
+            await chainlinkMock1.mockAddAnswer(0, toFullDigit(400, CHAINLINK_DECIMAL), 100, 100, 0)
+            await chainlinkMock1.mockAddAnswer(1, toFullDigit(405, CHAINLINK_DECIMAL), 150, 150, 1)
+            await chainlinkMock1.mockAddAnswer(2, toFullDigit(410, CHAINLINK_DECIMAL), 200, 200, 2)
+        })
+
+        it("get previous price (latest)", async () => {
+            const price = await chainlinkL2.getPreviousPrice(stringToBytes32("ETH"), 0)
+            expect(price).to.eq(toFullDigit(410))
+            const timestamp = await chainlinkL2.getPreviousTimestamp(stringToBytes32("ETH"), 0)
+            expect(timestamp).to.eq(200)
+        })
+
+        it("get previous price", async () => {
+            const price = await chainlinkL2.getPreviousPrice(stringToBytes32("ETH"), 2)
+            expect(price).to.eq(toFullDigit(400))
+            const timestamp = await chainlinkL2.getPreviousTimestamp(stringToBytes32("ETH"), 2)
+            expect(timestamp).to.eq(100)
+        })
+
+        it("force error, get previous price", async () => {
+            await expectRevert(chainlinkL2.getPreviousPrice(stringToBytes32("ETH"), 10), "Not enough history")
+            await expectRevert(chainlinkL2.getPreviousTimestamp(stringToBytes32("ETH"), 10), "Not enough history")
         })
     })
 })
