@@ -187,6 +187,34 @@ export const SNX_USD_AMM: AmmConfig = {
     },
 }
 
+export const SDEFI_USD_AMM: AmmConfig = {
+    name: LegacyAmmInstanceName.SDEFIUSDC,
+    deployArgs: {
+        // base * price
+        // exact quote reserve amount will be overriden by the script based on the base reserve and the price upon deployment
+        quoteAssetReserve: BigNumber.from(5_000_000).mul(DEFAULT_DIGITS),
+        baseAssetReserve: BigNumber.from(300_000).mul(DEFAULT_DIGITS),
+        tradeLimitRatio: BigNumber.from(90)
+            .mul(DEFAULT_DIGITS)
+            .div(100), // 90% trading limit ratio
+        fundingPeriod: BigNumber.from(3600), // 1 hour
+        fluctuation: BigNumber.from(12)
+            .mul(DEFAULT_DIGITS)
+            .div(1000), // 1.2%
+        priceFeedKey: PriceFeedKey.SDEFI,
+        tollRatio: BigNumber.from(0)
+            .mul(DEFAULT_DIGITS)
+            .div(10000), // 0.0%
+        spreadRatio: BigNumber.from(10)
+            .mul(DEFAULT_DIGITS)
+            .div(10000), // 0.1%
+    },
+    properties: {
+        maxHoldingBaseAsset: DEFAULT_DIGITS.mul(6_000),
+        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
+    },
+}
+
 export function makeAmmConfig(
     name: string,
     priceFeedKey: string,
@@ -250,6 +278,7 @@ export class DeployConfig {
         [LegacyAmmInstanceName.YFIUSDC]: YFI_USD_AMM,
         [LegacyAmmInstanceName.DOTUSDC]: DOT_USD_AMM,
         [LegacyAmmInstanceName.SNXUSDC]: SNX_USD_AMM,
+        [LegacyAmmInstanceName.SDEFIUSDC]: SDEFI_USD_AMM,
     }
 
     constructor(stage: Stage) {
