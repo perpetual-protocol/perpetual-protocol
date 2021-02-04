@@ -26,9 +26,9 @@ export class AmmContractWrapper extends ContractWrapper<Amm> {
             spreadRatio,
         } = ammDeployArgs
 
-        const updatedQuoteAssetReserve = baseAssetReserve.mul(priceInWei).div(BigNumber.from(10).pow(18))
         const price = await this.coinGecko.fetchUsdPrice(priceFeedKey)
         const priceInWei = utils.parseEther(price)
+        const updatedQuoteAssetReserve = baseAssetReserve.mul(priceInWei).div(BigNumber.from(10).pow(18))
 
         const priceFeedKeyBytes = ethers.utils.formatBytes32String(priceFeedKey.toString())
         const args = [
