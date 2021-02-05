@@ -15,12 +15,13 @@ import {
     InsuranceFund,
     L2PriceFeed,
     MetaTxGateway,
+    PerpRewardVesting,
     RootBridge,
 } from "../types/ethers"
 import { ContractWrapperFactory } from "./contract/ContractWrapperFactory"
 import { DeployConfig, PriceFeedKey } from "./contract/DeployConfig"
 import { DeployTask } from "./contract/DeployUtil"
-import { ContractName, LegacyAmmInstanceName } from "./ContractName"
+import { ContractInstanceName, ContractName, LegacyAmmInstanceName } from "./ContractName"
 import { OzContractDeployer } from "./OzContractDeployer"
 import { SettingsDao } from "./SettingsDao"
 import { SystemMetadataDao } from "./SystemMetadataDao"
@@ -124,6 +125,56 @@ export class ContractPublisher {
                     console.log(`${this.layerType} batch ends, transfer proxy admin to ${governance}`)
                     await OzContractDeployer.transferProxyAdminOwnership(governance)
                     console.log(`${this.layerType} contract deployment finished.`)
+                },
+            ],
+            // batch 2
+            // deploy PerpRewardVesting - 0 vesting & 12 weeks vesting
+            [
+                async (): Promise<void> => {
+                    console.log("deploy PerpRewardVesting with 0 vesting...")
+                    const perpAddr = this.settingsDao.getExternalContracts(this.layerType).perp!
+                    await this.factory
+                        .create<PerpRewardVesting>(
+                            ContractName.PerpRewardVesting,
+                            ContractInstanceName.PerpRewardNoVesting,
+                        )
+                        .deployUpgradableContract(perpAddr, 0)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring PerpRewardNoVesting's owner to governance=${gov}...please remember to claim the ownership`,
+                    )
+                    const reward = await this.factory
+                        .create<PerpRewardVesting>(
+                            ContractName.PerpRewardVesting,
+                            ContractInstanceName.PerpRewardNoVesting,
+                        )
+                        .instance()
+                    await (await reward.setOwner(gov)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("deploy PerpRewardVesting with 24w vesting...")
+                    const perpAddr = this.settingsDao.getExternalContracts(this.layerType).perp!
+                    await this.factory
+                        .create<PerpRewardVesting>(
+                            ContractName.PerpRewardVesting,
+                            ContractInstanceName.PerpRewardTwentySixWeeksVesting,
+                        )
+                        .deployUpgradableContract(perpAddr, this.deployConfig.defaultPerpRewardVestingPeriod)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.foundationGovernance!
+                    console.log(
+                        `transferring PerpRewardTwentySixWeeksVesting's owner to governance=${gov}...please remember to claim the ownership`,
+                    )
+                    const reward = await this.factory
+                        .create<PerpRewardVesting>(
+                            ContractName.PerpRewardVesting,
+                            ContractInstanceName.PerpRewardTwentySixWeeksVesting,
+                        )
+                        .instance()
+                    await (await reward.setOwner(gov)).wait(this.confirmations)
                 },
             ],
         ]

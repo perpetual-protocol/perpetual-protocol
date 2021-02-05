@@ -57,6 +57,9 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
 
     // #6 deploy the market (production=SNX, staging=sDEFI)
     await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 8`, options)
+
+    // #7 deploy PERP RewardVesting in layer 1
+    await asyncExec(`buidler --network ${layer1Network} ${TASK_DEPLOY_LAYER} ${stage} layer1 2`, options)
 }
 
 /* eslint-disable no-console */
