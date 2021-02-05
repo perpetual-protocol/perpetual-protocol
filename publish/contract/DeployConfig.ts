@@ -286,8 +286,8 @@ export class DeployConfig {
     readonly keeperRewardOnL1 = BigNumber.from(1).mul(DEFAULT_DIGITS) // 1 perp token
     readonly keeperRewardOnL2 = BigNumber.from(1).mul(DEFAULT_DIGITS) // 1 perp token
 
-    // PerpRewardVesting
-    readonly vestingPeriod = WEEK.mul(12)
+    // PerpRewardVesting = default is 24 weeks
+    readonly defaultPerpRewardVestingPeriod = WEEK.mul(24)
 
     constructor(stage: Stage) {
         switch (stage) {
