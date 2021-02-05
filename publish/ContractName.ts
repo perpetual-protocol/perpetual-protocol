@@ -28,4 +28,9 @@ export enum ContractName {
     FeeTokenPoolDispatcherL1 = "FeeTokenPoolDispatcherL1",
 }
 
-export type ContractId = ContractName | string
+export enum ContractInstanceName {
+    PerpRewardNoVesting = "PerpRewardNoVesting",
+    PerpRewardTwentySixWeeksVesting = "PerpRewardTwentySixWeeksVesting",
+}
+
+export type ContractId = ContractName | LegacyAmmInstanceName | ContractInstanceName
