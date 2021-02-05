@@ -9,7 +9,7 @@ import L2PriceFeedArtifact from "../../build/contracts/L2PriceFeed.json"
 import MetaTxGatewayArtifact from "../../build/contracts/MetaTxGateway.json"
 import OwnableArtifact from "../../build/contracts/Ownable.json"
 import RootBridgeArtifact from "../../build/contracts/RootBridge.json"
-import { AmmInstanceName, ContractName } from "../../publish/ContractName"
+import { ContractName, LegacyAmmInstanceName } from "../../publish/ContractName"
 import { SettingsDao } from "../../publish/SettingsDao"
 import { SystemMetadataDao } from "../../publish/SystemMetadataDao"
 import {
@@ -48,10 +48,11 @@ describe.skip("SystemTest Spec", () => {
     const insuranceFund = systemMetadataDao.getContractMetadata("layer2", ContractName.InsuranceFund)
     const clearingHouse = systemMetadataDao.getContractMetadata("layer2", ContractName.ClearingHouse)
     const clientBridge = systemMetadataDao.getContractMetadata("layer2", ContractName.ClientBridge)
-    const ETHUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.ETHUSDC)
-    const BTCUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.BTCUSDC)
-    const YFIUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.YFIUSDC)
-    const DOTUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.DOTUSDC)
+    const ETHUSDC = systemMetadataDao.getContractMetadata("layer2", LegacyAmmInstanceName.ETHUSDC)
+    const BTCUSDC = systemMetadataDao.getContractMetadata("layer2", LegacyAmmInstanceName.BTCUSDC)
+    const YFIUSDC = systemMetadataDao.getContractMetadata("layer2", LegacyAmmInstanceName.YFIUSDC)
+    const DOTUSDC = systemMetadataDao.getContractMetadata("layer2", LegacyAmmInstanceName.DOTUSDC)
+    const SNXUSDC = systemMetadataDao.getContractMetadata("layer2", LegacyAmmInstanceName.SNXUSDC)
     const ambBridgeL2 = settingsDao.getExternalContracts("layer2").ambBridgeOnXDai
     const multiTokenMediatorL2 = settingsDao.getExternalContracts("layer2").multiTokenMediatorOnXDai
     const usdc = settingsDao.getExternalContracts("layer2").usdc
@@ -388,6 +389,42 @@ describe.skip("SystemTest Spec", () => {
                 expect(await instance.spreadRatio()).eq(ethers.utils.parseEther("0.001").toString())
                 expect((await instance.getMaxHoldingBaseAsset()).d.toString()).eq(
                     ethers.utils.parseEther("5000").toString(),
+                )
+                expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
+                    ethers.utils.parseEther("2000000").toString(),
+                )
+            })
+        })
+
+        describe("SNXUSDC", async () => {
+            let instance: Amm
+
+            beforeEach(async () => {
+                instance = new ethers.Contract(SNXUSDC.address, AmmArtifact.abi, l2Provider) as Amm
+            })
+
+            // private
+            it.skip("has ClearingHouse", async () => {})
+
+            it("has quoteAsset", async () => {
+                expect(await instance.quoteAsset()).to.eq(usdc)
+            })
+
+            it("has L2PriceFeed", async () => {
+                expect(await instance.priceFeed()).to.eq(l2PriceFeed.address)
+            })
+
+            it("own by gov", async () => {
+                expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+            })
+
+            it("has correct config", async () => {
+                expect(await instance.tradeLimitRatio()).eq(ethers.utils.parseEther("0.9").toString())
+                expect(await instance.fluctuationLimitRatio()).eq(ethers.utils.parseEther("0.012").toString())
+                expect(await instance.tollRatio()).eq(ethers.utils.parseEther("0").toString())
+                expect(await instance.spreadRatio()).eq(ethers.utils.parseEther("0.001").toString())
+                expect((await instance.getMaxHoldingBaseAsset()).d.toString()).eq(
+                    ethers.utils.parseEther("6000").toString(),
                 )
                 expect((await instance.getOpenInterestNotionalCap()).d.toString()).eq(
                     ethers.utils.parseEther("2000000").toString(),

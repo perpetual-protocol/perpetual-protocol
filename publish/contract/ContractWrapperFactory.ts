@@ -3,8 +3,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Contract } from "ethers"
 import { Layer } from "../../scripts/common"
-import { Amm } from "../../types/ethers"
-import { AmmInstanceName, ContractName } from "../ContractName"
+import { ContractName } from "../ContractName"
 import { SystemMetadataDao } from "../SystemMetadataDao"
 import { AmmContractWrapper } from "./AmmContractWrapper"
 import { ContractWrapper } from "./ContractWrapper"
@@ -26,7 +25,7 @@ export class ContractWrapperFactory {
         )
     }
 
-    createAmm(ammInstanceName: AmmInstanceName): ContractWrapper<Amm> {
+    createAmm(ammInstanceName: string): AmmContractWrapper {
         return new AmmContractWrapper(
             this.layerType,
             this.systemMetadataDao,
