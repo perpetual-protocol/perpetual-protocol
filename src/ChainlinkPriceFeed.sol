@@ -8,7 +8,7 @@ import { BlockContext } from "./utils/BlockContext.sol";
 import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 import { Decimal, SafeMath } from "./utils/Decimal.sol";
 
-contract ChainlinkL2 is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
+contract ChainlinkPriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
     using SafeMath for uint256;
 
     uint256 private constant TOKEN_DIGIT = 10**18;

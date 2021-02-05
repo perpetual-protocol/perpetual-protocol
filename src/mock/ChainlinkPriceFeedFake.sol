@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
-import { ChainlinkL2 } from "../ChainlinkL2.sol";
+import { ChainlinkPriceFeed } from "../ChainlinkPriceFeed.sol";
 
-contract ChainlinkL2Fake is ChainlinkL2 {
+contract ChainlinkPriceFeedFake is ChainlinkPriceFeed {
     uint256 private timestamp = 1444004400;
     uint256 private number = 10001;
 

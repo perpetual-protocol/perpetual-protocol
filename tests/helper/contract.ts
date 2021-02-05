@@ -11,8 +11,8 @@ import {
     BalancerMockInstance,
     ChainlinkL1FakeContract,
     ChainlinkL1FakeInstance,
-    ChainlinkL2FakeContract,
-    ChainlinkL2FakeInstance,
+    ChainlinkPriceFeedFakeContract,
+    ChainlinkPriceFeedFakeInstance,
     ClearingHouseFakeContract,
     ClearingHouseFakeInstance,
     ClearingHouseViewerContract,
@@ -75,7 +75,7 @@ const RootBridge = artifacts.require("RootBridge") as RootBridgeContract
 const MultiTokenMediatorMock = artifacts.require("MultiTokenMediatorMock") as MultiTokenMediatorMockContract
 const AMBBridgeMock = artifacts.require("AMBBridgeMock") as AMBBridgeMockContract
 const MetaTxGateway = artifacts.require("MetaTxGateway") as MetaTxGatewayContract
-const ChainlinkL2Fake = artifacts.require("ChainlinkL2Fake") as ChainlinkL2FakeContract
+const ChainlinkPriceFeedFake = artifacts.require("ChainlinkPriceFeedFake") as ChainlinkPriceFeedFakeContract
 
 export enum Side {
     BUY = 0,
@@ -279,8 +279,8 @@ export async function deployChainlinkL1(
     return instance
 }
 
-export async function deployChainlinkL2(): Promise<ChainlinkL2FakeInstance> {
-    const instance = await ChainlinkL2Fake.new()
+export async function deployChainlinkPriceFeed(): Promise<ChainlinkPriceFeedFakeInstance> {
+    const instance = await ChainlinkPriceFeedFake.new()
     await instance.initialize()
     return instance
 }
