@@ -97,6 +97,8 @@ contract StakingReserve is
     // address who can call `notifyTokenAmount`, it's `clearingHouse` for now.
     address public feeNotifier;
 
+    IERC20 public override token;
+
     //**********************************************************//
     //    Can not change the order of above state variables     //
     //**********************************************************//

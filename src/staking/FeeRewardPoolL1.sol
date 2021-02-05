@@ -35,8 +35,8 @@ contract FeeRewardPoolL1 is IStakeModule, IRewardRecipient, PerpFiOwnableUpgrade
         _;
     }
 
-    modifier onlyTmpRewardPool() {
-        require(_msgSender() == tmpRewardPool, "only tmpRewardPool");
+    modifier onlyFeeTokenPoolDispatcher() {
+        require(_msgSender() == feeTokenPoolDispatcher, "only feeTokenPoolDispatcher");
         _;
     }
 
@@ -56,11 +56,10 @@ contract FeeRewardPoolL1 is IStakeModule, IRewardRecipient, PerpFiOwnableUpgrade
     // last reward notified time
     uint256 public lastUpdateTime;
     uint256 public periodFinish;
-    uint256 public duration;
 
-    address public tmpRewardPool;
+    address public feeTokenPoolDispatcher;
     StakedPerpToken public stakedPerpToken;
-    IERC20 public token;
+    IERC20 public override token;
 
     //**********************************************************//
     //    The above state variables can not change the order    //
@@ -77,14 +76,13 @@ contract FeeRewardPoolL1 is IStakeModule, IRewardRecipient, PerpFiOwnableUpgrade
     function initialize(
         IERC20 _token,
         StakedPerpToken _stakedPerpToken,
-        address _tmpRewardPool
-    ) external {
+        address _feeTokenPoolDispatcher
+    ) external initializer {
         require(address(_stakedPerpToken) != address(0), "Invalid input");
         __Ownable_init();
         stakedPerpToken = _stakedPerpToken;
-        tmpRewardPool = _tmpRewardPool;
+        feeTokenPoolDispatcher = _feeTokenPoolDispatcher;
         token = _token;
-        duration = DURATION;
     }
 
     function notifyStakeChanged(address _staker) external override onlyStakedPerpToken {
@@ -102,21 +100,20 @@ contract FeeRewardPoolL1 is IStakeModule, IRewardRecipient, PerpFiOwnableUpgrade
         emit RewardWithdrawn(msgSender, reward.toUint());
     }
 
-    // assume _reward = 7, duration = 7 days and rewardRate = 1
-    function notifyRewardAmount(Decimal.decimal calldata _reward) external override onlyTmpRewardPool {
+    // assume DURATION = 1 day, (existing) rewardRate = 1, and new incoming _reward = 2
+    function notifyRewardAmount(Decimal.decimal calldata _reward) external override onlyFeeTokenPoolDispatcher {
         require(_reward.toUint() > 0, "invalid input");
 
         updateReward(address(0));
         uint256 timestamp = _blockTimestamp();
         // there is no reward during the interval after the end of the previous period and before new rewards arrive
         if (timestamp >= periodFinish) {
-            // rewardRate = 7/7 = 1
+            // rewardRate = 2/1 = 2
             rewardRate = _reward.divScalar(DURATION);
         } else {
-            // assume 2 days left
-            // remainingTime = 2 days
-            // leftover = 1 * 2 = 2
-            // rewardRate = (7 + 2) / 7 ~= 1.28
+            // assume half a day left in the current period, thus remainingTime = 0.5 days
+            // leftover = 1 * 0.5 = 0.5
+            // rewardRate = (2 + 0.5) / 1 ~= 2.5
             uint256 remainingTime = periodFinish.sub(timestamp);
             Decimal.decimal memory leftover = rewardRate.mulScalar(remainingTime);
             rewardRate = _reward.addD(leftover).divScalar(DURATION);
@@ -126,11 +123,6 @@ contract FeeRewardPoolL1 is IStakeModule, IRewardRecipient, PerpFiOwnableUpgrade
         lastUpdateTime = timestamp;
         periodFinish = lastUpdateTime.add(DURATION);
         emit RewardTransferred(_reward.toUint());
-    }
-
-    function setDuration(uint256 _duration) external onlyOwner {
-        require(_duration != 0, "invalid input");
-        duration = _duration;
     }
 
     //
@@ -146,14 +138,15 @@ contract FeeRewardPoolL1 is IStakeModule, IRewardRecipient, PerpFiOwnableUpgrade
     }
 
     function rewardPerToken() public view returns (Decimal.decimal memory) {
-        if (totalSupply().toUint() == 0) {
+        Decimal.decimal memory totalSupply = totalSupply();
+        if (totalSupply.toUint() == 0) {
             return rewardPerTokenStored;
         }
         // lastUpdateTime = 100 (last time notifyRewardAmount())
         // lastTimeRewardApplicable() = min(timestamp = now, periodFinish = lastUpdateTime.add(DURATION)) = depends
 
         uint256 timeInterval = lastTimeRewardApplicable().sub(lastUpdateTime);
-        return rewardPerTokenStored.addD(rewardRate.divD(totalSupply()).mulScalar(timeInterval));
+        return rewardPerTokenStored.addD(rewardRate.divD(totalSupply).mulScalar(timeInterval));
     }
 
     //

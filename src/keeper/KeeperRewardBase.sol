@@ -42,6 +42,7 @@ abstract contract KeeperRewardBase is PerpFiOwnableUpgrade, DecimalERC20 {
      * @dev set functions those keepers can get reward by call one of them.
             The size of these three array MUST be the same.
      * @param _funcSelectors array of function selectors to be executed
+                             format: bytes4(keccak256(abi.encodePacked(address(contract), funcSelector)))
      * @param _contracts array of contract addresses those include corresponding _funcSelectors. 
                          Can be zero to reset corresponding selector.
      * @param _rewardAmount array of reward amount corresponding to different functions 
@@ -52,7 +53,10 @@ abstract contract KeeperRewardBase is PerpFiOwnableUpgrade, DecimalERC20 {
         uint256[] calldata _rewardAmount
     ) external onlyOwner {
         uint256 selectorLen = _funcSelectors.length;
-        require(selectorLen == _contracts.length && selectorLen == _rewardAmount.length, "inconsistent input size");
+        require(
+            selectorLen == _contracts.length && selectorLen == _rewardAmount.length && selectorLen > 0,
+            "inconsistent input size"
+        );
 
         for (uint256 i; i < selectorLen; i++) {
             bytes4 selector = _funcSelectors[i];
@@ -67,9 +71,11 @@ abstract contract KeeperRewardBase is PerpFiOwnableUpgrade, DecimalERC20 {
 
     /**
      * @dev need to check taskInfo is not empty before calling this.
+     * @param _selector bytes4(keccak256(abi.encodePacked(address(contract), funcSelector)))
      */
     function postTaskAction(bytes4 _selector) internal {
-        TaskInfo memory task = tasksMap[_selector];
+        TaskInfo memory task = getTaskInfo(_selector);
+
         address keeper = _msgSender();
         _transfer(rewardToken, keeper, task.rewardAmount);
 
@@ -77,7 +83,8 @@ abstract contract KeeperRewardBase is PerpFiOwnableUpgrade, DecimalERC20 {
     }
 
     /**
-     * @dev revert if contract address of the task is empty.
+     * @dev return TaskInfo with selector as key
+     * @param _selector bytes4(keccak256(abi.encodePacked(address(contract), funcSelector)))
      */
     function getTaskInfo(bytes4 _selector) internal view returns (TaskInfo memory task) {
         task = tasksMap[_selector];

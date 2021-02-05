@@ -45,7 +45,7 @@ describe("PerpRewardVestingSpec", () => {
 
     describe("seedAllocations()", () => {
         it("verify balances after seeding", async () => {
-            const timestamp = await perpRewardVesting.mock_getCurrentTimestamp()
+            const timestamp = (await perpRewardVesting.mock_getCurrentTimestamp()).addn(86400 * 7 * 12)
             await perpRewardVesting.seedAllocations(new BN(1), RANDOM_BYTES32_1, toFullDigit(1000000), { from: admin })
 
             expect(await perpToken.balanceOf(admin)).to.eq(toFullDigit(1000000))
@@ -130,7 +130,7 @@ describe("PerpRewardVestingSpec", () => {
             expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1800000))
         })
 
-        it("force error, claiming is not yet available", async () => {
+        it("force error, invalid claim, claim not yet available", async () => {
             await perpRewardVesting.seedAllocations(new BN(1), RANDOM_BYTES32_1, toFullDigit(1000000), { from: admin })
             await forwardBlockTimestamp(60)
 
@@ -138,7 +138,19 @@ describe("PerpRewardVestingSpec", () => {
                 perpRewardVesting.claimWeek(alice, new BN(1), toFullDigit(500000), [RANDOM_BYTES32_1], {
                     from: alice,
                 }),
-                "Claiming is not yet available",
+                "Invalid claim",
+            )
+        })
+
+        it("force error, invalid claim, input week is invalid", async () => {
+            await perpRewardVesting.seedAllocations(new BN(1), RANDOM_BYTES32_1, toFullDigit(1000000), { from: admin })
+            await forwardBlockTimestamp(Number(vestingPeriod))
+
+            await expectRevert(
+                perpRewardVesting.claimWeek(alice, new BN(0), toFullDigit(500000), [RANDOM_BYTES32_1], {
+                    from: alice,
+                }),
+                "Invalid claim",
             )
         })
 
@@ -317,10 +329,7 @@ describe("PerpRewardVestingSpec", () => {
                 },
             ]
 
-            await expectRevert(
-                perpRewardVesting.claimWeeks(alice, claimsArr, { from: alice }),
-                "Claiming is not yet available",
-            )
+            await expectRevert(perpRewardVesting.claimWeeks(alice, claimsArr, { from: alice }), "Invalid claim")
         })
 
         it("force error, alice has three shares and the latest one is not yet available", async () => {
@@ -351,10 +360,7 @@ describe("PerpRewardVestingSpec", () => {
                 },
             ]
 
-            await expectRevert(
-                perpRewardVesting.claimWeeks(alice, claimsArr, { from: alice }),
-                "Claiming is not yet available",
-            )
+            await expectRevert(perpRewardVesting.claimWeeks(alice, claimsArr, { from: alice }), "Invalid claim")
         })
 
         it("force error, claimWeeks() twice", async () => {
@@ -422,7 +428,7 @@ describe("PerpRewardVestingSpec", () => {
                     merkleProof: [RANDOM_BYTES32_1],
                 },
                 {
-                    week: "6",
+                    week: "7",
                     balance: toFullDigitStr(100000),
                     merkleProof: [RANDOM_BYTES32_2],
                 },

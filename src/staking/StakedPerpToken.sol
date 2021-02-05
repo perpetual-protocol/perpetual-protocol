@@ -12,12 +12,16 @@ import { Decimal } from "../utils/Decimal.sol";
 import { DecimalERC20 } from "../utils/DecimalERC20.sol";
 import { BlockContext } from "../utils/BlockContext.sol";
 import { PerpFiOwnableUpgrade } from "../utils/PerpFiOwnableUpgrade.sol";
+import { AddressArray } from "../utils/AddressArray.sol";
 import { IStakeModule } from "../interface/IStakeModule.sol";
 
 contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20, PerpFiOwnableUpgrade, BlockContext {
     using Checkpointing for Checkpointing.History;
     using CheckpointingHelpers for uint256;
     using SafeMath for uint256;
+    using AddressArray for address[];
+
+    uint256 public constant TOKEN_AMOUNT_LIMIT = 20;
 
     //
     // CONSTANT
@@ -30,6 +34,8 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     event Staked(address staker, uint256 amount);
     event Unstaked(address staker, uint256 amount);
     event Withdrawn(address staker, uint256 amount);
+    event StakeModuleAdded(address stakedModule);
+    event StakeModuleRemoved(address stakedModule);
 
     //**********************************************************//
     //    The below state variables can not change the order    //
@@ -53,7 +59,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     // staker => PERP staker can withdraw
     mapping(address => Decimal.decimal) public stakerWithdrawPendingBalance;
 
-    IStakeModule[] public stakeModules;
+    address[] public stakeModules;
     IERC20 public perpToken;
 
     //**********************************************************//
@@ -75,11 +81,12 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
         symbol = "sPERP";
         decimals = 18;
         perpToken = _perpToken;
-        stakeModules.push(_stakeModule);
+        stakeModules.push(address(_stakeModule));
     }
 
     function stake(Decimal.decimal calldata _amount) external {
         requireNonZeroAmount(_amount);
+        requireStakeModuleExisted();
         address msgSender = _msgSender();
 
         // copy calldata amount to memory
@@ -98,7 +105,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
 
         // Have to update balance first
         for (uint256 i; i < stakeModules.length; i++) {
-            stakeModules[i].notifyStakeChanged(msgSender);
+            IStakeModule(stakeModules[i]).notifyStakeChanged(msgSender);
         }
 
         emit Staked(msgSender, amount.toUint());
@@ -108,6 +115,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     // addPersonalBalanceCheckPoint, burn
     function unstake() external {
         address msgSender = _msgSender();
+        requireStakeModuleExisted();
         require(stakerWithdrawPendingBalance[msgSender].toUint() == 0, "Need to withdraw first");
 
         Decimal.decimal memory balance = Decimal.decimal(balancesHistory[msgSender].latestValue());
@@ -120,7 +128,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
 
         // Have to update balance first
         for (uint256 i; i < stakeModules.length; i++) {
-            stakeModules[i].notifyStakeChanged(msgSender);
+            IStakeModule(stakeModules[i]).notifyStakeChanged(msgSender);
         }
 
         emit Unstaked(msgSender, balance.toUint());
@@ -138,6 +146,21 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
         _transfer(perpToken, msgSender, balance);
 
         emit Withdrawn(msgSender, balance.toUint());
+    }
+
+    function addStakeModule(IStakeModule _stakeModule) external onlyOwner {
+        require(stakeModules.length <= TOKEN_AMOUNT_LIMIT, "exceed stakeModule amount limit");
+        require(stakeModules.add(address(_stakeModule)), "invalid input");
+
+        emit StakeModuleAdded(address(_stakeModule));
+    }
+
+    function removeStakeModule(IStakeModule _stakeModule) external onlyOwner {
+        address removedAddr = stakeModules.remove(address(_stakeModule));
+        require(removedAddr != address(0), "stakeModule does not exist");
+        require(removedAddr == address(_stakeModule), "remove wrong stakeModule");
+
+        emit StakeModuleRemoved(address(_stakeModule));
     }
 
     //
@@ -158,17 +181,28 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     //
     // override: IERC20WithCheckpointing
     //
-    function balanceOfAt(address _owner, uint256 _blockNumber) external view override returns (uint256) {
-        return _balanceOfAt(_owner, _blockNumber).toUint();
+    function balanceOfAt(address _owner, uint256 __blockNumber) external view override returns (uint256) {
+        return _balanceOfAt(_owner, __blockNumber).toUint();
     }
 
-    function totalSupplyAt(uint256 _blockNumber) external view override returns (uint256) {
-        return _totalSupplyAt(_blockNumber).toUint();
+    function totalSupplyAt(uint256 __blockNumber) external view override returns (uint256) {
+        return _totalSupplyAt(__blockNumber).toUint();
+    }
+
+    //
+    // EXTERNAL FUNCTIONS
+    //
+    function getStakeModuleLength() external view returns (uint256) {
+        return stakeModules.length;
     }
 
     //
     // INTERNAL FUNCTIONS
     //
+    function isStakeModuleExisted(IStakeModule _stakeModule) public view returns (bool) {
+        return stakeModules.isExisted(address(_stakeModule));
+    }
+
     function _mint(address account, Decimal.decimal memory amount) internal virtual {
         require(account != address(0), "ERC20: mint to the zero address");
 
@@ -199,24 +233,24 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
         emit Transfer(account, address(0), amount.toUint());
     }
 
-    function addTotalSupplyCheckPoint(uint256 _blockNumber, Decimal.decimal memory _amount) internal {
-        totalSupplyHistory.addCheckpoint(_blockNumber.toUint64Time(), _amount.toUint().toUint192Value());
+    function addTotalSupplyCheckPoint(uint256 __blockNumber, Decimal.decimal memory _amount) internal {
+        totalSupplyHistory.addCheckpoint(__blockNumber.toUint64Time(), _amount.toUint().toUint192Value());
     }
 
     function addPersonalBalanceCheckPoint(
         address _staker,
-        uint256 _blockNumber,
+        uint256 __blockNumber,
         Decimal.decimal memory _amount
     ) internal {
-        balancesHistory[_staker].addCheckpoint(_blockNumber.toUint64Time(), _amount.toUint().toUint192Value());
+        balancesHistory[_staker].addCheckpoint(__blockNumber.toUint64Time(), _amount.toUint().toUint192Value());
     }
 
-    function _balanceOfAt(address _owner, uint256 _blockNumber) internal view returns (Decimal.decimal memory) {
-        return Decimal.decimal(balancesHistory[_owner].getValueAt(_blockNumber.toUint64Time()));
+    function _balanceOfAt(address _owner, uint256 __blockNumber) internal view returns (Decimal.decimal memory) {
+        return Decimal.decimal(balancesHistory[_owner].getValueAt(__blockNumber.toUint64Time()));
     }
 
-    function _totalSupplyAt(uint256 _blockNumber) internal view returns (Decimal.decimal memory) {
-        return Decimal.decimal(totalSupplyHistory.getValueAt(_blockNumber.toUint64Time()));
+    function _totalSupplyAt(uint256 __blockNumber) internal view returns (Decimal.decimal memory) {
+        return Decimal.decimal(totalSupplyHistory.getValueAt(__blockNumber.toUint64Time()));
     }
 
     //
@@ -224,5 +258,9 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     //
     function requireNonZeroAmount(Decimal.decimal memory _amount) private pure {
         require(_amount.toUint() > 0, "Amount is 0");
+    }
+
+    function requireStakeModuleExisted() internal view {
+        require(stakeModules.length > 0, "no stakeModule");
     }
 }

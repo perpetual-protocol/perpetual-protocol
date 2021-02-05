@@ -27,6 +27,8 @@ import {
     ExchangeWrapperMockInstance,
     FeeRewardPoolL1FakeContract,
     FeeRewardPoolL1FakeInstance,
+    FeeTokenPoolDispatcherL1Contract,
+    FeeTokenPoolDispatcherL1Instance,
     InflationMonitorFakeContract,
     InflationMonitorFakeInstance,
     InsuranceFundFakeContract,
@@ -59,8 +61,6 @@ import {
     StakingReserveFakeInstance,
     SupplyScheduleFakeContract,
     SupplyScheduleFakeInstance,
-    TmpRewardPoolL1Contract,
-    TmpRewardPoolL1Instance,
     TollPoolContract,
     TollPoolInstance,
 } from "../../types/truffle"
@@ -94,7 +94,7 @@ const KeeperRewardL2 = artifacts.require("KeeperRewardL2") as KeeperRewardL2Cont
 const StakedPerpToken = artifacts.require("StakedPerpTokenFake") as StakedPerpTokenFakeContract
 const PerpRewardVesting = artifacts.require("PerpRewardVestingFake") as PerpRewardVestingFakeContract
 const TollPool = artifacts.require("TollPool") as TollPoolContract
-const TmpRewardPoolL1 = artifacts.require("TmpRewardPoolL1") as TmpRewardPoolL1Contract
+const FeeTokenPoolDispatcherL1 = artifacts.require("FeeTokenPoolDispatcherL1") as FeeTokenPoolDispatcherL1Contract
 const ClientBridge = artifacts.require("ClientBridge") as ClientBridgeContract
 const FeeRewardPoolL1 = artifacts.require("FeeRewardPoolL1Fake") as FeeRewardPoolL1FakeContract
 
@@ -395,8 +395,8 @@ export async function deployTollPool(clearingHouse: string, clientBridge: string
     return instance
 }
 
-export async function deployTmpRewardPoolL1(): Promise<TmpRewardPoolL1Instance> {
-    const instance = await TmpRewardPoolL1.new()
+export async function deployFeeTokenPoolDispatcherL1(): Promise<FeeTokenPoolDispatcherL1Instance> {
+    const instance = await FeeTokenPoolDispatcherL1.new()
     await instance.initialize()
     return instance
 }
@@ -404,9 +404,9 @@ export async function deployTmpRewardPoolL1(): Promise<TmpRewardPoolL1Instance> 
 export async function deployFeeRewardPoolL1(
     erc20: string,
     stakedPerpToken: string,
-    tmpRewardPoolL1: string,
+    feeTokenPoolDispatcherL1: string,
 ): Promise<FeeRewardPoolL1FakeInstance> {
     const instance = await FeeRewardPoolL1.new()
-    await instance.initialize(erc20, stakedPerpToken, tmpRewardPoolL1)
+    await instance.initialize(erc20, stakedPerpToken, feeTokenPoolDispatcherL1)
     return instance
 }

@@ -9,12 +9,15 @@ import { toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 
+const EMPTY_ADDRESS = "0x0000000000000000000000000000000000000000"
+
 describe("StakedPerpTokenSpec", () => {
     let admin: string
     let alice: string
     let stakedPerpToken: StakedPerpTokenFakeInstance
     let perpToken: PerpTokenInstance
-    let feeRewardPoolMock: FeeRewardPoolMockInstance
+    let feeRewardPoolMock1: FeeRewardPoolMockInstance
+    let feeRewardPoolMock2: FeeRewardPoolMockInstance
     let cooldownPeriod: number
 
     async function forwardBlockTimestamp(time: number): Promise<void> {
@@ -32,8 +35,9 @@ describe("StakedPerpTokenSpec", () => {
         alice = addresses[1]
 
         perpToken = await deployPerpToken(toFullDigit(2000000))
-        feeRewardPoolMock = await deployFeeRewardPoolMock()
-        stakedPerpToken = await deployStakedPerpToken(perpToken.address, feeRewardPoolMock.address)
+        feeRewardPoolMock1 = await deployFeeRewardPoolMock()
+        feeRewardPoolMock2 = await deployFeeRewardPoolMock()
+        stakedPerpToken = await deployStakedPerpToken(perpToken.address, feeRewardPoolMock1.address)
 
         await perpToken.transfer(alice, toFullDigit(2000))
         await perpToken.approve(stakedPerpToken.address, toFullDigit(2000), { from: alice })
@@ -61,7 +65,7 @@ describe("StakedPerpTokenSpec", () => {
             expect(await stakedPerpToken.balanceOfAt(alice, blockNumber)).to.eq(toFullDigit(100))
             expect(await stakedPerpToken.totalSupplyAt(blockNumber)).to.eq(toFullDigit(100))
             await expectEvent.inTransaction(receipt.tx, stakedPerpToken, "Staked")
-            await expectEvent.inTransaction(receipt.tx, feeRewardPoolMock, "NotificationReceived")
+            await expectEvent.inTransaction(receipt.tx, feeRewardPoolMock1, "NotificationReceived")
 
             expect(await perpToken.balanceOf(alice)).to.eq(toFullDigit(1900))
         })
@@ -130,6 +134,11 @@ describe("StakedPerpTokenSpec", () => {
                 "DecimalERC20: transferFrom failed",
             )
         })
+
+        it("force error, no stakeModule", async () => {
+            await stakedPerpToken.removeStakeModule(feeRewardPoolMock1.address)
+            await expectRevert(stakedPerpToken.stake(toDecimal(100), { from: alice }), "no stakeModule")
+        })
     })
 
     describe("unstake()", () => {
@@ -142,7 +151,7 @@ describe("StakedPerpTokenSpec", () => {
             const timestamp = await stakedPerpToken.mock_getCurrentTimestamp()
             const receipt = await stakedPerpToken.unstake({ from: alice })
             await expectEvent.inTransaction(receipt.tx, stakedPerpToken, "Unstaked")
-            await expectEvent.inTransaction(receipt.tx, feeRewardPoolMock, "NotificationReceived")
+            await expectEvent.inTransaction(receipt.tx, feeRewardPoolMock1, "NotificationReceived")
 
             expect(await stakedPerpToken.stakerCooldown(alice)).to.eq(timestamp.addn(cooldownPeriod))
             expect(await stakedPerpToken.stakerWithdrawPendingBalance(alice)).to.eq(toFullDigit(100))
@@ -245,6 +254,11 @@ describe("StakedPerpTokenSpec", () => {
         it("force error, alice unstakes without previous staking", async () => {
             await expectRevert(stakedPerpToken.unstake({ from: alice }), "Amount is 0")
         })
+
+        it("force error, no stakeModule", async () => {
+            await stakedPerpToken.removeStakeModule(feeRewardPoolMock1.address)
+            await expectRevert(stakedPerpToken.unstake({ from: alice }), "no stakeModule")
+        })
     })
 
     describe("withdraw()", () => {
@@ -292,6 +306,73 @@ describe("StakedPerpTokenSpec", () => {
             await forwardBlockTimestamp(cooldownPeriod)
             await stakedPerpToken.withdraw({ from: alice })
             await expectRevert(stakedPerpToken.withdraw({ from: alice }), "Amount is 0")
+        })
+    })
+
+    describe("addStakeModule()", () => {
+        it("stakeModules should be set", async () => {
+            await stakedPerpToken.addStakeModule(feeRewardPoolMock2.address)
+            expect(await stakedPerpToken.stakeModules(0)).to.eq(feeRewardPoolMock1.address)
+            expect(await stakedPerpToken.stakeModules(1)).to.eq(feeRewardPoolMock2.address)
+            expect(await stakedPerpToken.isStakeModuleExisted(feeRewardPoolMock1.address)).to.eq(true)
+            expect(await stakedPerpToken.isStakeModuleExisted(feeRewardPoolMock2.address)).to.eq(true)
+        })
+
+        it("force error, onlyOwner", async () => {
+            await expectRevert(
+                stakedPerpToken.addStakeModule(feeRewardPoolMock1.address, { from: alice }),
+                "PerpFiOwnableUpgrade: caller is not the owner",
+            )
+        })
+
+        it("force error, stakeModule is already existed", async () => {
+            await expectRevert(stakedPerpToken.addStakeModule(feeRewardPoolMock1.address), "invalid input")
+        })
+
+        it("force error, input is zero address", async () => {
+            await expectRevert(stakedPerpToken.addStakeModule(EMPTY_ADDRESS), "invalid input")
+        })
+    })
+
+    describe("removeStakeModule()", () => {
+        it("stakeModule should be removed", async () => {
+            await stakedPerpToken.removeStakeModule(feeRewardPoolMock1.address)
+            expect(await stakedPerpToken.isStakeModuleExisted(feeRewardPoolMock1.address)).to.eq(false)
+            expect(await stakedPerpToken.getStakeModuleLength()).to.eq(0)
+        })
+
+        it("stakeModules should be removed and can be added again", async () => {
+            await stakedPerpToken.addStakeModule(feeRewardPoolMock2.address)
+            await stakedPerpToken.removeStakeModule(feeRewardPoolMock1.address)
+            await stakedPerpToken.addStakeModule(feeRewardPoolMock1.address)
+            expect(await stakedPerpToken.stakeModules(0)).to.eq(feeRewardPoolMock2.address)
+            expect(await stakedPerpToken.stakeModules(1)).to.eq(feeRewardPoolMock1.address)
+        })
+
+        it("force error, onlyOwner", async () => {
+            await expectRevert(
+                stakedPerpToken.removeStakeModule(feeRewardPoolMock1.address, { from: alice }),
+                "PerpFiOwnableUpgrade: caller is not the owner",
+            )
+        })
+
+        it("force error, stakeModule does not exist", async () => {
+            await expectRevert(
+                stakedPerpToken.removeStakeModule(feeRewardPoolMock2.address),
+                "stakeModule does not exist",
+            )
+        })
+
+        it("force error, input is zero address", async () => {
+            await expectRevert(stakedPerpToken.removeStakeModule(EMPTY_ADDRESS), "stakeModule does not exist")
+        })
+
+        it("force error, no stakeModule", async () => {
+            await stakedPerpToken.removeStakeModule(feeRewardPoolMock1.address)
+            await expectRevert(
+                stakedPerpToken.removeStakeModule(feeRewardPoolMock1.address),
+                "stakeModule does not exist",
+            )
         })
     })
 })

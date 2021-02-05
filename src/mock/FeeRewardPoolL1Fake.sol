@@ -11,7 +11,7 @@ contract FeeRewardPoolL1Fake is FeeRewardPoolL1 {
     address public stakedPerpTokenAddr;
 
     modifier onlyStakedPerpToken() override {
-        require(msg.sender == stakedPerpTokenAddr, "only tmpRewardPool");
+        require(msg.sender == stakedPerpTokenAddr, "only FeeTokenPoolDispatcherL1");
         _;
     }
 

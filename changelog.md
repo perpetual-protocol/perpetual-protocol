@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - rename `ClearingHouse` interface from `setFeePool` to `setTollPool`
 ### Removed
 - remove `Amm::migrateLiquidity()`
+- rename `TmpRewardPoolL1` to `FeeTokenPoolDispatcherL1` #198
 
 ## [1.0.4] - 2020-12-10
 ### Added

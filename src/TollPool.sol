@@ -6,17 +6,21 @@ import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token
 import { Decimal } from "./utils/Decimal.sol";
 import { PerpFiOwnableUpgrade } from "./utils/PerpFiOwnableUpgrade.sol";
 import { DecimalERC20 } from "./utils/DecimalERC20.sol";
+import { AddressArray } from "./utils/AddressArray.sol";
 import { ClientBridge } from "./bridge/xDai/ClientBridge.sol";
 
 contract TollPool is PerpFiOwnableUpgrade, DecimalERC20 {
     using Decimal for Decimal.decimal;
+    using AddressArray for address[];
+
+    uint256 public constant TOKEN_AMOUNT_LIMIT = 20;
 
     //
     // EVENTS
     //
     event TokenReceived(address token, uint256 amount);
     event TokenTransferred(address token, uint256 amount);
-    event TmpRewardPoolSet(address tmpRewardPoolL1);
+    event FeeTokenPoolDispatcherSet(address feeTokenPoolDispatcher);
     event FeeTokenAdded(address token);
     event FeeTokenRemoved(address token);
 
@@ -32,8 +36,8 @@ contract TollPool is PerpFiOwnableUpgrade, DecimalERC20 {
     //    The below state variables can not change the order    //
     //**********************************************************//
 
-    address public tmpRewardPoolL1;
-    IERC20[] public feeTokens;
+    address public feeTokenPoolDispatcherL1;
+    address[] public feeTokens;
 
     address public clearingHouse;
     ClientBridge public clientBridge;
@@ -57,76 +61,67 @@ contract TollPool is PerpFiOwnableUpgrade, DecimalERC20 {
         clientBridge = _clientBridge;
     }
 
-    function transferToTmpRewardPool() public {
-        require(address(tmpRewardPoolL1) != address(0), "tmpRewardPoolL1 not yet set");
+    function transferToFeeTokenPoolDispatcher() external {
+        require(address(feeTokenPoolDispatcherL1) != address(0), "feeTokenPoolDispatcherL1 not yet set");
         require(feeTokens.length != 0, "feeTokens not set yet");
 
         bool hasToll;
         for (uint256 i; i < feeTokens.length; i++) {
-            IERC20 token = feeTokens[i];
-            Decimal.decimal memory balance = _balanceOf(token, address(this));
-
-            if (balance.toUint() != 0) {
-                clientBridge.erc20Transfer(token, address(tmpRewardPoolL1), balance);
-                hasToll = true;
-                emit TokenTransferred(address(token), balance.toUint());
-            }
+            address token = feeTokens[i];
+            hasToll = transferToDispatcher(IERC20(token)) || hasToll;
         }
         // revert if total fee of all tokens is zero
         require(hasToll, "fee is now zero");
     }
 
-    function setTmpRewardPool(address _tmpRewardPoolL1) external onlyOwner {
-        require(_tmpRewardPoolL1 != address(0), "invalid input");
-        require(_tmpRewardPoolL1 != tmpRewardPoolL1, "input is the same as the current one");
-        tmpRewardPoolL1 = _tmpRewardPoolL1;
-        emit TmpRewardPoolSet(_tmpRewardPoolL1);
+    function setFeeTokenPoolDispatcher(address _feeTokenPoolDispatcherL1) external onlyOwner {
+        require(_feeTokenPoolDispatcherL1 != address(0), "invalid input");
+        require(_feeTokenPoolDispatcherL1 != feeTokenPoolDispatcherL1, "input is the same as the current one");
+        feeTokenPoolDispatcherL1 = _feeTokenPoolDispatcherL1;
+        emit FeeTokenPoolDispatcherSet(_feeTokenPoolDispatcherL1);
     }
 
     function addFeeToken(IERC20 _token) external onlyOwner {
-        require(address(_token) != address(0), "invalid input");
-        require(!isFeeTokenExisted(_token), "token is already existed");
-        feeTokens.push(_token);
-        _approve(_token, address(clientBridge), Decimal.decimal(uint256(-1)));
+        require(feeTokens.length <= TOKEN_AMOUNT_LIMIT, "exceed token amount limit");
+        require(feeTokens.add(address(_token)), "invalid input");
+
         emit FeeTokenAdded(address(_token));
     }
 
     function removeFeeToken(IERC20 _token) external onlyOwner {
-        require(address(_token) != address(0), "invalid input");
+        address removedAddr = feeTokens.remove(address(_token));
+        require(removedAddr != address(0), "token does not exist");
+        require(removedAddr == address(_token), "remove wrong token");
 
-        uint256 lengthOfFeeTokens = getFeeTokenLength();
-        bool isTokenExisted;
-        for (uint256 i; i < lengthOfFeeTokens; i++) {
-            if (_token == feeTokens[i]) {
-                // transfer the rest token BEFORE removing
-                if (_token.balanceOf(address(this)) > 0) {
-                    transferToTmpRewardPool();
-                }
-                _approve(_token, address(clientBridge), Decimal.zero());
-
-                if (i != lengthOfFeeTokens - 1) {
-                    feeTokens[i] = feeTokens[lengthOfFeeTokens - 1];
-                }
-                feeTokens.pop();
-                isTokenExisted = true;
-                emit FeeTokenRemoved(address(_token));
-                break;
-            }
+        if (_token.balanceOf(address(this)) > 0) {
+            transferToDispatcher(_token);
         }
-        require(isTokenExisted, "token does not exist");
+        emit FeeTokenRemoved(address(_token));
     }
 
     //
     // VIEW FUNCTIONS
     //
     function isFeeTokenExisted(IERC20 _token) public view returns (bool) {
-        for (uint256 i; i < feeTokens.length; i++) {
-            if (_token == feeTokens[i]) return true;
-        }
-        return false;
+        return feeTokens.isExisted(address(_token));
     }
 
-    function getFeeTokenLength() public view returns (uint256) {
+    function getFeeTokenLength() external view returns (uint256) {
         return feeTokens.length;
+    }
+
+    //
+    // INTERNAL FUNCTIONS
+    //
+    function transferToDispatcher(IERC20 _token) private returns (bool) {
+        Decimal.decimal memory balance = _balanceOf(_token, address(this));
+
+        if (balance.toUint() != 0) {
+            _approve(_token, address(clientBridge), balance);
+            clientBridge.erc20Transfer(_token, address(feeTokenPoolDispatcherL1), balance);
+            emit TokenTransferred(address(_token), balance.toUint());
+            return true;
+        }
+        return false;
     }
 }
