@@ -28,4 +28,4 @@ export enum ContractName {
     FeeTokenPoolDispatcherL1 = "FeeTokenPoolDispatcherL1",
 }
 
-export type ContractInstanceName = ContractName | string
+export type ContractId = ContractName | string
