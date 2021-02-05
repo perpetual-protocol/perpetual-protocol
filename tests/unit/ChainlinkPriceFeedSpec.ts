@@ -9,7 +9,7 @@ import { toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 
-describe.only("ChainlinkPriceFeed Spec", () => {
+describe("ChainlinkPriceFeed Spec", () => {
     const CHAINLINK_DECIMAL = 8
 
     let addresses: string[]
