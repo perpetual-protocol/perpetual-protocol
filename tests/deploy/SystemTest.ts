@@ -9,7 +9,7 @@ import L2PriceFeedArtifact from "../../build/contracts/L2PriceFeed.json"
 import MetaTxGatewayArtifact from "../../build/contracts/MetaTxGateway.json"
 import OwnableArtifact from "../../build/contracts/Ownable.json"
 import RootBridgeArtifact from "../../build/contracts/RootBridge.json"
-import { ContractName, LegacyAmmInstanceName } from "../../publish/ContractName"
+import { AmmInstanceName, ContractName } from "../../publish/ContractName"
 import { SettingsDao } from "../../publish/SettingsDao"
 import { SystemMetadataDao } from "../../publish/SystemMetadataDao"
 import {
@@ -48,11 +48,11 @@ describe.skip("SystemTest Spec", () => {
     const insuranceFund = systemMetadataDao.getContractMetadata("layer2", ContractName.InsuranceFund)
     const clearingHouse = systemMetadataDao.getContractMetadata("layer2", ContractName.ClearingHouse)
     const clientBridge = systemMetadataDao.getContractMetadata("layer2", ContractName.ClientBridge)
-    const ETHUSDC = systemMetadataDao.getContractMetadata("layer2", LegacyAmmInstanceName.ETHUSDC)
-    const BTCUSDC = systemMetadataDao.getContractMetadata("layer2", LegacyAmmInstanceName.BTCUSDC)
-    const YFIUSDC = systemMetadataDao.getContractMetadata("layer2", LegacyAmmInstanceName.YFIUSDC)
-    const DOTUSDC = systemMetadataDao.getContractMetadata("layer2", LegacyAmmInstanceName.DOTUSDC)
-    const SNXUSDC = systemMetadataDao.getContractMetadata("layer2", LegacyAmmInstanceName.SNXUSDC)
+    const ETHUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.ETHUSDC)
+    const BTCUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.BTCUSDC)
+    const YFIUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.YFIUSDC)
+    const DOTUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.DOTUSDC)
+    const SNXUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.SNXUSDC)
     const ambBridgeL2 = settingsDao.getExternalContracts("layer2").ambBridgeOnXDai
     const multiTokenMediatorL2 = settingsDao.getExternalContracts("layer2").multiTokenMediatorOnXDai
     const usdc = settingsDao.getExternalContracts("layer2").usdc
