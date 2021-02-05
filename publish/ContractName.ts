@@ -1,4 +1,4 @@
-export enum LegacyAmmInstanceName {
+export enum AmmInstanceName {
     BTCUSDC = "BTCUSDC",
     ETHUSDC = "ETHUSDC",
     YFIUSDC = "YFIUSDC",
@@ -28,4 +28,9 @@ export enum ContractName {
     FeeTokenPoolDispatcherL1 = "FeeTokenPoolDispatcherL1",
 }
 
-export type ContractInstanceName = ContractName | string
+export enum ContractInstanceName {
+    PerpRewardNoVesting = "PerpRewardNoVesting",
+    PerpRewardTwentySixWeeksVesting = "PerpRewardTwentySixWeeksVesting",
+}
+
+export type ContractId = ContractName | AmmInstanceName | ContractInstanceName

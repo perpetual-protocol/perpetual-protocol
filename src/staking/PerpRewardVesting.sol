@@ -13,11 +13,6 @@ contract PerpRewardVesting is MerkleRedeemUpgradeSafe, BlockContext {
     using Decimal for Decimal.decimal;
     using SafeMath for uint256;
 
-    //
-    // CONSTANT
-    //
-    uint256 private constant VESTING_PERIOD = 12 weeks;
-
     //**********************************************************//
     //    The below state variables can not change the order    //
     //**********************************************************//
@@ -26,6 +21,8 @@ contract PerpRewardVesting is MerkleRedeemUpgradeSafe, BlockContext {
 
     // array of weekMerkleRootsIndex
     uint256[] public merkleRootIndexes;
+
+    uint256 public vestingPeriod;
 
     //**********************************************************//
     //    The above state variables can not change the order    //
@@ -36,9 +33,10 @@ contract PerpRewardVesting is MerkleRedeemUpgradeSafe, BlockContext {
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variable, ables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
     uint256[50] private __gap;
 
-    function initialize(IERC20 _token) external initializer {
+    function initialize(IERC20 _token, uint256 _vestingPeriod) external initializer {
         require(address(_token) != address(0), "Invalid input");
         __MerkleRedeem_init(_token);
+        vestingPeriod = _vestingPeriod;
     }
 
     function claimWeeks(address _account, Claim[] memory _claims) public virtual override {
@@ -80,7 +78,7 @@ contract PerpRewardVesting is MerkleRedeemUpgradeSafe, BlockContext {
         uint256 _totalAllocation
     ) public override onlyOwner {
         super.seedAllocations(_week, _merkleRoot, _totalAllocation);
-        merkleRootTimestampMap[_week] = _blockTimestamp().add(VESTING_PERIOD);
+        merkleRootTimestampMap[_week] = _blockTimestamp().add(vestingPeriod);
         merkleRootIndexes.push(_week);
     }
 
