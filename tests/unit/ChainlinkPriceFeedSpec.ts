@@ -166,12 +166,41 @@ describe("ChainlinkPriceFeed Spec", () => {
             expect(price).to.eq(toFullDigit(410))
         })
 
+        it("if current price < 0, ignore the current price", async () => {
+            await chainlinkMock1.mockAddAnswer(3, toFullDigit(-10, CHAINLINK_DECIMAL), 250, 250, 3)
+            const price = await priceFeed.getTwapPrice(stringToBytes32("ETH"), 45)
+            expect(price).to.eq(toFullDigit(405))
+        })
+
+        it("if there is a negative price in the middle, ignore that price", async () => {
+            const currentTime = await priceFeed.mock_getCurrentTimestamp()
+            await chainlinkMock1.mockAddAnswer(
+                3,
+                toFullDigit(-100, CHAINLINK_DECIMAL),
+                currentTime.addn(20),
+                currentTime.addn(20),
+                3,
+            )
+            await chainlinkMock1.mockAddAnswer(
+                4,
+                toFullDigit(420, CHAINLINK_DECIMAL),
+                currentTime.addn(30),
+                currentTime.addn(30),
+                4,
+            )
+            await priceFeed.mock_setBlockTimestamp(currentTime.addn(50))
+
+            // twap price should be (400 * 15) + (405 * 15) + (410 * 45) + (420 * 20) / 95 = 409.74
+            const price = await priceFeed.getTwapPrice(stringToBytes32("ETH"), 95)
+            expect(price).to.eq("409736842100000000000")
+        })
+
         it("force error, interval is zero", async () => {
             await expectRevert(priceFeed.getTwapPrice(stringToBytes32("ETH"), 0), "interval can't be 0")
         })
     })
 
-    describe("getPreviousPrice/getPreviousTimestamp", () => {
+    describe("getprice/getLatestTimestamp/getPreviousPrice/getPreviousTimestamp", () => {
         beforeEach(async () => {
             await priceFeed.addAggregator(stringToBytes32("ETH"), chainlinkMock1.address)
             await chainlinkMock1.mockAddAnswer(0, toFullDigit(400, CHAINLINK_DECIMAL), 100, 100, 0)
@@ -179,21 +208,56 @@ describe("ChainlinkPriceFeed Spec", () => {
             await chainlinkMock1.mockAddAnswer(2, toFullDigit(410, CHAINLINK_DECIMAL), 200, 200, 2)
         })
 
-        it("get previous price (latest)", async () => {
+        it("getPrice/getTimestamp", async () => {
+            const price = await priceFeed.getPrice(stringToBytes32("ETH"))
+            expect(price).to.eq(toFullDigit(410))
+            const timestamp = await priceFeed.getLatestTimestamp(stringToBytes32("ETH"))
+            expect(timestamp).to.eq(200)
+        })
+
+        it("latest getPreviousPrice/getPreviousTimestamp", async () => {
             const price = await priceFeed.getPreviousPrice(stringToBytes32("ETH"), 0)
             expect(price).to.eq(toFullDigit(410))
             const timestamp = await priceFeed.getPreviousTimestamp(stringToBytes32("ETH"), 0)
             expect(timestamp).to.eq(200)
         })
 
-        it("get previous price", async () => {
+        it("non-latest getPreviousPrice/getPreviousTimestamp", async () => {
             const price = await priceFeed.getPreviousPrice(stringToBytes32("ETH"), 2)
             expect(price).to.eq(toFullDigit(400))
             const timestamp = await priceFeed.getPreviousTimestamp(stringToBytes32("ETH"), 2)
             expect(timestamp).to.eq(100)
         })
 
-        it("force error, get previous price", async () => {
+        it("if current price < 0, return the latest positive price and the according timestamp", async () => {
+            await chainlinkMock1.mockAddAnswer(3, toFullDigit(-10, CHAINLINK_DECIMAL), 250, 250, 3)
+
+            let price = await priceFeed.getPrice(stringToBytes32("ETH"))
+            expect(price).to.eq(toFullDigit(410))
+            let timestamp = await priceFeed.getLatestTimestamp(stringToBytes32("ETH"))
+            expect(timestamp).to.eq(200)
+
+            await chainlinkMock1.mockAddAnswer(4, toFullDigit(-120, CHAINLINK_DECIMAL), 300, 300, 4)
+
+            price = await priceFeed.getPrice(stringToBytes32("ETH"))
+            expect(price).to.eq(toFullDigit(410))
+            timestamp = await priceFeed.getLatestTimestamp(stringToBytes32("ETH"))
+            expect(timestamp).to.eq(200)
+        })
+
+        it("force error, getPreviousPrice/getPreviousTimestamp fail if the price at that time < 0", async () => {
+            await chainlinkMock1.mockAddAnswer(3, toFullDigit(-10, CHAINLINK_DECIMAL), 250, 250, 3)
+
+            await expectRevert(priceFeed.getPreviousPrice(stringToBytes32("ETH"), 0), "Negative price")
+            await expectRevert(priceFeed.getPreviousTimestamp(stringToBytes32("ETH"), 0), "Negative price")
+
+            const price = await priceFeed.getPreviousPrice(stringToBytes32("ETH"), 2)
+            expect(price).to.eq(toFullDigit(405))
+            const timestamp = await priceFeed.getPreviousTimestamp(stringToBytes32("ETH"), 2)
+            expect(timestamp).to.eq(150)
+        })
+
+        it("force error, getPreviousPrice/getPreviousTimestamp more than current history", async () => {
             await expectRevert(priceFeed.getPreviousPrice(stringToBytes32("ETH"), 10), "Not enough history")
             await expectRevert(priceFeed.getPreviousTimestamp(stringToBytes32("ETH"), 10), "Not enough history")
         })
