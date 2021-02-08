@@ -85,5 +85,32 @@ execute the below commands:
 
 And the contract should be deployed on rinkeby, and the file ".openzeppelin/rinkeby.json" is modified with new contract addresses, but the changes can be ignored for testing purposes.
 
+### Checking Chainlink aggregator
+
+When we create a new AMM, we always need to execute `addAggregator()` to add a chainlink aggregator. Still, the arguments are all hex format numbers, and pretty easy to type the wrong parameters. There is a buidler task "check:chainlink" to show all major information. We can use this information to check on gnosis multisign.
+
+First step: go to https://docs.chain.link/docs/ethereum-addresses to find which price feed we need for the new AMM. e.g. if you want to check SNX/USD on homestead, please execute:
+
+```shell
+$ ./node_modules/.bin/buidler check:chainlink  --network homestead --address 0xDC3EA94CD0AC27d9A86C180091e7f78C683d3699
+```
+
+it will print basic information for SNX/USD:
+
+```
+When we create a new AMM, we always need to execute `addAggregator()` to add a chainlink aggregator. Still, the arguments are all hex format numbers, and pretty easy to type wrong parameters. There is a buidler task "check:chainlink" to show all major information. We can use this information to check on gnosis multisign.
+First step: go to https://docs.chain.link/docs/ethereum-addresses to find which price feed we need for the new AMM. e.g. if you want to check SNX/USD on homestead, please execute:
+$ ./node_modules/.bin/buidler check:chainlink  --network homestead --address 0xDC3EA94CD0AC27d9A86C180091e7f78C683d3699
+it will print basic information for SNX/USD:
+pair: SNX / USD
+base symbol: SNX
+quote symbol: USD
+latest price: 20.69401159
+price feed key: 0x534e580000000000000000000000000000000000000000000000000000000000
+functionData: 0x3f0e084f534e580000000000000000000000000000000000000000000000000000000000000000000000000000000000dc3ea94cd0ac27d9a86c180091e7f78c683d3699
+```
+
+When you send a transaction on gnosis app, we can use `functionData` to check if the transaction data is correct.
+
 ## License
 GPL3.0 or later

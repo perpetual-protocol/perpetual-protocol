@@ -19,9 +19,10 @@ import {
     XDAI_MNEMONIC,
     XDAI_URL,
 } from "./constants"
+import checkChainlink from "./publish/check-chainlink"
 import { TASK_DEPLOY_LAYER } from "./scripts/common"
 
-usePlugin("@nomiclabs/buidler-truffle5")
+export const TASK_CHECK_CHAINLINK = usePlugin("@nomiclabs/buidler-truffle5")
 usePlugin("@nomiclabs/buidler-ethers")
 usePlugin("@nomiclabs/buidler-waffle")
 usePlugin("@nomiclabs/buidler-etherscan")
@@ -39,6 +40,12 @@ task(TASK_COMPILE_GET_COMPILER_INPUT).setAction(async (_, env, runSuper) => {
     }
     return input
 })
+
+const checkChainlinkTask = task(checkChainlink.name)
+checkChainlink.parameters.forEach(param => {
+    checkChainlinkTask.addParam(param.name, param.description)
+})
+checkChainlinkTask.setAction(checkChainlink.action)
 
 task(TASK_DEPLOY_LAYER, "Deploy a layer")
     .addPositionalParam("stage", "Target stage of the deployment")
