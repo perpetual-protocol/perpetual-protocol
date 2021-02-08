@@ -47,13 +47,15 @@ describe("chainlinkL1 Spec", () => {
 
         it("set the address of RootBridge", async () => {
             const receipt = await chainlinkL1.setRootBridge(addresses[1])
-            expectEvent(receipt, "RootBridgeChanged", { rootBridge: addresses[1] })
+            await expectEvent.inTransaction(receipt.tx, chainlinkL1, "RootBridgeChanged", { rootBridge: addresses[1] })
             expect(await chainlinkL1.rootBridge()).eq(addresses[1])
         })
 
         it("set the address of PriceFeedL2", async () => {
             const receipt = await chainlinkL1.setPriceFeedL2(addresses[1])
-            expectEvent(receipt, "PriceFeedL2Changed", { priceFeedL2: addresses[1] })
+            await expectEvent.inTransaction(receipt.tx, chainlinkL1, "PriceFeedL2Changed", {
+                priceFeedL2: addresses[1],
+            })
             expect(await chainlinkL1.priceFeedL2Address()).eq(addresses[1])
         })
 
@@ -142,14 +144,18 @@ describe("chainlinkL1 Spec", () => {
 
         it("get latest data", async () => {
             const receipt = await chainlinkL1.updateLatestRoundData(stringToBytes32("ETH"))
-            expectEvent(receipt, "PriceUpdateMessageIdSent", { messageId: _messageIdBytes32 })
+            await expectEvent.inTransaction(receipt.tx, chainlinkL1, "PriceUpdateMessageIdSent", {
+                messageId: _messageIdBytes32,
+            })
             // reported price should be normalized to 18 decimals
             expect(await rootBridgeMock.price()).eq(new BN("123456780000000000"))
         })
 
         it("get latest data, a specified keeper is not required", async () => {
             const receipt = await chainlinkL1.updateLatestRoundData(stringToBytes32("ETH"), { from: addresses[1] })
-            expectEvent(receipt, "PriceUpdateMessageIdSent", { messageId: _messageIdBytes32 })
+            await expectEvent.inTransaction(receipt.tx, chainlinkL1, "PriceUpdateMessageIdSent", {
+                messageId: _messageIdBytes32,
+            })
         })
 
         // expectRevert section

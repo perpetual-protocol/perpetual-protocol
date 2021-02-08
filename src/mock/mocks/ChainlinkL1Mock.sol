@@ -33,7 +33,15 @@ contract ChainlinkL1Mock is AggregatorV3Interface {
             uint256 updatedAt,
             uint80 answeredInRound
         )
-    {}
+    {
+        return (
+            roundIdArray[_roundId],
+            answerArray[_roundId],
+            decimalsArray[_roundId],
+            timestampArray[_roundId],
+            versionArray[_roundId]
+        );
+    }
 
     function latestRoundData()
         external
