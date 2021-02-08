@@ -90,7 +90,7 @@ contract ChainlinkPriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
         requireNonEmptyAddress(address(aggregator));
 
         (, int256 latestPrice, , , ) = aggregator.latestRoundData();
-        return formatDecimals(uint256(latestPrice), priceFeedDecimalMap[_priceFeedKey]);
+        return formatDecimals(regulateChainlinkPrice(latestPrice), priceFeedDecimalMap[_priceFeedKey]);
     }
 
     function getLatestTimestamp(bytes32 _priceFeedKey) external view override returns (uint256) {
@@ -125,19 +125,21 @@ contract ChainlinkPriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
         uint256 baseTimestamp = _blockTimestamp().sub(_interval);
         // if latest updated timestamp is earlier than target timestamp, return the latest price.
         if (latestTimestamp < baseTimestamp || round == 0) {
-            return formatDecimals(uint256(latestPrice), decimal);
+            return formatDecimals(regulateChainlinkPrice(latestPrice), decimal);
         }
 
         // rounds are like snapshots, latestRound means the latest price snapshot. follow chainlink naming
         uint256 previousTimestamp = latestTimestamp;
         uint256 cumulativeTime = _blockTimestamp().sub(previousTimestamp);
-        uint256 weightedPrice = uint256(latestPrice).mul(cumulativeTime);
+        uint256 weightedPrice = regulateChainlinkPrice(latestPrice).mul(cumulativeTime);
         while (true) {
             if (round == 0) {
                 // if cumulative time is less than requested interval, return current twap price
                 return formatDecimals(weightedPrice.div(cumulativeTime), decimal);
             }
 
+            // @audit - it seems to rely on roundId being monotonic increasing (step=1), but it is not the case
+            //  per Chainlink docs, section "Why don’t the rounds update chronologically?" (https://docs.chain.link/docs/faq) (@detoo)
             round = round - 1;
             // get current round timestamp and price
             (, int256 currentPrice, , uint256 currentTimestamp, ) = aggregator.getRoundData(round);
@@ -148,12 +150,14 @@ contract ChainlinkPriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
                 // now is 1000, _interval is 100, then target timestamp is 900. If timestamp of current round is 970,
                 // and timestamp of NEXT round is 880, then the weighted time period will be (970 - 900) = 70,
                 // instead of (970 - 880)
-                weightedPrice = weightedPrice.add(uint256(currentPrice).mul(previousTimestamp.sub(baseTimestamp)));
+                weightedPrice = weightedPrice.add(
+                    regulateChainlinkPrice(currentPrice).mul(previousTimestamp.sub(baseTimestamp))
+                );
                 break;
             }
 
             uint256 timeFraction = previousTimestamp.sub(currentTimestamp);
-            weightedPrice = weightedPrice.add(uint256(currentPrice).mul(timeFraction));
+            weightedPrice = weightedPrice.add(regulateChainlinkPrice(currentPrice).mul(timeFraction));
             cumulativeTime = cumulativeTime.add(timeFraction);
             previousTimestamp = currentTimestamp;
         }
@@ -168,7 +172,7 @@ contract ChainlinkPriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
         require(round > 0 && round >= _numOfRoundBack, "Not enough history");
         (, int256 currentPrice, , uint256 currentTimestamp, ) =
             aggregator.getRoundData(round - uint80(_numOfRoundBack));
-        return formatDecimals(uint256(currentPrice), priceFeedDecimalMap[_priceFeedKey]);
+        return formatDecimals(regulateChainlinkPrice(currentPrice), priceFeedDecimalMap[_priceFeedKey]);
     }
 
     function getPreviousTimestamp(bytes32 _priceFeedKey, uint256 _numOfRoundBack)
@@ -197,6 +201,11 @@ contract ChainlinkPriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
     //
     // INTERNAL VIEW FUNCTIONS
     //
+    function regulateChainlinkPrice(int256 _price) internal pure returns (uint256) {
+        // we don't support negative price, so there will be a lower bound at 0
+        return (_price > 0) ? uint256(_price) : 0;
+    }
+
     function formatDecimals(uint256 _price, uint8 _decimals) internal pure returns (uint256) {
         return _price.mul(TOKEN_DIGIT).div(10**uint256(_decimals));
     }
