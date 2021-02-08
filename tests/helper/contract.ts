@@ -11,6 +11,8 @@ import {
     BalancerMockInstance,
     ChainlinkL1FakeContract,
     ChainlinkL1FakeInstance,
+    ChainlinkPriceFeedFakeContract,
+    ChainlinkPriceFeedFakeInstance,
     ClearingHouseFakeContract,
     ClearingHouseFakeInstance,
     ClearingHouseViewerContract,
@@ -97,6 +99,7 @@ const TollPool = artifacts.require("TollPool") as TollPoolContract
 const FeeTokenPoolDispatcherL1 = artifacts.require("FeeTokenPoolDispatcherL1") as FeeTokenPoolDispatcherL1Contract
 const ClientBridge = artifacts.require("ClientBridge") as ClientBridgeContract
 const FeeRewardPoolL1 = artifacts.require("FeeRewardPoolL1Fake") as FeeRewardPoolL1FakeContract
+const ChainlinkPriceFeedFake = artifacts.require("ChainlinkPriceFeedFake") as ChainlinkPriceFeedFakeContract
 
 export enum Side {
     BUY = 0,
@@ -297,6 +300,12 @@ export async function deployChainlinkL1(
 ): Promise<ChainlinkL1FakeInstance> {
     const instance = await ChainlinkL1Fake.new()
     await instance.initialize(rootBridgeAddress, priceFeedL2Address)
+    return instance
+}
+
+export async function deployChainlinkPriceFeed(): Promise<ChainlinkPriceFeedFakeInstance> {
+    const instance = await ChainlinkPriceFeedFake.new()
+    await instance.initialize()
     return instance
 }
 
