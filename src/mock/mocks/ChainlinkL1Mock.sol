@@ -11,6 +11,10 @@ contract ChainlinkL1Mock is AggregatorV3Interface {
 
     event PriceUpdated(uint256 roundId, uint256 price, uint256 timestamp);
 
+    function updateLatestRoundData(bytes32) external {
+        emit PriceUpdated(100, 500, 1444004400);
+    }
+
     function decimals() external view override returns (uint8) {
         return 8;
     }
