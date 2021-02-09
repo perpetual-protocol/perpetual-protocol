@@ -255,6 +255,8 @@ export function makeAmmConfig(
 }
 
 export class DeployConfig {
+    // stage
+    readonly stage: Stage
     // deploy
     readonly confirmations: number
 
@@ -290,6 +292,7 @@ export class DeployConfig {
     readonly defaultPerpRewardVestingPeriod = WEEK.mul(24)
 
     constructor(stage: Stage) {
+        this.stage = stage
         switch (stage) {
             case "production":
                 this.confirmations = 5
