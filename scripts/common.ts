@@ -50,6 +50,7 @@ export interface SystemMetadata {
 export interface ExternalContracts {
     // default is gnosis multisig safe which plays the governance role
     foundationGovernance?: string
+    rewardGovernance?: string
     arbitrageur?: string
     testnetFaucet?: string
 

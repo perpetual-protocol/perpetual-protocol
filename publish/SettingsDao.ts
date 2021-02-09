@@ -28,6 +28,7 @@ export class SettingsDao {
                                 version: "0",
                                 externalContracts: {
                                     foundationGovernance: "0xa230A4f6F38D904C2eA1eE95d8b2b8b7350e3d79",
+                                    rewardGovernance: "0x9FE5f5bbbD3f2172Fa370068D26185f3d82ed9aC",
                                     ambBridgeOnEth: "0xD4075FB57fCf038bFc702c915Ef9592534bED5c1",
                                     multiTokenMediatorOnEth: "0x30F693708fc604A57F1958E3CFa059F902e6d4CB",
                                     usdc: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",

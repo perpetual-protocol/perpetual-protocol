@@ -47,7 +47,7 @@ interface AmmProperties {
     openInterestNotionalCap: BigNumber
 }
 
-export type AmmConfig = { name: string; deployArgs: AmmDeployArgs; properties: AmmProperties }
+export type AmmConfig = { name: AmmInstanceName; deployArgs: AmmDeployArgs; properties: AmmProperties }
 export type AmmConfigMap = Record<string, AmmConfig>
 export const BTC_USD_AMM: AmmConfig = {
     name: AmmInstanceName.BTCUSDC,
@@ -217,7 +217,7 @@ export const SDEFI_USD_AMM: AmmConfig = {
 }
 
 export function makeAmmConfig(
-    name: string,
+    name: AmmInstanceName,
     priceFeedKey: string,
     baseAssetReserve: BigNumber,
     maxHoldingBaseAsset: BigNumber,

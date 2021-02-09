@@ -2,6 +2,7 @@
 import bre, { ethers } from "@nomiclabs/buidler"
 import { TASK_COMPILE } from "@nomiclabs/buidler/builtin-tasks/task-names"
 import { BigNumber } from "ethers"
+import PerpRewardVestingArtifact from "../build/contracts/PerpRewardVesting.json"
 import { SRC_DIR } from "../constants"
 import { ExternalContracts, Layer } from "../scripts/common"
 import { flatten } from "../scripts/flatten"
@@ -20,7 +21,7 @@ import {
 } from "../types/ethers"
 import { ContractWrapperFactory } from "./contract/ContractWrapperFactory"
 import { DeployConfig, PriceFeedKey } from "./contract/DeployConfig"
-import { DeployTask } from "./contract/DeployUtil"
+import { DeployTask, getImplementation } from "./contract/DeployUtil"
 import { AmmInstanceName, ContractInstanceName, ContractName } from "./ContractName"
 import { OzContractDeployer } from "./OzContractDeployer"
 import { SettingsDao } from "./SettingsDao"
@@ -141,7 +142,7 @@ export class ContractPublisher {
                         .deployUpgradableContract(perpAddr, 0)
                 },
                 async (): Promise<void> => {
-                    const gov = this.externalContract.foundationGovernance!
+                    const gov = this.externalContract.rewardGovernance!
                     console.log(
                         `transferring PerpRewardNoVesting's owner to governance=${gov}...please remember to claim the ownership`,
                     )
@@ -164,7 +165,7 @@ export class ContractPublisher {
                         .deployUpgradableContract(perpAddr, this.deployConfig.defaultPerpRewardVestingPeriod)
                 },
                 async (): Promise<void> => {
-                    const gov = this.externalContract.foundationGovernance!
+                    const gov = this.externalContract.rewardGovernance!
                     console.log(
                         `transferring PerpRewardTwentySixWeeksVesting's owner to governance=${gov}...please remember to claim the ownership`,
                     )
@@ -175,6 +176,24 @@ export class ContractPublisher {
                         )
                         .instance()
                     await (await reward.setOwner(gov)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log(
+                        "call PerpRewardTwentySixWeeksVesting.initialize() on implementation to avoid security issue",
+                    )
+                    const reward = await this.factory
+                        .create<PerpRewardVesting>(
+                            ContractName.PerpRewardVesting,
+                            ContractInstanceName.PerpRewardTwentySixWeeksVesting,
+                        )
+                        .instance()
+                    const perpAddr = this.settingsDao.getExternalContracts(this.layerType).perp!
+                    const proxyAdminAddr = this.settingsDao.getExternalContracts(this.layerType).proxyAdmin!
+                    const impAddr = await getImplementation(proxyAdminAddr, reward.address)
+                    console.log("implementation: ", impAddr)
+                    const imp = await ethers.getContractAt(PerpRewardVestingArtifact.abi, impAddr)
+                    const tx = await imp.initialize(perpAddr, this.deployConfig.defaultPerpRewardVestingPeriod)
+                    await tx.wait(this.confirmations)
                 },
             ],
         ]

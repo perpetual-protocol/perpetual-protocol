@@ -5,6 +5,7 @@
       "network": "homestead",
       "externalContracts": {
         "foundationGovernance": "0x5E4B407eB1253527628bAb875525AaeC0099fFC5",
+        "rewardGovernance": "0x9FE5f5bbbD3f2172Fa370068D26185f3d82ed9aC",
         "perp": "0xbc396689893d065f41bc2c6ecbee5e0085233447",
         "usdc": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
         "tether": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
@@ -12,7 +13,7 @@
         "multiTokenMediatorOnEth": "0x88ad09518695c6c3712AC10a214bE5109a655671",
         "proxyAdmin": "0x29853EcF31eaedcD9074a11A85A8C8b689165F0b"
       },
-      "version": "8"
+      "version": "13"
     },
     "layer2": {
       "chainId": 100,
