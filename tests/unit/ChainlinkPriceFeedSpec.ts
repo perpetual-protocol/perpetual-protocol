@@ -262,4 +262,30 @@ describe("ChainlinkPriceFeed Spec", () => {
             await expectRevert(priceFeed.getPreviousTimestamp(stringToBytes32("ETH"), 10), "Not enough history")
         })
     })
+
+    describe("when all price history are negative, there is no enough (valid) history", () => {
+        beforeEach(async () => {
+            await priceFeed.addAggregator(stringToBytes32("ETH"), chainlinkMock1.address)
+            await chainlinkMock1.mockAddAnswer(0, toFullDigit(-400, CHAINLINK_DECIMAL), 100, 100, 0)
+            await chainlinkMock1.mockAddAnswer(1, toFullDigit(-405, CHAINLINK_DECIMAL), 150, 150, 1)
+            await chainlinkMock1.mockAddAnswer(2, toFullDigit(-410, CHAINLINK_DECIMAL), 200, 200, 2)
+        })
+
+        it("force error, getTwapPrice", async () => {
+            await expectRevert(priceFeed.getTwapPrice(stringToBytes32("ETH"), 40), "Not enough history")
+        })
+
+        it("force error, getprice/getLatestTimestamp", async () => {
+            await expectRevert(priceFeed.getPrice(stringToBytes32("ETH")), "Not enough history")
+            await expectRevert(priceFeed.getLatestTimestamp(stringToBytes32("ETH")), "Not enough history")
+        })
+
+        it("force error, getPreviousPrice/getPreviousTimestamp still get the 'Negative price' error, as these two functions do not traverse back to a valid one", async () => {
+            await expectRevert(priceFeed.getPreviousPrice(stringToBytes32("ETH"), 0), "Negative price")
+            await expectRevert(priceFeed.getPreviousTimestamp(stringToBytes32("ETH"), 0), "Negative price")
+
+            await expectRevert(priceFeed.getPreviousPrice(stringToBytes32("ETH"), 1), "Negative price")
+            await expectRevert(priceFeed.getPreviousTimestamp(stringToBytes32("ETH"), 1), "Negative price")
+        })
+    })
 })
