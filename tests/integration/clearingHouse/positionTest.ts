@@ -8,7 +8,7 @@ import {
     ClearingHouseViewerInstance,
     ERC20FakeInstance,
     InsuranceFundFakeInstance,
-    StakingReserveInstance,
+    TollPoolInstance,
 } from "../../../types/truffle"
 import { assertionHelper } from "../../helper/assertion-plugin"
 import { PnlCalcOption, Side } from "../../helper/contract"
@@ -30,7 +30,7 @@ describe("ClearingHouse - open/close position Test", () => {
     let insuranceFund: InsuranceFundFakeInstance
     let quoteToken: ERC20FakeInstance
     let clearingHouseViewer: ClearingHouseViewerInstance
-    let stakingReserve: StakingReserveInstance
+    let tollPool: TollPoolInstance
 
     async function approve(account: string, spender: string, amount: number | string): Promise<void> {
         await quoteToken.approve(spender, toFullDigit(amount, +(await quoteToken.decimals())), { from: account })
@@ -54,7 +54,7 @@ describe("ClearingHouse - open/close position Test", () => {
         clearingHouse = contracts.clearingHouse
         clearingHouseViewer = contracts.clearingHouseViewer
         clearingHouse = contracts.clearingHouse
-        stakingReserve = contracts.stakingReserve
+        tollPool = contracts.tollPool
 
         // Each of Alice & Bob have 5000 DAI
         await transfer(admin, alice, 5000)
@@ -528,29 +528,44 @@ describe("ClearingHouse - open/close position Test", () => {
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(60), toDecimal(10), toDecimal(0), {
                 from: alice,
             })
-
             expect(await quoteToken.balanceOf(clearingHouse.address)).to.eq(
                 toFullDigit(60, +(await quoteToken.decimals())),
             )
-            expect(await quoteToken.balanceOf(stakingReserve.address)).to.eq(
-                toFullDigit(6, +(await quoteToken.decimals())),
-            )
 
             // clearingHouse's balance = 60 - 60(alice's margin) = 0
-            // fee balance in stakingReserve = 6 + 6 = 12
+            // fee balance in tollPool = 6 + 6 = 12
             // spread balance in insuranceFund = 12 + 12 = 24
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
             expect(await quoteToken.balanceOf(clearingHouse.address)).to.eq(
                 toFullDigit(0, +(await quoteToken.decimals())),
             )
-            expect(await quoteToken.balanceOf(stakingReserve.address)).to.eq(
-                toFullDigit(12, +(await quoteToken.decimals())),
-            )
+
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq(
                 toFullDigit(5024, +(await quoteToken.decimals())),
             )
+            expect(await quoteToken.balanceOf(tollPool.address)).to.eq(toFullDigit(12, +(await quoteToken.decimals())))
+        })
 
-            expect(await stakingReserve.feeMap(quoteToken.address)).eq(toFullDigit(12))
+        it("open/close position to check the fee is charged; tollRatio changed to 1% from 5%", async () => {
+            await amm.setTollRatio(toDecimal(0.01))
+
+            // deposit to 2000
+            await approve(alice, clearingHouse.address, 2000)
+
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(60), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+            expect(await quoteToken.balanceOf(tollPool.address)).to.eq(toFullDigit(6, +(await quoteToken.decimals())))
+
+            await amm.setTollRatio(toDecimal(0.05))
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+
+            expect(await quoteToken.balanceOf(tollPool.address)).to.eq(toFullDigit(16, +(await quoteToken.decimals())))
+
+            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
+            expect(await quoteToken.balanceOf(tollPool.address)).to.eq("55999999") // ~=56
         })
 
         it("check PositionChanged event by opening and then closing a position", async () => {
@@ -1380,9 +1395,7 @@ describe("ClearingHouse - open/close position Test", () => {
             )
 
             // fee 30, spread 30
-            expect(await quoteToken.balanceOf(stakingReserve.address)).to.eq(
-                toFullDigit(30, +(await quoteToken.decimals())),
-            )
+            expect(await quoteToken.balanceOf(tollPool.address)).to.eq(toFullDigit(30, +(await quoteToken.decimals())))
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq(
                 toFullDigit(5030, +(await quoteToken.decimals())),
             )
@@ -1422,9 +1435,7 @@ describe("ClearingHouse - open/close position Test", () => {
             expect(await quoteToken.balanceOf(clearingHouse.address)).to.eq(
                 toFullDigit(100, +(await quoteToken.decimals())),
             )
-            expect(await quoteToken.balanceOf(stakingReserve.address)).to.eq(
-                toFullDigit(10, +(await quoteToken.decimals())),
-            )
+            expect(await quoteToken.balanceOf(tollPool.address)).to.eq(toFullDigit(10, +(await quoteToken.decimals())))
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq(
                 toFullDigit(5010, +(await quoteToken.decimals())),
             )
@@ -1457,9 +1468,7 @@ describe("ClearingHouse - open/close position Test", () => {
             expect(await quoteToken.balanceOf(clearingHouse.address)).to.eq(
                 toFullDigit(0, +(await quoteToken.decimals())),
             )
-            expect(await quoteToken.balanceOf(stakingReserve.address)).to.eq(
-                toFullDigit(60, +(await quoteToken.decimals())),
-            )
+            expect(await quoteToken.balanceOf(tollPool.address)).to.eq(toFullDigit(60, +(await quoteToken.decimals())))
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq(
                 toFullDigit(5060, +(await quoteToken.decimals())),
             )
@@ -1502,9 +1511,7 @@ describe("ClearingHouse - open/close position Test", () => {
             // 1st tx spread = 300 * 2 * 5% = 30
             // 2nd tx fee = 300 * 2 * 5% = 30
             // 2nd tx fee = 300 * 2 * 5% = 30
-            expect(await quoteToken.balanceOf(stakingReserve.address)).to.eq(
-                toFullDigit(60, +(await quoteToken.decimals())),
-            )
+            expect(await quoteToken.balanceOf(tollPool.address)).to.eq(toFullDigit(60, +(await quoteToken.decimals())))
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq(
                 toFullDigit(5060, +(await quoteToken.decimals())),
             )
@@ -1548,9 +1555,7 @@ describe("ClearingHouse - open/close position Test", () => {
             // 2nd tx fee = 300 * 2 * 5% = 30
             // 2nd tx fee = 300 * 2 * 5% = 30
 
-            expect(await quoteToken.balanceOf(stakingReserve.address)).to.eq(
-                toFullDigit(60, +(await quoteToken.decimals())),
-            )
+            expect(await quoteToken.balanceOf(tollPool.address)).to.eq(toFullDigit(60, +(await quoteToken.decimals())))
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq(
                 toFullDigit(5060, +(await quoteToken.decimals())),
             )
@@ -1575,7 +1580,7 @@ describe("ClearingHouse - open/close position Test", () => {
             const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
 
             // fee is 10 + 5 + 17.04/2 = 23.52
-            expect(await quoteToken.balanceOf(stakingReserve.address)).to.eq("23521126")
+            expect(await quoteToken.balanceOf(tollPool.address)).to.eq("23521126")
         })
 
         it("force error, close a under collateral position when fee is 10%", async () => {
@@ -1639,9 +1644,7 @@ describe("ClearingHouse - open/close position Test", () => {
                 realizedPnl: "0",
             })
 
-            expect(await quoteToken.balanceOf(stakingReserve.address)).to.eq(
-                toFullDigit(0, +(await quoteToken.decimals())),
-            )
+            expect(await quoteToken.balanceOf(tollPool.address)).to.eq(toFullDigit(0, +(await quoteToken.decimals())))
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq(
                 toFullDigit(5060, +(await quoteToken.decimals())),
             )
@@ -1684,7 +1687,7 @@ describe("ClearingHouse - open/close position Test", () => {
                 expect(await quoteToken.balanceOf(clearingHouse.address)).eq(
                     toFullDigit(60, +(await quoteToken.decimals())),
                 )
-                expect(await quoteToken.balanceOf(stakingReserve.address)).to.eq(
+                expect(await quoteToken.balanceOf(tollPool.address)).to.eq(
                     toFullDigit(60, +(await quoteToken.decimals())),
                 )
             })
@@ -1712,7 +1715,7 @@ describe("ClearingHouse - open/close position Test", () => {
                 expect(await quoteToken.balanceOf(clearingHouse.address)).eq(
                     toFullDigit(60, +(await quoteToken.decimals())),
                 )
-                expect(await quoteToken.balanceOf(stakingReserve.address)).to.eq(
+                expect(await quoteToken.balanceOf(tollPool.address)).to.eq(
                     toFullDigit(60, +(await quoteToken.decimals())),
                 )
             })
@@ -2706,7 +2709,7 @@ describe("ClearingHouse - open/close position Test", () => {
                 expect(position.margin).to.eq("51515151515151515151")
 
                 // 25 + 35 + 80 = 140
-                expect(await quoteToken.balanceOf(stakingReserve.address)).to.eq(
+                expect(await quoteToken.balanceOf(tollPool.address)).to.eq(
                     toFullDigit(140, +(await quoteToken.decimals())),
                 )
             })

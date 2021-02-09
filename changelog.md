@@ -7,9 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- add `Amm:getBaseAssetDelta()`
+- add `Amm::getBaseAssetDelta()`
+- add `StakedPerpToken.sol` for staking; inherit from `aragonone/Checkpointing.sol` #105 
+- add `PerpRewardVesting.sol` for distributing staking reward; inherit from `Balancer/MerkleRedeem.sol` #106
+- add `TollPool.sol` for distributing toll #113
+- add `TmpRewardPoolL1.sol` for receiving and transferring toll to feeRewardPool #115
+- add `FeeRewardPoolL1.sol` for calculating users' rewards and for users to withdraw rewards; fork from `Unipool.sol` #120
+- add `KeeperRewardL1.sol` and `KeeperRewardL2.sol` #61
+
+### Changed
+- rename `ClearingHouse` interface from `feePool` to `tollPool`
+- rename `ClearingHouse` interface from `setFeePool` to `setTollPool`
 ### Removed
 - remove `Amm::migrateLiquidity()`
+- rename `TmpRewardPoolL1` to `FeeTokenPoolDispatcherL1` #198
 
 ## [1.0.4] - 2020-12-10
 ### Added
@@ -17,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add `spotPrice` to `ClearingHouse::PositionChanged` #95
 - index `trader` and `amm` in position-related events #95
 
-## Removed
+### Removed
 - `IAmm::getReserve` #95
 - remove `quotAssetReserve` and `baseAssetReserve` from `ClearingHouse::PositionChanged` event #95
 

@@ -1,9 +1,10 @@
 import { BigNumber } from "ethers"
 import { Stage } from "../../scripts/common"
-import { LegacyAmmInstanceName } from "../ContractName"
+import { AmmInstanceName } from "../ContractName"
 
 // TODO replace by ethers format
 export const DEFAULT_DIGITS = BigNumber.from(10).pow(18)
+
 const WEEK = BigNumber.from(7 * 24 * 60 * 60)
 const DEFAULT_AMM_TRADE_LIMIT_RATIO = BigNumber.from(90)
     .mul(DEFAULT_DIGITS)
@@ -46,10 +47,10 @@ interface AmmProperties {
     openInterestNotionalCap: BigNumber
 }
 
-export type AmmConfig = { name: string; deployArgs: AmmDeployArgs; properties: AmmProperties }
+export type AmmConfig = { name: AmmInstanceName; deployArgs: AmmDeployArgs; properties: AmmProperties }
 export type AmmConfigMap = Record<string, AmmConfig>
 export const BTC_USD_AMM: AmmConfig = {
-    name: LegacyAmmInstanceName.BTCUSDC,
+    name: AmmInstanceName.BTCUSDC,
     deployArgs: {
         // base * price
         quoteAssetReserve: BigNumber.from(10000000).mul(DEFAULT_DIGITS),
@@ -78,7 +79,7 @@ export const BTC_USD_AMM: AmmConfig = {
 }
 
 export const ETH_USD_AMM: AmmConfig = {
-    name: LegacyAmmInstanceName.ETHUSDC,
+    name: AmmInstanceName.ETHUSDC,
     deployArgs: {
         // base * price
         quoteAssetReserve: BigNumber.from(10000000).mul(DEFAULT_DIGITS),
@@ -105,7 +106,7 @@ export const ETH_USD_AMM: AmmConfig = {
 }
 
 export const YFI_USD_AMM: AmmConfig = {
-    name: LegacyAmmInstanceName.YFIUSDC,
+    name: AmmInstanceName.YFIUSDC,
     deployArgs: {
         // base * price
         quoteAssetReserve: BigNumber.from(4000000).mul(DEFAULT_DIGITS),
@@ -132,7 +133,7 @@ export const YFI_USD_AMM: AmmConfig = {
 }
 
 export const DOT_USD_AMM: AmmConfig = {
-    name: LegacyAmmInstanceName.DOTUSDC,
+    name: AmmInstanceName.DOTUSDC,
     deployArgs: {
         // base * price
         // exact quote reserve amount will be overriden by the script based on the base reserve and the price upon deployment
@@ -160,7 +161,7 @@ export const DOT_USD_AMM: AmmConfig = {
 }
 
 export const SNX_USD_AMM: AmmConfig = {
-    name: LegacyAmmInstanceName.SNXUSDC,
+    name: AmmInstanceName.SNXUSDC,
     deployArgs: {
         // base * price
         // exact quote reserve amount will be overriden by the script based on the base reserve and the price upon deployment
@@ -188,7 +189,7 @@ export const SNX_USD_AMM: AmmConfig = {
 }
 
 export const SDEFI_USD_AMM: AmmConfig = {
-    name: LegacyAmmInstanceName.SDEFIUSDC,
+    name: AmmInstanceName.SDEFIUSDC,
     deployArgs: {
         // base * price
         // exact quote reserve amount will be overriden by the script based on the base reserve and the price upon deployment
@@ -216,7 +217,7 @@ export const SDEFI_USD_AMM: AmmConfig = {
 }
 
 export function makeAmmConfig(
-    name: string,
+    name: AmmInstanceName,
     priceFeedKey: string,
     baseAssetReserve: BigNumber,
     maxHoldingBaseAsset: BigNumber,
@@ -273,13 +274,20 @@ export class DeployConfig {
 
     // amm
     readonly legacyAmmConfigMap: Record<string, AmmConfig> = {
-        [LegacyAmmInstanceName.BTCUSDC]: BTC_USD_AMM,
-        [LegacyAmmInstanceName.ETHUSDC]: ETH_USD_AMM,
-        [LegacyAmmInstanceName.YFIUSDC]: YFI_USD_AMM,
-        [LegacyAmmInstanceName.DOTUSDC]: DOT_USD_AMM,
-        [LegacyAmmInstanceName.SNXUSDC]: SNX_USD_AMM,
-        [LegacyAmmInstanceName.SDEFIUSDC]: SDEFI_USD_AMM,
+        [AmmInstanceName.BTCUSDC]: BTC_USD_AMM,
+        [AmmInstanceName.ETHUSDC]: ETH_USD_AMM,
+        [AmmInstanceName.YFIUSDC]: YFI_USD_AMM,
+        [AmmInstanceName.DOTUSDC]: DOT_USD_AMM,
+        [AmmInstanceName.SNXUSDC]: SNX_USD_AMM,
+        [AmmInstanceName.SDEFIUSDC]: SDEFI_USD_AMM,
     }
+
+    // KeeperReward
+    readonly keeperRewardOnL1 = BigNumber.from(1).mul(DEFAULT_DIGITS) // 1 perp token
+    readonly keeperRewardOnL2 = BigNumber.from(1).mul(DEFAULT_DIGITS) // 1 perp token
+
+    // PerpRewardVesting = default is 24 weeks
+    readonly defaultPerpRewardVestingPeriod = WEEK.mul(24)
 
     constructor(stage: Stage) {
         switch (stage) {
@@ -311,6 +319,7 @@ export class DeployConfig {
                     [PriceFeedKey.ETH]: "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
                     [PriceFeedKey.YFI]: "0xA027702dbb89fbd58938e4324ac03B58d812b0E1",
                     [PriceFeedKey.DOT]: "0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734",
+                    [PriceFeedKey.SDEFI]: "0x0630521aC362bc7A19a4eE44b57cE72Ea34AD01c",
                 }
                 break
             default:

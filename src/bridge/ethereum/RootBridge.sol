@@ -42,13 +42,8 @@ contract RootBridge is BaseBridge {
         require(address(priceFeed) == _msgSender(), "!priceFeed");
 
         bytes4 methodSelector = IPriceFeed.setLatestData.selector;
-        bytes memory data = abi.encodeWithSelector(
-            methodSelector,
-            _priceFeedKey,
-            _price.toUint(),
-            _timestamp,
-            _roundId
-        );
+        bytes memory data =
+            abi.encodeWithSelector(methodSelector, _priceFeedKey, _price.toUint(), _timestamp, _roundId);
         return callBridge(_priceFeedAddrOnL2, data, DEFAULT_GAS_LIMIT);
     }
 

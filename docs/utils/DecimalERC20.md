@@ -6,7 +6,7 @@
 
 
 
-### `transfer(contract IERC20 _token, address _to, struct Decimal.decimal _value)` (internal)
+### `_transfer(contract IERC20 _token, address _to, struct Decimal.decimal _value)` (internal)
 
 
 
@@ -15,7 +15,7 @@
 Parameters:
 
 Returns:
-### `transferFrom(contract IERC20 _token, address _from, address _to, struct Decimal.decimal _value)` (internal)
+### `_transferFrom(contract IERC20 _token, address _from, address _to, struct Decimal.decimal _value)` (internal)
 
 
 
@@ -24,7 +24,7 @@ Returns:
 Parameters:
 
 Returns:
-### `approve(contract IERC20 _token, address _spender, struct Decimal.decimal _value)` (internal)
+### `_approve(contract IERC20 _token, address _spender, struct Decimal.decimal _value)` (internal)
 
 
 
@@ -33,7 +33,7 @@ Returns:
 Parameters:
 
 Returns:
-### `allowance(contract IERC20 _token, address _owner, address _spender) → struct Decimal.decimal` (internal)
+### `_allowance(contract IERC20 _token, address _owner, address _spender) → struct Decimal.decimal` (internal)
 
 
 
@@ -42,7 +42,7 @@ Returns:
 Parameters:
 
 Returns:
-### `balanceOf(contract IERC20 _token, address _owner) → struct Decimal.decimal` (internal)
+### `_balanceOf(contract IERC20 _token, address _owner) → struct Decimal.decimal` (internal)
 
 
 
@@ -51,7 +51,34 @@ Returns:
 Parameters:
 
 Returns:
-### `totalSupply(contract IERC20 _token) → struct Decimal.decimal` (internal)
+### `_totalSupply(contract IERC20 _token) → struct Decimal.decimal` (internal)
+
+
+
+
+
+Parameters:
+
+Returns:
+### `_toDecimal(contract IERC20 _token, uint256 _number) → struct Decimal.decimal` (internal)
+
+
+
+
+
+Parameters:
+
+Returns:
+### `_toUint(contract IERC20 _token, struct Decimal.decimal _decimal) → uint256` (internal)
+
+
+
+
+
+Parameters:
+
+Returns:
+### `_getTokenDecimals(address _token) → uint256` (internal)
 
 
 

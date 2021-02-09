@@ -2,23 +2,23 @@ import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import BN from "bn.js"
 import { expect, use } from "chai"
-import { ChainlinkL1Instance, ChainlinkL1MockInstance, RootBridgeMockInstance } from "../../types/truffle"
+import { ChainlinkAggregatorMockInstance, ChainlinkL1Instance, RootBridgeMockInstance } from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { deployChainlinkL1 } from "../helper/contract"
-import { deployChainlinkL1Mock, deployRootBridgeMock } from "../helper/mockContract"
+import { deployChainlinkAggregatorMock, deployRootBridgeMock } from "../helper/mockContract"
 
 use(assertionHelper)
 
 describe("chainlinkL1 Spec", () => {
     let addresses: string[]
     let chainlinkL1!: ChainlinkL1Instance
-    let chainlinkL1Mock!: ChainlinkL1MockInstance
+    let chainlinkAggregator!: ChainlinkAggregatorMockInstance
     let rootBridgeMock!: RootBridgeMockInstance
     const EMPTY_ADDRESS = "0x0000000000000000000000000000000000000000"
 
     beforeEach(async () => {
         addresses = await web3.eth.getAccounts()
-        chainlinkL1Mock = await deployChainlinkL1Mock()
+        chainlinkAggregator = await deployChainlinkAggregatorMock()
         rootBridgeMock = await deployRootBridgeMock()
     })
 
@@ -75,22 +75,22 @@ describe("chainlinkL1 Spec", () => {
         })
 
         it("getAggregator with existed aggregator key", async () => {
-            await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkL1Mock.address)
+            await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkAggregator.address)
             expect(fromBytes32(await chainlinkL1.priceFeedKeys(0))).eq("ETH")
-            expect(await chainlinkL1.getAggregator(stringToBytes32("ETH"))).eq(chainlinkL1Mock.address)
+            expect(await chainlinkL1.getAggregator(stringToBytes32("ETH"))).eq(chainlinkAggregator.address)
         })
 
         it("getAggregator with non-existed aggregator key", async () => {
-            await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkL1Mock.address)
+            await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkAggregator.address)
             expect(await chainlinkL1.getAggregator(stringToBytes32("BTC"))).eq(EMPTY_ADDRESS)
         })
 
         it("add multi aggregators", async () => {
-            await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkL1Mock.address)
+            await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkAggregator.address)
             await chainlinkL1.addAggregator(stringToBytes32("BTC"), addresses[1])
             await chainlinkL1.addAggregator(stringToBytes32("LINK"), addresses[2])
             expect(fromBytes32(await chainlinkL1.priceFeedKeys(0))).eq("ETH")
-            expect(await chainlinkL1.getAggregator(stringToBytes32("ETH"))).eq(chainlinkL1Mock.address)
+            expect(await chainlinkL1.getAggregator(stringToBytes32("ETH"))).eq(chainlinkAggregator.address)
             expect(fromBytes32(await chainlinkL1.priceFeedKeys(2))).eq("LINK")
             expect(await chainlinkL1.getAggregator(stringToBytes32("LINK"))).eq(addresses[2])
         })
@@ -106,7 +106,7 @@ describe("chainlinkL1 Spec", () => {
         })
 
         it("remove 1 aggregator when there's only 1", async () => {
-            await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkL1Mock.address)
+            await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkAggregator.address)
             await chainlinkL1.removeAggregator(stringToBytes32("ETH"))
 
             // cant use expectRevert because the error message is different between CI and local env
@@ -122,12 +122,12 @@ describe("chainlinkL1 Spec", () => {
         })
 
         it("remove 1 aggregator when there're 2", async () => {
-            await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkL1Mock.address)
-            await chainlinkL1.addAggregator(stringToBytes32("BTC"), chainlinkL1Mock.address)
+            await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkAggregator.address)
+            await chainlinkL1.addAggregator(stringToBytes32("BTC"), chainlinkAggregator.address)
             await chainlinkL1.removeAggregator(stringToBytes32("ETH"))
             expect(fromBytes32(await chainlinkL1.priceFeedKeys(0))).eq("BTC")
             expect(await chainlinkL1.getAggregator(stringToBytes32("ETH"))).eq(EMPTY_ADDRESS)
-            expect(await chainlinkL1.getAggregator(stringToBytes32("BTC"))).eq(chainlinkL1Mock.address)
+            expect(await chainlinkL1.getAggregator(stringToBytes32("BTC"))).eq(chainlinkAggregator.address)
         })
     })
 
@@ -137,9 +137,9 @@ describe("chainlinkL1 Spec", () => {
 
         beforeEach(async () => {
             chainlinkL1 = await deployChainlinkL1(rootBridgeMock.address, addresses[1])
-            await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkL1Mock.address)
+            await chainlinkL1.addAggregator(stringToBytes32("ETH"), chainlinkAggregator.address)
             await rootBridgeMock.mockSetMessageId(_messageId)
-            await chainlinkL1Mock.mockAddAnswer(8, 12345678, 1, 200000000000, 1)
+            await chainlinkAggregator.mockAddAnswer(8, 12345678, 1, 200000000000, 1)
         })
 
         it("get latest data", async () => {
@@ -165,7 +165,7 @@ describe("chainlinkL1 Spec", () => {
         })
 
         it("force error, timestamp equal to 0", async () => {
-            await chainlinkL1Mock.mockAddAnswer(8, 41, 1, 0, 1)
+            await chainlinkAggregator.mockAddAnswer(8, 41, 1, 0, 1)
             await expectRevert(chainlinkL1.updateLatestRoundData(stringToBytes32("ETH")), "incorrect timestamp")
         })
 

@@ -104,13 +104,8 @@ contract ChainlinkL1 is PerpFiOwnableUpgrade, BlockContext {
         uint8 decimals = aggregator.decimals();
 
         Decimal.decimal memory decimalPrice = Decimal.decimal(formatDecimals(uint256(price), decimals));
-        bytes32 messageId = rootBridge.updatePriceFeed(
-            priceFeedL2Address,
-            _priceFeedKey,
-            decimalPrice,
-            timestamp,
-            roundId
-        );
+        bytes32 messageId =
+            rootBridge.updatePriceFeed(priceFeedL2Address, _priceFeedKey, decimalPrice, timestamp, roundId);
         emit PriceUpdateMessageIdSent(messageId);
         emit PriceUpdated(roundId, decimalPrice.toUint(), timestamp);
 

@@ -1,3 +1,4 @@
+import { ethers } from "@nomiclabs/buidler"
 import { ExternalContracts } from "../../scripts/common"
 import { ClearingHouse, L2PriceFeed } from "../../types/ethers"
 import { ContractName } from "../ContractName"
@@ -5,6 +6,12 @@ import { ContractWrapperFactory } from "./ContractWrapperFactory"
 import { AmmConfig } from "./DeployConfig"
 
 export type DeployTask = () => Promise<void>
+
+export async function getImplementation(proxyAdminAddr: string, proxyAddr: string) {
+    const proxyAdminAbi = ["function getProxyImplementation(address proxy) view returns (address)"]
+    const proxyAdmin = await ethers.getContractAt(proxyAdminAbi, proxyAdminAddr)
+    return proxyAdmin.getProxyImplementation(proxyAddr)
+}
 
 export function makeAmmDeployBatch(
     ammConfig: AmmConfig,

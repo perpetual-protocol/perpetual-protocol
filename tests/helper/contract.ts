@@ -17,6 +17,8 @@ import {
     ClearingHouseFakeInstance,
     ClearingHouseViewerContract,
     ClearingHouseViewerInstance,
+    ClientBridgeContract,
+    ClientBridgeInstance,
     CUsdtMockContract,
     CUsdtMockInstance,
     ERC20FakeContract,
@@ -25,10 +27,18 @@ import {
     ExchangeWrapperInstance,
     ExchangeWrapperMockContract,
     ExchangeWrapperMockInstance,
+    FeeRewardPoolL1FakeContract,
+    FeeRewardPoolL1FakeInstance,
+    FeeTokenPoolDispatcherL1Contract,
+    FeeTokenPoolDispatcherL1Instance,
     InflationMonitorFakeContract,
     InflationMonitorFakeInstance,
     InsuranceFundFakeContract,
     InsuranceFundFakeInstance,
+    KeeperRewardL1Contract,
+    KeeperRewardL1Instance,
+    KeeperRewardL2Contract,
+    KeeperRewardL2Instance,
     L2PriceFeedFakeContract,
     L2PriceFeedFakeInstance,
     L2PriceFeedMockContract,
@@ -39,16 +49,22 @@ import {
     MinterInstance,
     MultiTokenMediatorMockContract,
     MultiTokenMediatorMockInstance,
+    PerpRewardVestingFakeContract,
+    PerpRewardVestingFakeInstance,
     PerpTokenContract,
     PerpTokenInstance,
     RewardsDistributionFakeContract,
     RewardsDistributionFakeInstance,
     RootBridgeContract,
     RootBridgeInstance,
+    StakedPerpTokenFakeContract,
+    StakedPerpTokenFakeInstance,
     StakingReserveFakeContract,
     StakingReserveFakeInstance,
     SupplyScheduleFakeContract,
     SupplyScheduleFakeInstance,
+    TollPoolContract,
+    TollPoolInstance,
 } from "../../types/truffle"
 import { Decimal, toFullDigit } from "./number"
 
@@ -75,6 +91,14 @@ const RootBridge = artifacts.require("RootBridge") as RootBridgeContract
 const MultiTokenMediatorMock = artifacts.require("MultiTokenMediatorMock") as MultiTokenMediatorMockContract
 const AMBBridgeMock = artifacts.require("AMBBridgeMock") as AMBBridgeMockContract
 const MetaTxGateway = artifacts.require("MetaTxGateway") as MetaTxGatewayContract
+const KeeperRewardL1 = artifacts.require("KeeperRewardL1") as KeeperRewardL1Contract
+const KeeperRewardL2 = artifacts.require("KeeperRewardL2") as KeeperRewardL2Contract
+const StakedPerpToken = artifacts.require("StakedPerpTokenFake") as StakedPerpTokenFakeContract
+const PerpRewardVesting = artifacts.require("PerpRewardVestingFake") as PerpRewardVestingFakeContract
+const TollPool = artifacts.require("TollPool") as TollPoolContract
+const FeeTokenPoolDispatcherL1 = artifacts.require("FeeTokenPoolDispatcherL1") as FeeTokenPoolDispatcherL1Contract
+const ClientBridge = artifacts.require("ClientBridge") as ClientBridgeContract
+const FeeRewardPoolL1 = artifacts.require("FeeRewardPoolL1Fake") as FeeRewardPoolL1FakeContract
 const ChainlinkPriceFeedFake = artifacts.require("ChainlinkPriceFeedFake") as ChainlinkPriceFeedFakeContract
 
 export enum Side {
@@ -310,7 +334,17 @@ export async function deployMinter(perpToken: string): Promise<MinterInstance> {
 
 export async function deployRootBridge(ambBridge: string, tokenMediator: string): Promise<RootBridgeInstance> {
     const instance = await RootBridge.new()
-    instance.initialize(ambBridge, tokenMediator)
+    await instance.initialize(ambBridge, tokenMediator)
+    return instance
+}
+
+export async function deployClientBridge(
+    ambBridge: string,
+    tokenMediator: string,
+    trustedForwarder: string,
+): Promise<ClientBridgeInstance> {
+    const instance = await ClientBridge.new()
+    await instance.initialize(ambBridge, tokenMediator, trustedForwarder)
     return instance
 }
 
@@ -331,5 +365,57 @@ export async function deployMetaTxGateway(
 ): Promise<MetaTxGatewayInstance> {
     const instance = await MetaTxGateway.new()
     instance.initialize(name, version, chainIdL1)
+    return instance
+}
+
+export async function deployL1KeeperReward(perpToken: string): Promise<KeeperRewardL1Instance> {
+    const instance = await KeeperRewardL1.new()
+    await instance.initialize(perpToken)
+    return instance
+}
+
+export async function deployL2KeeperReward(perpToken: string): Promise<KeeperRewardL2Instance> {
+    const instance = await KeeperRewardL2.new()
+    await instance.initialize(perpToken)
+    return instance
+}
+
+export async function deployStakedPerpToken(
+    perpToken: string,
+    feeRewardPool: string,
+): Promise<StakedPerpTokenFakeInstance> {
+    const instance = await StakedPerpToken.new()
+    await instance.initialize(perpToken, feeRewardPool)
+    return instance
+}
+
+export async function deployPerpRewardVesting(
+    perpToken: string,
+    vestingPeriod: BN = new BN(12 * 7 * 24 * 60 * 60),
+): Promise<PerpRewardVestingFakeInstance> {
+    const instance = await PerpRewardVesting.new()
+    await instance.initialize(perpToken, vestingPeriod)
+    return instance
+}
+
+export async function deployTollPool(clearingHouse: string, clientBridge: string): Promise<TollPoolInstance> {
+    const instance = await TollPool.new()
+    await instance.initialize(clearingHouse, clientBridge)
+    return instance
+}
+
+export async function deployFeeTokenPoolDispatcherL1(): Promise<FeeTokenPoolDispatcherL1Instance> {
+    const instance = await FeeTokenPoolDispatcherL1.new()
+    await instance.initialize()
+    return instance
+}
+
+export async function deployFeeRewardPoolL1(
+    erc20: string,
+    stakedPerpToken: string,
+    feeTokenPoolDispatcherL1: string,
+): Promise<FeeRewardPoolL1FakeInstance> {
+    const instance = await FeeRewardPoolL1.new()
+    await instance.initialize(erc20, stakedPerpToken, feeTokenPoolDispatcherL1)
     return instance
 }

@@ -15,7 +15,7 @@
 Parameters:
 
 Returns:
-### `getUnrealizedPnl(contract Amm _amm, address _trader, enum ClearingHouse.PnlCalcOption _pnlCalcOption) → struct SignedDecimal.signedDecimal` (external)
+### `getUnrealizedPnl(contract IAmm _amm, address _trader, enum ClearingHouse.PnlCalcOption _pnlCalcOption) → struct SignedDecimal.signedDecimal` (external)
 
 get unrealized PnL
 
@@ -23,7 +23,7 @@ get unrealized PnL
 
 
 Parameters:
- - _amm → Amm address
+ - _amm → IAmm address
 
  - _trader → trader address
 
@@ -47,7 +47,7 @@ Parameters:
 
 Returns:
  - margin personal balance with funding payment in 18 digits
-### `getPersonalPositionWithFundingPayment(contract Amm _amm, address _trader) → struct ClearingHouse.Position position` (public)
+### `getPersonalPositionWithFundingPayment(contract IAmm _amm, address _trader) → struct ClearingHouse.Position position` (public)
 
 get personal position with funding payment
 
@@ -55,14 +55,29 @@ get personal position with funding payment
 
 
 Parameters:
- - _amm → Amm address
+ - _amm → IAmm address
 
  - _trader → trader address
 
 
 Returns:
  - position ClearingHouse.Position struct
-### `getMarginRatio(contract Amm _amm, address _trader) → struct SignedDecimal.signedDecimal` (external)
+### `isPositionNeedToBeMigrated(contract IAmm _amm, address _trader) → bool` (external)
+
+verify if trader's position needs to be migrated
+
+
+
+
+Parameters:
+ - _amm → IAmm address
+
+ - _trader → trader address
+
+
+Returns:
+ - true if trader's position is not at the latest Amm curve, otherwise is false
+### `getMarginRatio(contract IAmm _amm, address _trader) → struct SignedDecimal.signedDecimal` (external)
 
 get personal margin ratio
 
@@ -70,7 +85,7 @@ get personal margin ratio
 
 
 Parameters:
- - _amm → Amm address
+ - _amm → IAmm address
 
  - _trader → trader address
 

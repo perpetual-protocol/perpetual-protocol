@@ -11,8 +11,8 @@ import {
     L2PriceFeedMockInstance,
     MinterInstance,
     PerpTokenInstance,
-    StakingReserveFakeInstance,
     SupplyScheduleFakeInstance,
+    TollPoolInstance,
 } from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { deployAmm, deployErc20Fake, Side } from "../helper/contract"
@@ -32,10 +32,10 @@ describe("Protocol shutdown test", () => {
     let quoteToken: ERC20FakeInstance
     let insuranceFund: InsuranceFundFakeInstance
     let mockPriceFeed!: L2PriceFeedMockInstance
+    let tollPool: TollPoolInstance
     let supplySchedule: SupplyScheduleFakeInstance
     let perpToken: PerpTokenInstance
     let inflationMonitor: InflationMonitorFakeInstance
-    let stakingReserve: StakingReserveFakeInstance
     let minter: MinterInstance
 
     async function deployAmmPair(quoteToken?: ERC20FakeInstance): Promise<any> {
@@ -50,6 +50,7 @@ describe("Protocol shutdown test", () => {
         await amm.setGlobalShutdown(insuranceFund.address)
         await amm.setCounterParty(clearingHouse.address)
         await amm.setOpen(true)
+        await tollPool.addFeeToken(quote.address)
 
         return { quote, amm }
     }
@@ -76,7 +77,6 @@ describe("Protocol shutdown test", () => {
             baseAssetReserve: toFullDigit(100),
         })
         clearingHouse = contracts.clearingHouse
-        clearingHouse = contracts.clearingHouse
         amm = contracts.amm
         quoteToken = contracts.quoteToken
         insuranceFund = contracts.insuranceFund
@@ -84,8 +84,8 @@ describe("Protocol shutdown test", () => {
         supplySchedule = contracts.supplySchedule
         perpToken = contracts.perpToken
         inflationMonitor = contracts.inflationMonitor
-        stakingReserve = contracts.stakingReserve
         minter = contracts.minter
+        tollPool = contracts.tollPool
     })
 
     describe("global shutdown test", () => {

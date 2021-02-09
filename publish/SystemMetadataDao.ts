@@ -12,9 +12,9 @@ import {
     SystemMetadata,
 } from "../scripts/common"
 import { asyncExec } from "../scripts/helper"
-import { ContractInstanceName } from "./ContractName"
-import { SettingsDao } from "./SettingsDao"
 import { getContractMetadataFile } from "../scripts/path"
+import { ContractId } from "./ContractName"
+import { SettingsDao } from "./SettingsDao"
 
 export interface AccountMetadata {
     privateKey: string
@@ -73,8 +73,8 @@ export class SystemMetadataDao {
         )
     }
 
-    getContractMetadata(layerType: Layer, contractInstanceName: ContractInstanceName): ContractMetadata {
-        return this.systemMetadataCache.layers[layerType]!.contracts[contractInstanceName]
+    getContractMetadata(layerType: Layer, contractId: ContractId): ContractMetadata {
+        return this.systemMetadataCache.layers[layerType]!.contracts[contractId]
     }
 
     setMetadata(metadata: SystemMetadata): void {

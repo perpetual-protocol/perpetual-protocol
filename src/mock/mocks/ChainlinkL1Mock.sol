@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.6.9;
-
 import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 
 contract ChainlinkL1Mock is AggregatorV3Interface {
@@ -9,6 +8,12 @@ contract ChainlinkL1Mock is AggregatorV3Interface {
     uint256[] decimalsArray;
     uint256[] timestampArray;
     uint80[] versionArray;
+
+    event PriceUpdated(uint256 roundId, uint256 price, uint256 timestamp);
+
+    function updateLatestRoundData(bytes32) external {
+        emit PriceUpdated(100, 500, 1444004400);
+    }
 
     function decimals() external view override returns (uint8) {
         return 8;
