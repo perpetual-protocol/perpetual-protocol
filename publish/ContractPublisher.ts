@@ -20,8 +20,8 @@ import {
     RootBridge,
 } from "../types/ethers"
 import { ContractWrapperFactory } from "./contract/ContractWrapperFactory"
-import { DeployConfig, PriceFeedKey } from "./contract/DeployConfig"
-import { DeployTask, getImplementation } from "./contract/DeployUtil"
+import { DEFAULT_DIGITS, DeployConfig, makeAmmConfig, PriceFeedKey } from "./contract/DeployConfig"
+import { DeployTask, getImplementation, makeAmmDeployBatch } from "./contract/DeployUtil"
 import { AmmInstanceName, ContractInstanceName, ContractName } from "./ContractName"
 import { OzContractDeployer } from "./OzContractDeployer"
 import { SettingsDao } from "./SettingsDao"
@@ -752,6 +752,38 @@ export class ContractPublisher {
                 },
             ],
         ]
+
+        if (this.deployConfig.stage === "production") {
+            const linkAmmConfig = makeAmmConfig(
+                AmmInstanceName.LINKUSDC,
+                "LINK",
+                BigNumber.from(300_000).mul(DEFAULT_DIGITS),
+                DEFAULT_DIGITS.mul(5000),
+                BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
+            )
+            const batch = makeAmmDeployBatch(
+                linkAmmConfig,
+                this.factory,
+                this.externalContract,
+                this.deployConfig.confirmations,
+            )
+            this.taskBatchesMap.layer2.push(batch)
+        } else {
+            const trxAmmConfig = makeAmmConfig(
+                AmmInstanceName.TRXUSDC,
+                "TRX",
+                BigNumber.from(300_000).mul(DEFAULT_DIGITS),
+                DEFAULT_DIGITS.mul(5000),
+                BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
+            )
+            const batch = makeAmmDeployBatch(
+                trxAmmConfig,
+                this.factory,
+                this.externalContract,
+                this.deployConfig.confirmations,
+            )
+            this.taskBatchesMap.layer2.push(batch)
+        }
 
         // Example for creating new amm
         // const linkAmmConfig = makeAmmConfig(

@@ -1,5 +1,8 @@
-import { ethers } from "@nomiclabs/buidler"
+import bre, { ethers } from "@nomiclabs/buidler"
+import { TASK_COMPILE } from "@nomiclabs/buidler/builtin-tasks/task-names"
+import { SRC_DIR } from "../../constants"
 import { ExternalContracts } from "../../scripts/common"
+import { flatten } from "../../scripts/flatten"
 import { ClearingHouse, L2PriceFeed } from "../../types/ethers"
 import { ContractName } from "../ContractName"
 import { ContractWrapperFactory } from "./ContractWrapperFactory"
@@ -18,11 +21,20 @@ export function makeAmmDeployBatch(
     factory: ContractWrapperFactory,
     externalContract: ExternalContracts,
     confirmations: number,
+    needFlatten = false,
 ): DeployTask[] {
     return [
         async (): Promise<void> => {
             console.log(`deploy ${ammConfig.name} amm...`)
+            const filename = `${ContractName.Amm}.sol`
             const l2PriceFeedContract = factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
+
+            if (needFlatten) {
+                // after flatten sol file we must re-compile again
+                await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                await bre.run(TASK_COMPILE)
+            }
+
             const ammContract = factory.createAmm(ammConfig.name)
             const quoteTokenAddr = externalContract.usdc!
             await ammContract.deployUpgradableContract(

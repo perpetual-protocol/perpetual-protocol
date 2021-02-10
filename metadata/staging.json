@@ -9,12 +9,21 @@
         "ChainlinkL1": {
           "name": "ChainlinkL1",
           "address": "0xD16a6772163463C731e37Ef42c98EEe95f15A496"
+        },
+        "PerpRewardNoVesting": {
+          "name": "PerpRewardVesting",
+          "address": "0xd225Da8898F88E7B613Ea57eaE6b0fe510b2C4Cd"
+        },
+        "PerpRewardTwentySixWeeksVesting": {
+          "name": "PerpRewardVesting",
+          "address": "0x0607C2540c62aea495996Bb2C39b658FEb8d8978"
         }
       },
       "accounts": [],
       "network": "rinkeby",
       "externalContracts": {
         "foundationGovernance": "0xa230A4f6F38D904C2eA1eE95d8b2b8b7350e3d79",
+        "rewardGovernance": "0x7cd11681690d25DAA202550E1B3F314C74A0Acd6",
         "perp": "0xaFfB148304D38947193785D194972a7d0d9b7F68",
         "tether": "0x40D3B2F06f198D2B789B823CdBEcD1DB78090D74",
         "usdc": "0x40D3B2F06f198D2B789B823CdBEcD1DB78090D74",
@@ -72,6 +81,10 @@
         "SDEFIUSDC": {
           "name": "Amm",
           "address": "0xF6886540399Ac4055f1Cf2b9110909277F2498A1"
+        },
+        "TRXUSDC": {
+          "name": "Amm",
+          "address": "0x3a2E1e21BcA6d00FbD9BD6eDeD7D7635AD17fb3c"
         }
       },
       "accounts": [],
