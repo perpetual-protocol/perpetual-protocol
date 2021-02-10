@@ -22,7 +22,7 @@ module.exports = {
     XDAI_MNEMONIC: process.env["XDAI_MNEMONIC"] || "",
     ARTIFACTS_DIR: "./build/contracts",
     GAS: 8000000,
-    GAS_PRICE: 20_000_000_000,
+    GAS_PRICE: 2_000_000_000,
     ROOT_DIR,
     SRC_DIR_NAME,
     SRC_DIR: join(ROOT_DIR, SRC_DIR_NAME),
