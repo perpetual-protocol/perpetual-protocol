@@ -55,7 +55,7 @@ contract FeeTokenPoolDispatcherL1 is PerpFiOwnableUpgrade, DecimalERC20 {
     }
 
     function addFeeRewardPool(IRewardRecipient _recipient) external onlyOwner {
-        require(feeTokens.length <= TOKEN_AMOUNT_LIMIT, "exceed token amount limit");
+        require(feeTokens.length < TOKEN_AMOUNT_LIMIT, "exceed token amount limit");
 
         IERC20 token = _recipient.token();
         require(feeTokens.add(address(token)), "invalid input");
