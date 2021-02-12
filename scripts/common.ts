@@ -85,3 +85,4 @@ export interface SystemDeploySettings {
 }
 
 export const TASK_DEPLOY_LAYER = "deploy:layer"
+export const TASK_CHECK_CHAINLINK = "check:chainlink"
