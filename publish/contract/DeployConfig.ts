@@ -3,7 +3,22 @@ import { Stage } from "../../scripts/common"
 import { AmmInstanceName } from "../ContractName"
 
 // TODO replace by ethers format
-const DEFAULT_DIGITS = BigNumber.from(10).pow(18)
+export const DEFAULT_DIGITS = BigNumber.from(10).pow(18)
+
+const WEEK = BigNumber.from(7 * 24 * 60 * 60)
+const DEFAULT_AMM_TRADE_LIMIT_RATIO = BigNumber.from(90)
+    .mul(DEFAULT_DIGITS)
+    .div(100) // 90% trading limit ratio
+const DEFAULT_AMM_FUNDING_PERIOD = BigNumber.from(3600) // 1 hour
+const DEFAULT_AMM_FLUCTUATION = BigNumber.from(12)
+    .mul(DEFAULT_DIGITS)
+    .div(1000) // 1.2%
+const DEFAULT_AMM_TOLL_RATIO = BigNumber.from(0)
+    .mul(DEFAULT_DIGITS)
+    .div(10000) // 0.0%
+const DEFAULT_AMM_SPREAD_RATIO = BigNumber.from(10)
+    .mul(DEFAULT_DIGITS)
+    .div(10000) // 0.1%
 
 // chainlink
 export enum PriceFeedKey {
@@ -16,13 +31,13 @@ export enum PriceFeedKey {
 }
 
 // amm
-interface AmmDeployArgs {
+export interface AmmDeployArgs {
     quoteAssetReserve: BigNumber
     baseAssetReserve: BigNumber
     tradeLimitRatio: BigNumber
     fundingPeriod: BigNumber
     fluctuation: BigNumber
-    priceFeedKey: PriceFeedKey
+    priceFeedKey: string
     tollRatio: BigNumber
     spreadRatio: BigNumber
 }
@@ -32,9 +47,10 @@ interface AmmProperties {
     openInterestNotionalCap: BigNumber
 }
 
-export type AmmConfig = { deployArgs: AmmDeployArgs; properties: AmmProperties }
+export type AmmConfig = { name: AmmInstanceName; deployArgs: AmmDeployArgs; properties: AmmProperties }
 export type AmmConfigMap = Record<string, AmmConfig>
 export const BTC_USD_AMM: AmmConfig = {
+    name: AmmInstanceName.BTCUSDC,
     deployArgs: {
         // base * price
         quoteAssetReserve: BigNumber.from(10000000).mul(DEFAULT_DIGITS),
@@ -63,6 +79,7 @@ export const BTC_USD_AMM: AmmConfig = {
 }
 
 export const ETH_USD_AMM: AmmConfig = {
+    name: AmmInstanceName.ETHUSDC,
     deployArgs: {
         // base * price
         quoteAssetReserve: BigNumber.from(10000000).mul(DEFAULT_DIGITS),
@@ -89,6 +106,7 @@ export const ETH_USD_AMM: AmmConfig = {
 }
 
 export const YFI_USD_AMM: AmmConfig = {
+    name: AmmInstanceName.YFIUSDC,
     deployArgs: {
         // base * price
         quoteAssetReserve: BigNumber.from(4000000).mul(DEFAULT_DIGITS),
@@ -115,6 +133,7 @@ export const YFI_USD_AMM: AmmConfig = {
 }
 
 export const DOT_USD_AMM: AmmConfig = {
+    name: AmmInstanceName.DOTUSDC,
     deployArgs: {
         // base * price
         // exact quote reserve amount will be overriden by the script based on the base reserve and the price upon deployment
@@ -142,6 +161,7 @@ export const DOT_USD_AMM: AmmConfig = {
 }
 
 export const SNX_USD_AMM: AmmConfig = {
+    name: AmmInstanceName.SNXUSDC,
     deployArgs: {
         // base * price
         // exact quote reserve amount will be overriden by the script based on the base reserve and the price upon deployment
@@ -168,7 +188,75 @@ export const SNX_USD_AMM: AmmConfig = {
     },
 }
 
+export const SDEFI_USD_AMM: AmmConfig = {
+    name: AmmInstanceName.SDEFIUSDC,
+    deployArgs: {
+        // base * price
+        // exact quote reserve amount will be overriden by the script based on the base reserve and the price upon deployment
+        quoteAssetReserve: BigNumber.from(5_000_000).mul(DEFAULT_DIGITS),
+        baseAssetReserve: BigNumber.from(300_000).mul(DEFAULT_DIGITS),
+        tradeLimitRatio: BigNumber.from(90)
+            .mul(DEFAULT_DIGITS)
+            .div(100), // 90% trading limit ratio
+        fundingPeriod: BigNumber.from(3600), // 1 hour
+        fluctuation: BigNumber.from(12)
+            .mul(DEFAULT_DIGITS)
+            .div(1000), // 1.2%
+        priceFeedKey: PriceFeedKey.SDEFI,
+        tollRatio: BigNumber.from(0)
+            .mul(DEFAULT_DIGITS)
+            .div(10000), // 0.0%
+        spreadRatio: BigNumber.from(10)
+            .mul(DEFAULT_DIGITS)
+            .div(10000), // 0.1%
+    },
+    properties: {
+        maxHoldingBaseAsset: DEFAULT_DIGITS.mul(6_000),
+        openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
+    },
+}
+
+export function makeAmmConfig(
+    name: AmmInstanceName,
+    priceFeedKey: string,
+    baseAssetReserve: BigNumber,
+    maxHoldingBaseAsset: BigNumber,
+    openInterestNotionalCap: BigNumber,
+    restDeployArgs?: Partial<AmmDeployArgs>,
+): AmmConfig {
+    const config: AmmConfig = {
+        name,
+        deployArgs: {
+            // base * price
+            // exact quote reserve amount will be overriden by the script based on the base reserve and the price upon deployment
+            baseAssetReserve,
+            quoteAssetReserve: BigNumber.from(0),
+            tradeLimitRatio: DEFAULT_AMM_TRADE_LIMIT_RATIO,
+            fundingPeriod: DEFAULT_AMM_FUNDING_PERIOD,
+            fluctuation: DEFAULT_AMM_FLUCTUATION,
+            priceFeedKey: priceFeedKey,
+            tollRatio: DEFAULT_AMM_TOLL_RATIO,
+            spreadRatio: DEFAULT_AMM_SPREAD_RATIO, // 0.1%
+        },
+        properties: {
+            maxHoldingBaseAsset,
+            openInterestNotionalCap,
+        },
+    }
+
+    if (restDeployArgs) {
+        config.deployArgs = {
+            ...config.deployArgs,
+            ...restDeployArgs,
+        }
+    }
+
+    return config
+}
+
 export class DeployConfig {
+    // stage
+    readonly stage: Stage
     // deploy
     readonly confirmations: number
 
@@ -187,15 +275,24 @@ export class DeployConfig {
         .div(10000) // 1.25%
 
     // amm
-    readonly ammConfigMap: Record<string, AmmConfig> = {
+    readonly legacyAmmConfigMap: Record<string, AmmConfig> = {
         [AmmInstanceName.BTCUSDC]: BTC_USD_AMM,
         [AmmInstanceName.ETHUSDC]: ETH_USD_AMM,
         [AmmInstanceName.YFIUSDC]: YFI_USD_AMM,
         [AmmInstanceName.DOTUSDC]: DOT_USD_AMM,
         [AmmInstanceName.SNXUSDC]: SNX_USD_AMM,
+        [AmmInstanceName.SDEFIUSDC]: SDEFI_USD_AMM,
     }
 
+    // KeeperReward
+    readonly keeperRewardOnL1 = BigNumber.from(1).mul(DEFAULT_DIGITS) // 1 perp token
+    readonly keeperRewardOnL2 = BigNumber.from(1).mul(DEFAULT_DIGITS) // 1 perp token
+
+    // PerpRewardVesting = default is 24 weeks
+    readonly defaultPerpRewardVestingPeriod = WEEK.mul(24)
+
     constructor(stage: Stage) {
+        this.stage = stage
         switch (stage) {
             case "production":
                 this.confirmations = 5
@@ -225,6 +322,7 @@ export class DeployConfig {
                     [PriceFeedKey.ETH]: "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
                     [PriceFeedKey.YFI]: "0xA027702dbb89fbd58938e4324ac03B58d812b0E1",
                     [PriceFeedKey.DOT]: "0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734",
+                    [PriceFeedKey.SDEFI]: "0x0630521aC362bc7A19a4eE44b57cE72Ea34AD01c",
                 }
                 break
             default:

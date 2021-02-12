@@ -2,6 +2,7 @@
 import bre, { ethers } from "@nomiclabs/buidler"
 import { TASK_COMPILE } from "@nomiclabs/buidler/builtin-tasks/task-names"
 import { BigNumber } from "ethers"
+import PerpRewardVestingArtifact from "../build/contracts/PerpRewardVesting.json"
 import { SRC_DIR } from "../constants"
 import { ExternalContracts, Layer } from "../scripts/common"
 import { flatten } from "../scripts/flatten"
@@ -15,16 +16,16 @@ import {
     InsuranceFund,
     L2PriceFeed,
     MetaTxGateway,
+    PerpRewardVesting,
     RootBridge,
 } from "../types/ethers"
 import { ContractWrapperFactory } from "./contract/ContractWrapperFactory"
-import { DeployConfig, PriceFeedKey } from "./contract/DeployConfig"
-import { AmmInstanceName, ContractName } from "./ContractName"
+import { DEFAULT_DIGITS, DeployConfig, makeAmmConfig, PriceFeedKey } from "./contract/DeployConfig"
+import { DeployTask, getImplementation, makeAmmDeployBatch } from "./contract/DeployUtil"
+import { AmmInstanceName, ContractInstanceName, ContractName } from "./ContractName"
 import { OzContractDeployer } from "./OzContractDeployer"
 import { SettingsDao } from "./SettingsDao"
 import { SystemMetadataDao } from "./SystemMetadataDao"
-
-export type DeployTask = () => Promise<void>
 
 /* eslint-disable no-console */
 export class ContractPublisher {
@@ -32,7 +33,20 @@ export class ContractPublisher {
     readonly factory: ContractWrapperFactory
     readonly deployConfig: DeployConfig
     protected taskBatchesMap: Record<Layer, DeployTask[][]> = {
-        layer1: [
+        layer1: [],
+        layer2: [],
+    }
+
+    constructor(
+        readonly layerType: Layer,
+        readonly settingsDao: SettingsDao,
+        readonly systemMetadataDao: SystemMetadataDao,
+    ) {
+        this.externalContract = settingsDao.getExternalContracts(layerType)
+        this.deployConfig = new DeployConfig(settingsDao.stage)
+        this.factory = new ContractWrapperFactory(layerType, systemMetadataDao, this.deployConfig.confirmations)
+
+        this.taskBatchesMap.layer1 = [
             // batch 0
             [
                 async (): Promise<void> => {
@@ -114,8 +128,77 @@ export class ContractPublisher {
                     console.log(`${this.layerType} contract deployment finished.`)
                 },
             ],
-        ],
-        layer2: [
+            // batch 2
+            // deploy PerpRewardVesting - 0 vesting & 12 weeks vesting
+            [
+                async (): Promise<void> => {
+                    console.log("deploy PerpRewardVesting with 0 vesting...")
+                    const perpAddr = this.settingsDao.getExternalContracts(this.layerType).perp!
+                    await this.factory
+                        .create<PerpRewardVesting>(
+                            ContractName.PerpRewardVesting,
+                            ContractInstanceName.PerpRewardNoVesting,
+                        )
+                        .deployUpgradableContract(perpAddr, 0)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.rewardGovernance!
+                    console.log(
+                        `transferring PerpRewardNoVesting's owner to governance=${gov}...please remember to claim the ownership`,
+                    )
+                    const reward = await this.factory
+                        .create<PerpRewardVesting>(
+                            ContractName.PerpRewardVesting,
+                            ContractInstanceName.PerpRewardNoVesting,
+                        )
+                        .instance()
+                    await (await reward.setOwner(gov)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log("deploy PerpRewardVesting with 24w vesting...")
+                    const perpAddr = this.settingsDao.getExternalContracts(this.layerType).perp!
+                    await this.factory
+                        .create<PerpRewardVesting>(
+                            ContractName.PerpRewardVesting,
+                            ContractInstanceName.PerpRewardTwentySixWeeksVesting,
+                        )
+                        .deployUpgradableContract(perpAddr, this.deployConfig.defaultPerpRewardVestingPeriod)
+                },
+                async (): Promise<void> => {
+                    const gov = this.externalContract.rewardGovernance!
+                    console.log(
+                        `transferring PerpRewardTwentySixWeeksVesting's owner to governance=${gov}...please remember to claim the ownership`,
+                    )
+                    const reward = await this.factory
+                        .create<PerpRewardVesting>(
+                            ContractName.PerpRewardVesting,
+                            ContractInstanceName.PerpRewardTwentySixWeeksVesting,
+                        )
+                        .instance()
+                    await (await reward.setOwner(gov)).wait(this.confirmations)
+                },
+                async (): Promise<void> => {
+                    console.log(
+                        "call PerpRewardTwentySixWeeksVesting.initialize() on implementation to avoid security issue",
+                    )
+                    const reward = await this.factory
+                        .create<PerpRewardVesting>(
+                            ContractName.PerpRewardVesting,
+                            ContractInstanceName.PerpRewardTwentySixWeeksVesting,
+                        )
+                        .instance()
+                    const perpAddr = this.settingsDao.getExternalContracts(this.layerType).perp!
+                    const proxyAdminAddr = this.settingsDao.getExternalContracts(this.layerType).proxyAdmin!
+                    const impAddr = await getImplementation(proxyAdminAddr, reward.address)
+                    console.log("implementation: ", impAddr)
+                    const imp = await ethers.getContractAt(PerpRewardVestingArtifact.abi, impAddr)
+                    const tx = await imp.initialize(perpAddr, this.deployConfig.defaultPerpRewardVestingPeriod)
+                    await tx.wait(this.confirmations)
+                },
+            ],
+        ]
+
+        this.taskBatchesMap.layer2 = [
             // batch 0
             [
                 async (): Promise<void> => {
@@ -194,11 +277,12 @@ export class ContractPublisher {
                 },
                 async (): Promise<void> => {
                     console.log("deploy ETHUSDC amm...")
+                    const ammName = AmmInstanceName.ETHUSDC
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.ETHUSDC)
+                    const ammContract = this.factory.createAmm(ammName)
                     const quoteTokenAddr = this.externalContract.usdc!
                     await ammContract.deployUpgradableContract(
-                        this.deployConfig.ammConfigMap,
+                        this.deployConfig.legacyAmmConfigMap[ammName].deployArgs,
                         l2PriceFeedContract.address!,
                         quoteTokenAddr,
                     )
@@ -206,10 +290,11 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("deploy BTCUSDC amm...")
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.BTCUSDC)
+                    const ammName = AmmInstanceName.BTCUSDC
+                    const ammContract = this.factory.createAmm(ammName)
                     const quoteTokenAddr = this.externalContract.usdc!
                     await ammContract.deployUpgradableContract(
-                        this.deployConfig.ammConfigMap,
+                        this.deployConfig.legacyAmmConfigMap[ammName].deployArgs,
                         l2PriceFeedContract.address!,
                         quoteTokenAddr,
                     )
@@ -251,7 +336,7 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("set ETH amm Cap...")
                     const amm = await this.factory.createAmm(AmmInstanceName.ETHUSDC).instance()
-                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.legacyAmmConfigMap[
                         AmmInstanceName.ETHUSDC
                     ].properties
                     if (maxHoldingBaseAsset.gt(0)) {
@@ -279,7 +364,7 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("set BTC amm Cap...")
                     const amm = await this.factory.createAmm(AmmInstanceName.BTCUSDC).instance()
-                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.legacyAmmConfigMap[
                         AmmInstanceName.BTCUSDC
                     ].properties
                     if (maxHoldingBaseAsset.gt(0)) {
@@ -406,7 +491,7 @@ export class ContractPublisher {
                     await bre.run(TASK_COMPILE)
 
                     // deploy clearing house implementation
-                    const contract = await this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+                    const contract = this.factory.create<ClearingHouse>(ContractName.ClearingHouse)
                     await contract.prepareUpgradeContract()
                 },
             ],
@@ -438,10 +523,11 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("deploy YFIUSDC amm...")
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.YFIUSDC)
+                    const ammName = AmmInstanceName.YFIUSDC
+                    const ammContract = this.factory.createAmm(ammName)
                     const quoteTokenAddr = this.externalContract.usdc!
                     await ammContract.deployUpgradableContract(
-                        this.deployConfig.ammConfigMap,
+                        this.deployConfig.legacyAmmConfigMap[ammName].deployArgs,
                         l2PriceFeedContract.address!,
                         quoteTokenAddr,
                     )
@@ -449,7 +535,7 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("set YFI amm Cap...")
                     const amm = await this.factory.createAmm(AmmInstanceName.YFIUSDC).instance()
-                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.legacyAmmConfigMap[
                         AmmInstanceName.YFIUSDC
                     ].properties
                     if (maxHoldingBaseAsset.gt(0)) {
@@ -505,10 +591,11 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("deploy DOTUSDC amm...")
                     const l2PriceFeedContract = this.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
-                    const ammContract = this.factory.createAmm(AmmInstanceName.DOTUSDC)
+                    const ammName = AmmInstanceName.DOTUSDC
+                    const ammContract = this.factory.createAmm(ammName)
                     const quoteTokenAddr = this.externalContract.usdc!
                     await ammContract.deployUpgradableContract(
-                        this.deployConfig.ammConfigMap,
+                        this.deployConfig.legacyAmmConfigMap[ammName].deployArgs,
                         l2PriceFeedContract.address!,
                         quoteTokenAddr,
                     )
@@ -516,7 +603,7 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("set DOT amm Cap...")
                     const amm = await this.factory.createAmm(AmmInstanceName.DOTUSDC).instance()
-                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.legacyAmmConfigMap[
                         AmmInstanceName.DOTUSDC
                     ].properties
                     if (maxHoldingBaseAsset.gt(0)) {
@@ -624,7 +711,7 @@ export class ContractPublisher {
                     const ammContract = this.factory.createAmm(AmmInstanceName.SNXUSDC)
                     const quoteTokenAddr = this.externalContract.usdc!
                     await ammContract.deployUpgradableContract(
-                        this.deployConfig.ammConfigMap,
+                        this.deployConfig.legacyAmmConfigMap[AmmInstanceName.SDEFIUSDC].deployArgs,
                         l2PriceFeedContract.address!,
                         quoteTokenAddr,
                     )
@@ -632,7 +719,7 @@ export class ContractPublisher {
                 async (): Promise<void> => {
                     console.log("set SNX amm Cap...")
                     const amm = await this.factory.createAmm(AmmInstanceName.SNXUSDC).instance()
-                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.ammConfigMap[
+                    const { maxHoldingBaseAsset, openInterestNotionalCap } = this.deployConfig.legacyAmmConfigMap[
                         AmmInstanceName.SNXUSDC
                     ].properties
                     if (maxHoldingBaseAsset.gt(0)) {
@@ -664,17 +751,55 @@ export class ContractPublisher {
                     await (await SNXUSDC.setOwner(gov)).wait(this.confirmations)
                 },
             ],
-        ],
-    }
+        ]
 
-    constructor(
-        readonly layerType: Layer,
-        readonly settingsDao: SettingsDao,
-        readonly systemMetadataDao: SystemMetadataDao,
-    ) {
-        this.externalContract = settingsDao.getExternalContracts(layerType)
-        this.deployConfig = new DeployConfig(settingsDao.stage)
-        this.factory = new ContractWrapperFactory(layerType, systemMetadataDao, this.deployConfig.confirmations)
+        if (this.deployConfig.stage === "production") {
+            const linkAmmConfig = makeAmmConfig(
+                AmmInstanceName.LINKUSDC,
+                "LINK",
+                BigNumber.from(300_000).mul(DEFAULT_DIGITS),
+                DEFAULT_DIGITS.mul(5000),
+                BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
+            )
+            const batch = makeAmmDeployBatch(
+                linkAmmConfig,
+                this.factory,
+                this.externalContract,
+                this.deployConfig.confirmations,
+            )
+            this.taskBatchesMap.layer2.push(batch)
+        } else {
+            const trxAmmConfig = makeAmmConfig(
+                AmmInstanceName.TRXUSDC,
+                "TRX",
+                BigNumber.from(300_000).mul(DEFAULT_DIGITS),
+                DEFAULT_DIGITS.mul(5000),
+                BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
+            )
+            const batch = makeAmmDeployBatch(
+                trxAmmConfig,
+                this.factory,
+                this.externalContract,
+                this.deployConfig.confirmations,
+            )
+            this.taskBatchesMap.layer2.push(batch)
+        }
+
+        // Example for creating new amm
+        // const linkAmmConfig = makeAmmConfig(
+        //     "LINKUSDC",
+        //     "LINK",
+        //     BigNumber.from(200).mul(DEFAULT_DIGITS),
+        //     DEFAULT_DIGITS.mul(5).div(10),
+        //     BigNumber.from(DEFAULT_DIGITS).mul(1000000),
+        // )
+        // const batch = makeAmmDeployBatch(
+        //     linkAmmConfig,
+        //     this.factory,
+        //     this.externalContract,
+        //     this.deployConfig.confirmations,
+        // )
+        // this.taskBatchesMap.layer2.push(batch)
     }
 
     get confirmations(): number {
@@ -696,7 +821,7 @@ export class ContractPublisher {
 
         const batchStartVer = taskBatches.slice(0, batch).flat().length
         const batchEndVer = batchStartVer + tasks.length
-        console.log(`batchStartVer: ${batchStartVer}, batchEndVer: ${batchEndVer}`)
+        console.log(`layer:${this.layerType}, batchStartVer: ${batchStartVer}, batchEndVer: ${batchEndVer}`)
 
         const ver = this.settingsDao.getVersion(this.layerType)
         if (ver < batchStartVer) {

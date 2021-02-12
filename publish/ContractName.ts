@@ -6,6 +6,7 @@ export enum AmmInstanceName {
     SNXUSDC = "SNXUSDC",
     LINKUSDC = "LINKUSDC",
     SDEFIUSDC = "SDEFIUSDC",
+    TRXUSDC = "TRXUSDC",
 }
 
 export enum ContractName {
@@ -20,6 +21,17 @@ export enum ContractName {
     AmmReader = "AmmReader",
     ClientBridge = "ClientBridge",
     RootBridge = "RootBridge",
+    KeeperRewardL1 = "KeeperRewardL1",
+    KeeperRewardL2 = "KeeperRewardL2",
+    PerpRewardVesting = "PerpRewardVesting",
+    StakedPerpToken = "StakedPerpToken",
+    TollPool = "TollPool",
+    FeeTokenPoolDispatcherL1 = "FeeTokenPoolDispatcherL1",
 }
 
-export type ContractInstanceName = ContractName | AmmInstanceName
+export enum ContractInstanceName {
+    PerpRewardNoVesting = "PerpRewardNoVesting",
+    PerpRewardTwentySixWeeksVesting = "PerpRewardTwentySixWeeksVesting",
+}
+
+export type ContractId = ContractName | AmmInstanceName | ContractInstanceName

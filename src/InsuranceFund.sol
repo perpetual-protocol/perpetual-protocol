@@ -202,11 +202,8 @@ contract InsuranceFund is IInsuranceFund, PerpFiOwnableUpgrade, BlockContext, Re
         Decimal.decimal memory valueOfMaxValueToken = balanceOf(denominatedToken);
         for (uint256 i = 1; i < numOfQuoteTokens; i++) {
             IERC20 quoteToken = quoteTokens[i];
-            Decimal.decimal memory quoteTokenValue = exchange.getInputPrice(
-                quoteToken,
-                denominatedToken,
-                balanceOf(quoteToken)
-            );
+            Decimal.decimal memory quoteTokenValue =
+                exchange.getInputPrice(quoteToken, denominatedToken, balanceOf(quoteToken));
             if (quoteTokenValue.cmp(valueOfMaxValueToken) > 0) {
                 maxValueToken = quoteToken;
                 valueOfMaxValueToken = quoteTokenValue;
@@ -248,11 +245,8 @@ contract InsuranceFund is IInsuranceFund, PerpFiOwnableUpgrade, BlockContext, Re
         for (uint256 i = 0; i < orderedTokens.length; i++) {
             // get how many amount of quote token i is still required
             Decimal.decimal memory swappedQuoteToken;
-            Decimal.decimal memory otherQuoteRequiredAmount = exchange.getOutputPrice(
-                orderedTokens[i],
-                _quoteToken,
-                _requiredQuoteAmount
-            );
+            Decimal.decimal memory otherQuoteRequiredAmount =
+                exchange.getOutputPrice(orderedTokens[i], _quoteToken, _requiredQuoteAmount);
 
             // if balance of token i can afford the left debt, swap and return
             if (otherQuoteRequiredAmount.toUint() <= balanceOf(orderedTokens[i]).toUint()) {
@@ -267,11 +261,8 @@ contract InsuranceFund is IInsuranceFund, PerpFiOwnableUpgrade, BlockContext, Re
 
         // if all the quote tokens can't afford the debt, ask staking token to mint
         if (_requiredQuoteAmount.toUint() > 0) {
-            Decimal.decimal memory requiredPerpAmount = exchange.getOutputPrice(
-                perpToken,
-                _quoteToken,
-                _requiredQuoteAmount
-            );
+            Decimal.decimal memory requiredPerpAmount =
+                exchange.getOutputPrice(perpToken, _quoteToken, _requiredQuoteAmount);
             minter.mintForLoss(requiredPerpAmount);
             swapInput(perpToken, _quoteToken, requiredPerpAmount, Decimal.zero());
         }
@@ -297,18 +288,12 @@ contract InsuranceFund is IInsuranceFund, PerpFiOwnableUpgrade, BlockContext, Re
         // insertion sort
         for (uint256 i = 0; i < getQuoteTokenLength(); i++) {
             IERC20 currentToken = quoteTokens[i];
-            Decimal.decimal memory currentPerpValue = exchange.getInputPrice(
-                currentToken,
-                perpToken,
-                balanceOf(currentToken)
-            );
+            Decimal.decimal memory currentPerpValue =
+                exchange.getInputPrice(currentToken, perpToken, balanceOf(currentToken));
 
             for (uint256 j = i; j > 0; j--) {
-                Decimal.decimal memory subsetPerpValue = exchange.getInputPrice(
-                    tokens[j - 1],
-                    perpToken,
-                    balanceOf(tokens[j - 1])
-                );
+                Decimal.decimal memory subsetPerpValue =
+                    exchange.getInputPrice(tokens[j - 1], perpToken, balanceOf(tokens[j - 1]));
                 if (currentPerpValue.toUint() > subsetPerpValue.toUint()) {
                     tokens[j] = tokens[j - 1];
                     tokens[j - 1] = currentToken;

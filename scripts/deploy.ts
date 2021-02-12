@@ -19,6 +19,8 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
     // we have to break deployment up into multiple batches because:
     // (1) layer1 and layer2 contracts have circular dependencies
     // (2) buidler only works with one network at a time
+
+    // V1
     await asyncExec(`buidler --network ${layer1Network} ${TASK_DEPLOY_LAYER} ${stage} layer1 0`, options)
     await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 0`, options)
     await asyncExec(`buidler --network ${layer1Network} ${TASK_DEPLOY_LAYER} ${stage} layer1 1`, options)
@@ -55,6 +57,14 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
 
     // #6 deploy the market (production=SNX, staging=sDEFI)
     await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 8`, options)
+
+    // #7 deploy PERP RewardVesting in layer 1
+    await asyncExec(`buidler --network ${layer1Network} ${TASK_DEPLOY_LAYER} ${stage} layer1 2`, options)
+
+    await asyncExec(
+        `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 9`,
+        options,
+    )
 }
 
 /* eslint-disable no-console */

@@ -9,12 +9,21 @@
         "ChainlinkL1": {
           "name": "ChainlinkL1",
           "address": "0x05b1d5B3ad20769B3b71b658A1Df2290CD5A2376"
+        },
+        "PerpRewardNoVesting": {
+          "name": "PerpRewardVesting",
+          "address": "0xc523D13685a0EAdEd0d673a3755EB9888C2eB9a1"
+        },
+        "PerpRewardTwentySixWeeksVesting": {
+          "name": "PerpRewardVesting",
+          "address": "0xf4EC90Db4713d199a756c18069CD4BB4bf4b3E26"
         }
       },
       "accounts": [],
       "network": "homestead",
       "externalContracts": {
         "foundationGovernance": "0x5E4B407eB1253527628bAb875525AaeC0099fFC5",
+        "rewardGovernance": "0x9FE5f5bbbD3f2172Fa370068D26185f3d82ed9aC",
         "perp": "0xbc396689893d065f41bc2c6ecbee5e0085233447",
         "usdc": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
         "tether": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
@@ -72,6 +81,10 @@
         "SNXUSDC": {
           "name": "Amm",
           "address": "0xb397389B61cbF3920d297b4ea1847996eb2ac8E8"
+        },
+        "LINKUSDC": {
+          "name": "Amm",
+          "address": "0x80DaF8ABD5a6Ba182033B6464e3E39A0155DCC10"
         }
       },
       "accounts": [],

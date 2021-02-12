@@ -4,7 +4,7 @@
 import { ethers } from "@nomiclabs/buidler"
 import { Contract } from "ethers"
 import { Layer } from "../../scripts/common"
-import { ContractInstanceName, ContractName } from "../ContractName"
+import { ContractId } from "../ContractName"
 import { OzContractDeployer } from "../OzContractDeployer"
 import { SystemMetadataDao } from "../SystemMetadataDao"
 
@@ -14,8 +14,8 @@ export class ContractWrapper<T extends Contract> {
     constructor(
         protected readonly layerType: Layer,
         protected readonly systemMetadataDao: SystemMetadataDao,
-        protected readonly contractFileName: ContractName,
-        protected contractInstanceName: ContractInstanceName,
+        protected readonly contractFileName: ContractId,
+        protected contractId: ContractId,
         readonly confirmations: number = 1,
     ) {
         this.ozContractDeployer = new OzContractDeployer(confirmations)
@@ -50,9 +50,9 @@ export class ContractWrapper<T extends Contract> {
     }
 
     get address(): string | undefined {
-        const metadata = this.systemMetadataDao.getContractMetadata(this.layerType, this.contractInstanceName)
+        const metadata = this.systemMetadataDao.getContractMetadata(this.layerType, this.contractId)
         if (!metadata || !metadata.address) {
-            console.error(`metadata not found, contractInstanceName=${this.contractInstanceName}`)
+            console.error(`metadata not found, contractId=${this.contractId}`)
             return
         }
 
@@ -65,7 +65,7 @@ export class ContractWrapper<T extends Contract> {
     }
 
     private updateMetadata(address: string): void {
-        this.systemMetadataDao.setContract(this.layerType, this.contractInstanceName, {
+        this.systemMetadataDao.setContract(this.layerType, this.contractId, {
             name: this.contractFileName,
             address: address,
         })

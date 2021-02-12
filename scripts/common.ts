@@ -12,7 +12,7 @@ export const ozNetworkFile: Record<Network, string> = {
     ropsten: "ropsten",
     localhost: "unknown-31337",
     xdai: "unknown-100",
-    sokol: "unknown-100",
+    sokol: "unknown-77",
 }
 
 // TODO deprecated
@@ -50,6 +50,7 @@ export interface SystemMetadata {
 export interface ExternalContracts {
     // default is gnosis multisig safe which plays the governance role
     foundationGovernance?: string
+    rewardGovernance?: string
     arbitrageur?: string
     testnetFaucet?: string
 
@@ -84,3 +85,4 @@ export interface SystemDeploySettings {
 }
 
 export const TASK_DEPLOY_LAYER = "deploy:layer"
+export const TASK_CHECK_CHAINLINK = "check:chainlink"
