@@ -149,7 +149,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     }
 
     function addStakeModule(IStakeModule _stakeModule) external onlyOwner {
-        require(stakeModules.length <= TOKEN_AMOUNT_LIMIT, "exceed stakeModule amount limit");
+        require(stakeModules.length < TOKEN_AMOUNT_LIMIT, "exceed stakeModule amount limit");
         require(stakeModules.add(address(_stakeModule)), "invalid input");
 
         emit StakeModuleAdded(address(_stakeModule));
