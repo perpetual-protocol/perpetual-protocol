@@ -5,7 +5,7 @@ import AmmArtifact from "../build/contracts/Amm.json"
 import ClearingHouseArtifact from "../build/contracts/ClearingHouse.json"
 import ERC20Artifact from "../build/contracts/ERC20.json"
 import InsuranceFundArtifact from "../build/contracts/InsuranceFund.json"
-import { Amm, ClearingHouse, ERC20Token, InsuranceFund } from "../types/ethers"
+import { Amm, ClearingHouse, ERC20, InsuranceFund } from "../types/ethers"
 
 const USDC_DECIMALS = 6
 const provider = new ethers.providers.JsonRpcProvider(
@@ -21,7 +21,7 @@ async function healthCheck(): Promise<void> {
     const json = await results.json()
     const layer2 = json["layers"]["layer2"]
 
-    const usdc = instance(layer2["externalContracts"]["usdc"], ERC20Artifact.abi) as ERC20Token
+    const usdc = instance(layer2["externalContracts"]["usdc"], ERC20Artifact.abi) as ERC20
     const arbitrageur = layer2["externalContracts"]["arbitrageur"]
 
     const ammETH = instance(layer2["contracts"]["ETHUSDC"]["address"], AmmArtifact.abi) as Amm
@@ -29,6 +29,7 @@ async function healthCheck(): Promise<void> {
     const ammYFI = instance(layer2["contracts"]["YFIUSDC"]["address"], AmmArtifact.abi) as Amm
     const ammDOT = instance(layer2["contracts"]["DOTUSDC"]["address"], AmmArtifact.abi) as Amm
     const ammSNX = instance(layer2["contracts"]["SNXUSDC"]["address"], AmmArtifact.abi) as Amm
+    const ammLINK = instance(layer2["contracts"]["LINKUSDC"]["address"], AmmArtifact.abi) as Amm
     const insuranceFund = instance(
         layer2["contracts"]["InsuranceFund"]["address"],
         InsuranceFundArtifact.abi,
@@ -47,11 +48,13 @@ async function healthCheck(): Promise<void> {
     const yfiCap = await ammYFI.getOpenInterestNotionalCap()
     const dotCap = await ammDOT.getOpenInterestNotionalCap()
     const snxCap = await ammSNX.getOpenInterestNotionalCap()
+    const linkCap = await ammLINK.getOpenInterestNotionalCap()
     console.log(`ethCap=$${utils.formatEther(ethCap.toString())}`)
     console.log(`btcCap=$${utils.formatEther(btcCap.toString())}`)
     console.log(`yfiCap=$${utils.formatEther(yfiCap.toString())}`)
     console.log(`dotCap=$${utils.formatEther(dotCap.toString())}`)
     console.log(`snxCap=$${utils.formatEther(snxCap.toString())}`)
+    console.log(`linkCap=$${utils.formatEther(linkCap.toString())}`)
 
     const ethPersonalCap = await ammETH.getMaxHoldingBaseAsset()
     const btcPersonalCap = await ammBTC.getMaxHoldingBaseAsset()
@@ -63,6 +66,7 @@ async function healthCheck(): Promise<void> {
     console.log(`yfiPersonalCap=${utils.formatEther(yfiPersonalCap.toString())}`)
     console.log(`dotPersonalCap=${utils.formatEther(dotPersonalCap.toString())}`)
     console.log(`snxPersonalCap=${utils.formatEther(snxPersonalCap.toString())}`)
+    console.log(`linkPersonalCap=${utils.formatEther(snxPersonalCap.toString())}`)
 
     const ETHOpenInterest = await clearingHouse.openInterestNotionalMap(ammETH.address)
     console.log("open interest of ETH", utils.formatEther(ETHOpenInterest.toString()))
@@ -74,6 +78,8 @@ async function healthCheck(): Promise<void> {
     console.log("open interest of DOT", utils.formatEther(DOTOpenInterest.toString()))
     const SNXOpenInterest = await clearingHouse.openInterestNotionalMap(ammSNX.address)
     console.log("open interest of SNX", utils.formatEther(SNXOpenInterest.toString()))
+    const LINKOpenInterest = await clearingHouse.openInterestNotionalMap(ammLINK.address)
+    console.log("open interest of LINK", utils.formatEther(LINKOpenInterest.toString()))
 
     const ETHReserves = await ammETH.getReserve()
     console.log(
@@ -104,6 +110,12 @@ async function healthCheck(): Promise<void> {
         `SNX Amm quote reserve=${utils.formatEther(
             SNXReserves[0].toString(),
         )}, SNX Amm base reserve=${utils.formatEther(SNXReserves[1].toString())}`,
+    )
+    const LINKReserve = await ammLINK.getReserve()
+    console.log(
+        `LINK Amm quote reserve=${utils.formatEther(
+            SNXReserves[0].toString(),
+        )}, LINK Amm base reserve=${utils.formatEther(SNXReserves[1].toString())}`,
     )
 
     console.log("========= balance ============")
