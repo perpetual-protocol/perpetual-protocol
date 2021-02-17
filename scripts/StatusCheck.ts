@@ -10,9 +10,7 @@ import { Amm, ClearingHouse, ERC20, InsuranceFund } from "../types/ethers"
 // TODO move to another standalone repo with SystemTest
 
 const USDC_DECIMALS = 6
-const provider = new ethers.providers.JsonRpcProvider(
-    "https://little-frosty-field.xdai.quiknode.pro/25b211172476a7b94f4d1083a740c4c2fc325b0e/",
-)
+const provider = new ethers.providers.JsonRpcProvider("https://rpc.xdaichain.com/")
 
 // string | Array<Fragment | JsonFragment | string> | Interface;
 function instance(address: string, abi: Array<string | Fragment | JsonFragment>): Contract {
