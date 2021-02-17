@@ -53,7 +53,9 @@ async function InitializationCheck(): Promise<void> {
     const layer1Contracts = jsonLayer1["contracts"]
     const layer2Contracts = jsonLayer2["contracts"]
 
+    console.log("===== Ethereum =====")
     await check(layer1Contracts, layer1ProxyAdmin, l1Provider)
+    console.log("===== xDai =====")
     await check(layer2Contracts, layer2ProxyAdmin, xdaiProvider)
 }
 
