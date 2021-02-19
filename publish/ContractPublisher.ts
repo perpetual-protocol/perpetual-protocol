@@ -791,7 +791,7 @@ export class ContractPublisher {
             const aaveAmmConfig = makeAmmConfig(
                 AmmInstanceName.AAVEUSDC,
                 "AAVE",
-                BigNumber.from(12_000).mul(DEFAULT_DIGITS),
+                BigNumber.from(20_000).mul(DEFAULT_DIGITS),
                 DEFAULT_DIGITS.mul(250),
                 BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
             )
