@@ -7,6 +7,8 @@ export enum AmmInstanceName {
     LINKUSDC = "LINKUSDC",
     SDEFIUSDC = "SDEFIUSDC",
     TRXUSDC = "TRXUSDC",
+    SCEXUSDC = "SCEXUSDC",
+    AAVEUSDC = "AAVEUSDC",
 }
 
 export enum ContractName {

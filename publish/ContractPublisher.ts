@@ -753,6 +753,7 @@ export class ContractPublisher {
             ],
         ]
 
+        // layer 2, batch 9
         if (this.deployConfig.stage === "production") {
             const linkAmmConfig = makeAmmConfig(
                 AmmInstanceName.LINKUSDC,
@@ -781,6 +782,41 @@ export class ContractPublisher {
                 this.factory,
                 this.externalContract,
                 this.deployConfig.confirmations,
+            )
+            this.taskBatchesMap.layer2.push(batch)
+        }
+
+        // layer 2, batch 10
+        if (this.deployConfig.stage === "production") {
+            const aaveAmmConfig = makeAmmConfig(
+                AmmInstanceName.AAVEUSDC,
+                "AAVE",
+                BigNumber.from(12_000).mul(DEFAULT_DIGITS),
+                DEFAULT_DIGITS.mul(250),
+                BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
+            )
+            const batch = makeAmmDeployBatch(
+                aaveAmmConfig,
+                this.factory,
+                this.externalContract,
+                this.deployConfig.confirmations,
+                true,
+            )
+            this.taskBatchesMap.layer2.push(batch)
+        } else {
+            const sCexAmmConfig = makeAmmConfig(
+                AmmInstanceName.SCEXUSDC,
+                "sCEX",
+                BigNumber.from(12_000).mul(DEFAULT_DIGITS),
+                DEFAULT_DIGITS.mul(250),
+                BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
+            )
+            const batch = makeAmmDeployBatch(
+                sCexAmmConfig,
+                this.factory,
+                this.externalContract,
+                this.deployConfig.confirmations,
+                true,
             )
             this.taskBatchesMap.layer2.push(batch)
         }
