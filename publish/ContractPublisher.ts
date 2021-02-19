@@ -820,22 +820,6 @@ export class ContractPublisher {
             )
             this.taskBatchesMap.layer2.push(batch)
         }
-
-        // Example for creating new amm
-        // const linkAmmConfig = makeAmmConfig(
-        //     "LINKUSDC",
-        //     "LINK",
-        //     BigNumber.from(200).mul(DEFAULT_DIGITS),
-        //     DEFAULT_DIGITS.mul(5).div(10),
-        //     BigNumber.from(DEFAULT_DIGITS).mul(1000000),
-        // )
-        // const batch = makeAmmDeployBatch(
-        //     linkAmmConfig,
-        //     this.factory,
-        //     this.externalContract,
-        //     this.deployConfig.confirmations,
-        // )
-        // this.taskBatchesMap.layer2.push(batch)
     }
 
     get confirmations(): number {

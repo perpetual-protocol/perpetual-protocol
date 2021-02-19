@@ -85,6 +85,10 @@
         "TRXUSDC": {
           "name": "Amm",
           "address": "0x3a2E1e21BcA6d00FbD9BD6eDeD7D7635AD17fb3c"
+        },
+        "SCEXUSDC": {
+          "name": "Amm",
+          "address": "0xEFB91c661a77aa40A4a9FF581C0c074Ac1c18aaD"
         }
       },
       "accounts": [],
