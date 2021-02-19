@@ -61,8 +61,15 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
     // #7 deploy PERP RewardVesting in layer 1
     await asyncExec(`buidler --network ${layer1Network} ${TASK_DEPLOY_LAYER} ${stage} layer1 2`, options)
 
+    // deploy the market (production=LINK, staging=TRX)
     await asyncExec(
         `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 9`,
+        options,
+    )
+
+    // deploy the market (production=AAVE, staging=sCEX)
+    await asyncExec(
+        `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 10`,
         options,
     )
 }

@@ -33,6 +33,7 @@
     "cSpell.enabled": true,
     "cSpell.enableFiletypes": ["solidity", "javascript", "typescript"],
     "cSpell.words": [
+        "AAVEUSDC",
         "AMM's",
         "AMMs",
         "Biconomy",
@@ -55,6 +56,7 @@
         "Numberify",
         "Parens",
         "Pausable",
+        "SCEXUSDC",
         "SPDX",
         "Snapshotted",
         "Staker's",

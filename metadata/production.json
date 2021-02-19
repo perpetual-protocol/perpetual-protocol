@@ -85,6 +85,10 @@
         "LINKUSDC": {
           "name": "Amm",
           "address": "0x80DaF8ABD5a6Ba182033B6464e3E39A0155DCC10"
+        },
+        "AAVEUSDC": {
+          "name": "Amm",
+          "address": "0x16A7ECF2c27Cb367Df36d39e389e66B42000E0dF"
         }
       },
       "accounts": [],
