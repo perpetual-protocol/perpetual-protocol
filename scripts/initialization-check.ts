@@ -43,7 +43,7 @@ async function check(contracts: any, proxyAdminAddr: string, provider: ethers.pr
     }
 }
 
-async function InitializationCheck(): Promise<void> {
+async function initializationCheck(): Promise<void> {
     const results = await fetch(`https://metadata.perp.exchange/production.json`)
     const json = await results.json()
     const jsonLayer1 = json["layers"]["layer1"]
@@ -60,7 +60,7 @@ async function InitializationCheck(): Promise<void> {
 }
 
 if (require.main === module) {
-    InitializationCheck()
+    initializationCheck()
         .then(() => process.exit(0))
         .catch(error => {
             console.error(error)
