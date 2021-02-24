@@ -1,0 +1,30 @@
+name: Hotfix PR back to develop
+
+on:
+  pull_request:
+    types: ['opened']
+    branches:
+      - master
+      - release/*
+
+jobs:
+  build:
+    name: Hotfix PR back to develop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: checkout to branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr checkout ${{ github.event.number }}
+
+      - name: create PR to develop
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          gh pr create -B develop
+          -t "[-> dev] ${{ github.event.pull_request.title }}"
+          -b "ref #${{ github.event.number }}"
+          -r "${{github.actor}}"
