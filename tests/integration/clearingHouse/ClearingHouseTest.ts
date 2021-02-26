@@ -881,7 +881,7 @@ describe("ClearingHouse Test", () => {
         })
     })
 
-    describe("liquidate", () => {
+    describe.only("liquidate", () => {
         enum Action {
             OPEN = 0,
             CLOSE = 1,
@@ -890,145 +890,215 @@ describe("ClearingHouse Test", () => {
 
         beforeEach(async () => {
             await forwardBlockTimestamp(900)
+            await clearingHouse.setPartialLiquidationRatio(toDecimal(0.25))
+            await clearingHouse.setLiquidationFeeRatio(toDecimal(0.025))
         })
 
-        it("liquidate when the position (long) is lower than the maintenance margin", async () => {
+        it("partially liquidate a long position", async () => {
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
             await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
 
-            // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
-            // AMM after: 1100 : 90.9090909091
-            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(9.09), {
-                from: bob,
-            })
-
-            // when alice create a 20 margin * 5x long position when 7.5757575758 quoteAsset = 100 DAI
-            // AMM after: 1200 : 83.3333333333
-            await forwardBlockTimestamp(15) // 15 secs. later
-            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(7.57), {
+            // when alice create a 25 margin * 10x position to get 20 long position
+            // AMM after: 1250 : 80
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(0), {
                 from: alice,
             })
 
-            // when bob sell his position when 7.5757575758 quoteAsset = 100 DAI
-            // AMM after: 1100 : 90.9090909091
-            await forwardBlockTimestamp(15)
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(7.58), {
-                from: bob,
-            })
-
-            // verify alice's openNotional = 100 DAI
-            // spot price PnL = positionValue - openNotional = 84.62 - 100 = -15.38
-            // TWAP PnL = (70.42 * 855 + 84.62 * 15 + 99.96 * 15 + 84.62 * 15) / 900 - 100 ~= -28.61
-            // Use spot price PnL since -15.38 > -28.61
-            await forwardBlockTimestamp(15)
-            const positionBefore = await clearingHouse.getPosition(amm.address, alice)
-            expect(positionBefore.openNotional).to.eq(toFullDigit(100))
-
-            expect(await clearingHouseViewer.getUnrealizedPnl(amm.address, alice, PnlCalcOption.SPOT_PRICE)).to.eq(
-                new BN("-15384615384615384623"),
-            )
-            expect(await clearingHouseViewer.getUnrealizedPnl(amm.address, alice, PnlCalcOption.TWAP)).to.eq(
-                new BN("-28611412062116287475"),
+            // when bob create a 45.18072289 margin * 1x position to get 3 short position
+            // AMM after: 1204.819277 : 83
+            await forwardBlockTimestamp(15) // 15 secs. later
+            await clearingHouse.openPosition(
+                amm.address,
+                Side.SELL,
+                toDecimal(45.18072289),
+                toDecimal(1),
+                toDecimal(0),
+                {
+                    from: bob,
+                },
             )
 
-            // remainMargin = (margin + unrealizedPnL) = 20 - 15.38 = 4.62
-            // marginRatio = remainMargin / openNotional = 4.62 / 100 = 0.0462 < minMarginRatio(0.05)
-            // then anyone (eg. carol) can liquidate alice's position
             const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
-            expectEvent(receipt, "PositionChanged", {
+            expectEvent(receipt, "PositionLiquidated", {
                 amm: amm.address,
                 trader: alice,
-                positionNotional: "84615384615384615377",
-                exchangedPositionSize: "-7575757575757575757",
-                fee: "0",
-                positionSizeAfter: "0",
-                realizedPnl: "-15384615384615384623",
-                fundingPayment: "0",
+                positionNotional: "68455640744970299586",
+                positionSize: "5000000000000000000",
+                liquidationFee: "855695509312128744",
+                liquidator: carol,
+                badDebt: "0",
+            })
+            expectEvent(receipt, "PositionChanged", {
+                margin: "20986372675303987180",
+                positionNotional: "68455640744970299586",
+                exchangedPositionSize: "-5000000000000000000",
+                positionSizeAfter: "15000000000000000000",
+                realizedPnl: "-4013627324696012820",
+                unrealizedPnlAfter: "-12040881974088038460",
+                liquidationPenalty: "1711391018624257489",
+                badDebt: "0",
             })
 
-            // verify carol get her reward
-            // = positionNotional * liquidationFeeRatio = 84.62 * 0.05 = 4.231
-            expect(await quoteToken.balanceOf(carol)).to.eq("4230769")
-
-            // verify alice's position got liquidate and she lost 20 DAI
-            const positionAfter = await clearingHouse.getPosition(amm.address, alice)
-            expect(positionAfter.size).eq(0)
-
-            // verify alice's remaining balance
-            const margin = await clearingHouseViewer.getPersonalBalanceWithFundingPayment(quoteToken.address, alice)
-            expect(margin).to.eq(0)
-            expect(await quoteToken.balanceOf(alice)).to.eq(toFullDigit(4980, +(await quoteToken.decimals())))
-            // verify insuranceFund remaining
-            // insuranceFundPnl = remainMargin - liquidationFee = 4.62 - 4.231 = 0.38
-            // 5000 + 0.38 = 5000.384615384615384622
-            expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq(new BN("5000384615"))
+            expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq("20986372675303987180")
+            expect(await clearingHouse.getMarginRatio(amm.address, alice)).to.eq("50388406581494426")
+            expect((await clearingHouse.getPosition(amm.address, alice)).size).to.eq(toFullDigit(15))
+            expect(await quoteToken.balanceOf(carol)).to.eq("855695")
+            expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("5000855695")
         })
 
-        it("liquidate when the position (short) is lower than the maintenance margin", async () => {
+        it("partially liquidate a short position", async () => {
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
 
-            // when bob create a 20 margin * 5x short position when 11.1111111111 quoteAsset = 100 DAI
-            // AMM after: 900 : 111.1111111111
-
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(11.12), {
-                from: bob,
-            })
-
-            // when alice create a 20 margin * 5x short position when 13.8888888889 quoteAsset = 100 DAI
+            // when alice create a 20 margin * 10x position to get 25 short position
             // AMM after: 800 : 125
-            await forwardBlockTimestamp(15)
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(13.89), {
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
                 from: alice,
             })
 
-            // when bob close his position
-            // AMM after: 878.0487804877 : 113.8888888889
-            // Bob's PnL
-            // spot price Pnl = 21.951219512195121950
-            // twap price Pnl = -24.583333333333333332
-            // clearingHouse only has 20 + 20 = 40, need to return Bob's margin 20 and PnL 21.951.
-            // So, InsuranceFund to pay 1.95121..., remaining 4998.049
-            await forwardBlockTimestamp(15)
-            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
-
-            // verify alice's openNotional = 100 DAI
-            // spot price PnL = openNotional - positionValue = 100 - 121.95 = -21.95
-            // TWAP PnL = 100 - (161.29 * 855 + 128.57 * 15 + 100 * 15 + 121.95 * 15) / 900 ~= -59.06
-            // Use spot price PnL since -21.95 > -59.06
-            await forwardBlockTimestamp(15)
-            const positionBefore = await clearingHouse.getPosition(amm.address, alice)
-            expect(positionBefore.openNotional).to.eq(toFullDigit(100))
-            expect(await clearingHouseViewer.getUnrealizedPnl(amm.address, alice, PnlCalcOption.SPOT_PRICE)).to.eq(
-                new BN("-21951219512195121954"),
-            )
-            expect(await clearingHouseViewer.getUnrealizedPnl(amm.address, alice, PnlCalcOption.TWAP)).to.eq(
-                new BN("-59067850586339964783"),
+            // when bob create a 19.67213115 margin * 1x position to get 3 long position
+            // AMM after: 819.6721311 : 122
+            await forwardBlockTimestamp(15) // 15 secs. later
+            await clearingHouse.openPosition(
+                amm.address,
+                Side.BUY,
+                toDecimal(19.67213115),
+                toDecimal(1),
+                toDecimal(0),
+                { from: bob },
             )
 
-            // marginRatio = (margin + unrealizedPnL) / openNotional = (20 + (-21.95)) / 100 = -0.0195 < 0.05 = minMarginRatio
-            // then anyone (eg. carol) can liquidate alice's position
-            await clearingHouse.liquidate(amm.address, alice, { from: carol })
+            const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
+            expectEvent(receipt, "PositionLiquidated", {
+                amm: amm.address,
+                trader: alice,
+                positionNotional: "44258754381889405651",
+                positionSize: "6250000000000000000",
+                liquidationFee: "553234429773617570",
+                liquidator: carol,
+                badDebt: "0",
+            })
+            expectEvent(receipt, "PositionChanged", {
+                margin: "17186074023640928899",
+                positionNotional: "44258754381889405651",
+                exchangedPositionSize: "6250000000000000000",
+                positionSizeAfter: "-18750000000000000000",
+                realizedPnl: "-2813925976359071101",
+                unrealizedPnlAfter: "-8441777929077213306",
+                liquidationPenalty: "1106468859547235141",
+                badDebt: "0",
+            })
 
-            // verify carol get her reward
-            // = positionNotional * liquidationFeeRatio = 121.95 * 0.05 = 6.0975
-            expect(await quoteToken.balanceOf(carol)).to.eq("6097560")
+            expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq("17186074023640928899")
+            expect(await clearingHouse.getMarginRatio(amm.address, alice)).to.eq("55149863650796949")
+            expect((await clearingHouse.getPosition(amm.address, alice)).size).to.eq(toFullDigit(-18.75))
+            expect(await quoteToken.balanceOf(carol)).to.eq("553234")
+            expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("5000553234")
+        })
 
-            // verify alice's position got liquidate and she lost 20 DAI
-            const positionAfter = await clearingHouse.getPosition(amm.address, alice)
-            expect(positionAfter.size).eq(0)
+        it("a long position is under water, thus liquidating the complete position", async () => {
+            await approve(alice, clearingHouse.address, 100)
+            await approve(bob, clearingHouse.address, 100)
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
 
-            // verify alice's remaining balance
-            const margin = await clearingHouseViewer.getPersonalBalanceWithFundingPayment(quoteToken.address, alice)
-            expect(margin).to.eq(0)
+            // when alice create a 25 margin * 10x position to get 20 long position
+            // AMM after: 1250 : 80
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
 
-            // verify insuranceFund remaining
-            // remainMargin = margin + unrealizedPnL = 20 + (-21.95121)  = -1.95121 - it's negative which means badDebt
-            // insuranceFund already prepaid for alice's bad debt, so no need to withdraw for bad debt
-            // insuranceFundPnl = remainMargin - liquidationFee = 0 - 6.0975 = -6.0975
-            // (after closing Bob's position) 4998.049 - 6.0975 ~= 4991.9515
-            expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("4991951221")
+            // when bob create a 73.52941176 margin * 1x position to get 3 short position
+            // AMM after: 1176.470588 : 85
+            await forwardBlockTimestamp(15) // 15 secs. later
+            await clearingHouse.openPosition(
+                amm.address,
+                Side.SELL,
+                toDecimal(73.52941176),
+                toDecimal(1),
+                toDecimal(0),
+                { from: bob },
+            )
+
+            const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
+            // the badDebt params of the two events are different
+            expectEvent(receipt, "PositionLiquidated", {
+                amm: amm.address,
+                trader: alice,
+                positionNotional: "224089635855963718818",
+                positionSize: "20000000000000000000",
+                liquidationFee: "2801120448199546485",
+                liquidator: carol,
+                badDebt: "2801120448199546485",
+            })
+            expectEvent(receipt, "PositionChanged", {
+                margin: "0",
+                positionNotional: "224089635855963718818",
+                exchangedPositionSize: "-20000000000000000000",
+                positionSizeAfter: "0",
+                realizedPnl: "-25910364144036281182",
+                unrealizedPnlAfter: "0",
+                liquidationPenalty: "25000000000000000000",
+                badDebt: "910364144036281182",
+            })
+
+            expect((await clearingHouse.getPosition(amm.address, alice)).size).to.eq(0)
+            expect(await quoteToken.balanceOf(carol)).to.eq("2801120")
+            // 5000 - 0.91 - 2.8
+            expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("4996288516")
+        })
+
+        it("a short position is under water, thus liquidating the complete position", async () => {
+            await approve(alice, clearingHouse.address, 100)
+            await approve(bob, clearingHouse.address, 100)
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
+
+            // when alice create a 20 margin * 10x position to get 25 short position
+            // AMM after: 800 : 125
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+
+            // when bob create a 40.33613445 margin * 1x position to get 3 long position
+            // AMM after: 840.3361345 : 119
+            await forwardBlockTimestamp(15) // 15 secs. later
+            await clearingHouse.openPosition(
+                amm.address,
+                Side.BUY,
+                toDecimal(40.33613445),
+                toDecimal(1),
+                toDecimal(0),
+                {
+                    from: bob,
+                },
+            )
+
+            const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
+            expectEvent(receipt, "PositionLiquidated", {
+                amm: amm.address,
+                trader: alice,
+                positionNotional: "223493652777982118604",
+                positionSize: toFullDigit(25),
+                liquidationFee: "2793670659724776482",
+                liquidator: carol,
+                badDebt: "2793670659724776482",
+            })
+            expectEvent(receipt, "PositionChanged", {
+                margin: "0",
+                positionNotional: "223493652777982118604",
+                exchangedPositionSize: "25000000000000000000",
+                positionSizeAfter: "0",
+                realizedPnl: "-23493652777982118604",
+                unrealizedPnlAfter: "0",
+                liquidationPenalty: "20000000000000000000",
+                badDebt: "3493652777982118604",
+            })
+
+            expect((await clearingHouse.getPosition(amm.address, alice)).size).to.eq(0)
+            expect(await quoteToken.balanceOf(carol)).to.eq("2793670")
+            // 5000 - 3.49 - 2.79
+            expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("4993712677")
         })
 
         it("force error, position not liquidatable due to TWAP over maintenance margin", async () => {
@@ -1110,7 +1180,7 @@ describe("ClearingHouse Test", () => {
             )
         })
 
-        it("can't liquidate an empty position", async () => {
+        it("force error, can't liquidate an empty position", async () => {
             await expectRevert(clearingHouse.liquidate(amm.address, alice, { from: carol }), "positionSize is 0")
         })
 
@@ -1129,7 +1199,7 @@ describe("ClearingHouse Test", () => {
             }
         }
 
-        it("liquidate one position within the fluctuation limit", async () => {
+        it.only("liquidate one position within the fluctuation limit", async () => {
             await amm.setFluctuationLimitRatio(toDecimal(0.148))
 
             await approve(alice, clearingHouse.address, 100)
@@ -1162,7 +1232,7 @@ describe("ClearingHouse Test", () => {
             expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 100).to.eq(1015.38)
         })
 
-        it("liquidate two positions within the fluctuation limit", async () => {
+        it.only("liquidate two positions within the fluctuation limit", async () => {
             await amm.setFluctuationLimitRatio(toDecimal(0.148))
             traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
@@ -1201,7 +1271,7 @@ describe("ClearingHouse Test", () => {
             expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 100).to.eq(1015.38)
         })
 
-        it("liquidate three positions within the fluctuation limit", async () => {
+        it.only("liquidate three positions within the fluctuation limit", async () => {
             await amm.setFluctuationLimitRatio(toDecimal(0.22))
             traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
@@ -1270,7 +1340,7 @@ describe("ClearingHouse Test", () => {
             expectEvent(await clearingHouse.liquidate(amm.address, alice, { from: carol }), "PositionLiquidated")
         })
 
-        it("force error, liquidate two positions while exceeding the fluctuation limit", async () => {
+        it.only("force error, liquidate two positions while exceeding the fluctuation limit", async () => {
             await amm.setFluctuationLimitRatio(toDecimal(0.147))
             traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
@@ -1306,7 +1376,7 @@ describe("ClearingHouse Test", () => {
             )
         })
 
-        it("force error, liquidate three positions while exceeding the fluctuation limit", async () => {
+        it.only("force error, liquidate three positions while exceeding the fluctuation limit", async () => {
             await amm.setFluctuationLimitRatio(toDecimal(0.21))
             traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
