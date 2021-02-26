@@ -8,6 +8,7 @@ doc
 .env
 .serverless
 .openzeppelin/mainnet.json
+.openzeppelin/unknown-100.json
 .openzeppelin/.session
 .openzeppelin/test/*
 publish/settings/test.json
