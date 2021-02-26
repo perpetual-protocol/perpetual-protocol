@@ -820,6 +820,38 @@ export class ContractPublisher {
             )
             this.taskBatchesMap.layer2.push(batch)
         }
+
+        // layer 2, batch 11
+        const upgradeAmmBatch = [
+            async () => {
+                const filename = `${ContractName.Amm}.sol`
+
+                // after flatten sol file we must re-compile again
+                await flatten(SRC_DIR, bre.config.paths.sources, filename)
+                await bre.run(TASK_COMPILE)
+
+                // deploy clearing house implementation
+                // proxy does not use here, we just use createAmm to create an implementation
+                const contract = this.factory.createAmm(AmmInstanceName.BTCUSDC)
+                const impAddress = await contract.prepareUpgradeContract()
+                const amm = (await ethers.getContractAt(ContractName.Amm, impAddress)) as Amm
+                const wei = BigNumber.from(1)
+                const emptyAddr = "0x0000000000000000000000000000000000000001"
+                await amm.initialize(
+                    wei,
+                    wei,
+                    wei,
+                    wei,
+                    emptyAddr,
+                    ethers.utils.formatBytes32String(""),
+                    emptyAddr,
+                    wei,
+                    wei,
+                    wei,
+                )
+            },
+        ]
+        this.taskBatchesMap.layer2.push(upgradeAmmBatch)
     }
 
     get confirmations(): number {

@@ -72,6 +72,12 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
         `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 10`,
         options,
     )
+
+    // prepare upgrading AMM, deploy new implementation without actually update it in proxy
+    await asyncExec(
+        `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 11`,
+        options,
+    )
 }
 
 /* eslint-disable no-console */
