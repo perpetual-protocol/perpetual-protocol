@@ -38,6 +38,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     event LiquidityChanged(uint256 quoteReserve, uint256 baseReserve, int256 cumulativeNotional);
     event CapChanged(uint256 maxHoldingBaseAsset, uint256 openInterestNotionalCap);
     event Shutdown(uint256 settlementPrice);
+    event PriceFeedUpdated(address priceFeed);
 
     //
     // MODIFIERS
@@ -404,6 +405,17 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         maxHoldingBaseAsset = _maxHoldingBaseAsset;
         openInterestNotionalCap = _openInterestNotionalCap;
         emit CapChanged(maxHoldingBaseAsset.toUint(), openInterestNotionalCap.toUint());
+    }
+
+    /**
+     * @notice set priceFee address
+     * @dev only owner can call
+     * @param _priceFeed new price feed for this AMM
+     */
+    function setPriceFeed(IPriceFeed _priceFeed) public onlyOwner {
+        require(address(_priceFeed) != address(0), "invalid PriceFeed address");
+        priceFeed = _priceFeed;
+        emit PriceFeedUpdated(address(priceFeed));
     }
 
     //
