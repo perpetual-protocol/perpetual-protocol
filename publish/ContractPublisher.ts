@@ -10,6 +10,7 @@ import {
     Amm,
     AmmReader,
     ChainlinkL1,
+    ChainlinkPriceFeed,
     ClearingHouse,
     ClearingHouseViewer,
     ClientBridge,
@@ -21,7 +22,7 @@ import {
 } from "../types/ethers"
 import { ContractWrapperFactory } from "./contract/ContractWrapperFactory"
 import { DEFAULT_DIGITS, DeployConfig, makeAmmConfig, PriceFeedKey } from "./contract/DeployConfig"
-import { DeployTask, getImplementation, makeAmmDeployBatch } from "./contract/DeployUtil"
+import { addAggregator, DeployTask, getImplementation, makeAmmDeployBatch } from "./contract/DeployUtil"
 import { AmmInstanceName, ContractInstanceName, ContractName } from "./ContractName"
 import { OzContractDeployer } from "./OzContractDeployer"
 import { SettingsDao } from "./SettingsDao"
@@ -852,6 +853,62 @@ export class ContractPublisher {
             },
         ]
         this.taskBatchesMap.layer2.push(upgradeAmmBatch)
+
+        // layer 2, batch 12: deploy chainlink on layer 2
+        const chainlinkBatch = [
+            async () => {
+                console.log("deploy chainlink price feed on layer 2...")
+                await this.factory
+                    .create<ChainlinkPriceFeed>(ContractName.ChainlinkPriceFeed)
+                    .deployUpgradableContract()
+            },
+            async () => {
+                const priceFeedKey = "AAVE"
+                const address = "0x2b481Dc923Aa050E009113Dca8dcb0daB4B68cDF"
+                await addAggregator(priceFeedKey, address, this.factory, this.confirmations)
+            },
+            async () => {
+                const priceFeedKey = "BTC"
+                const address = "0x6C1d7e76EF7304a40e8456ce883BC56d3dEA3F7d"
+                await addAggregator(priceFeedKey, address, this.factory, this.confirmations)
+            },
+            async () => {
+                const priceFeedKey = "DOT"
+                const address = "0x3c30c5c415B2410326297F0f65f5Cbb32f3aefCc"
+                await addAggregator(priceFeedKey, address, this.factory, this.confirmations)
+            },
+            async () => {
+                const priceFeedKey = "ETH"
+                const address = "0xa767f745331D267c7751297D982b050c93985627"
+                await addAggregator(priceFeedKey, address, this.factory, this.confirmations)
+            },
+            async () => {
+                const priceFeedKey = "LINK"
+                const address = "0xed322A5ac55BAE091190dFf9066760b86751947B"
+                await addAggregator(priceFeedKey, address, this.factory, this.confirmations)
+            },
+            async () => {
+                const priceFeedKey = "SUSHI"
+                const address = "0xC0a6Bf8d5D408B091D022C3C0653d4056D4B9c01"
+                await addAggregator(priceFeedKey, address, this.factory, this.confirmations)
+            },
+            async () => {
+                const priceFeedKey = "YFI"
+                const address = "0x14030d5a0C9e63D9606C6f2c8771Fc95b34b07e0"
+                await addAggregator(priceFeedKey, address, this.factory, this.confirmations)
+            },
+            async () => {
+                const gov = this.externalContract.foundationGovernance!
+                console.log(
+                    `transferring chainlinkPriceFeed's owner to governance=${gov}...please remember to claim the ownership`,
+                )
+                const chainlinkPriceFeed = await this.factory
+                    .create<ChainlinkPriceFeed>(ContractName.ChainlinkPriceFeed)
+                    .instance()
+                await (await chainlinkPriceFeed.setOwner(gov)).wait(this.confirmations)
+            },
+        ]
+        this.taskBatchesMap.layer2.push(chainlinkBatch)
     }
 
     get confirmations(): number {

@@ -3,7 +3,7 @@ import { TASK_COMPILE } from "@nomiclabs/buidler/builtin-tasks/task-names"
 import { SRC_DIR } from "../../constants"
 import { ExternalContracts } from "../../scripts/common"
 import { flatten } from "../../scripts/flatten"
-import { ClearingHouse, L2PriceFeed } from "../../types/ethers"
+import { ChainlinkPriceFeed, ClearingHouse, L2PriceFeed } from "../../types/ethers"
 import { ContractName } from "../ContractName"
 import { ContractWrapperFactory } from "./ContractWrapperFactory"
 import { AmmConfig } from "./DeployConfig"
@@ -73,4 +73,15 @@ export function makeAmmDeployBatch(
             await (await amm.setOwner(gov)).wait(confirmations)
         },
     ]
+}
+
+export async function addAggregator(
+    priceFeedKey: string,
+    address: string,
+    factory: ContractWrapperFactory,
+    confirmations: number,
+): Promise<void> {
+    const chainlinkPriceFeed = await factory.create<ChainlinkPriceFeed>(ContractName.ChainlinkPriceFeed).instance()
+    let tx = await chainlinkPriceFeed.addAggregator(ethers.utils.formatBytes32String(priceFeedKey), address)
+    await tx.wait(confirmations)
 }

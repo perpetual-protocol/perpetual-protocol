@@ -78,6 +78,8 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
         `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 11`,
         options,
     )
+
+    await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 12`, options)
 }
 
 /* eslint-disable no-console */
