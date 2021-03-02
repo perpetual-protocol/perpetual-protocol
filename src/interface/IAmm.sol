@@ -27,7 +27,8 @@ interface IAmm {
     function swapInput(
         Dir _dir,
         Decimal.decimal calldata _quoteAssetAmount,
-        Decimal.decimal calldata _baseAssetAmountLimit
+        Decimal.decimal calldata _baseAssetAmountLimit,
+        bool _isLiquidation
     ) external returns (Decimal.decimal memory);
 
     function swapOutput(

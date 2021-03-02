@@ -200,7 +200,8 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     function swapInput(
         Dir _dir,
         Decimal.decimal calldata _quoteAssetAmount,
-        Decimal.decimal calldata _baseAssetAmountLimit
+        Decimal.decimal calldata _baseAssetAmountLimit,
+        bool _isLiquidation
     ) external override onlyOpen onlyCounterParty returns (Decimal.decimal memory) {
         if (_quoteAssetAmount.toUint() == 0) {
             return Decimal.zero();
@@ -224,10 +225,13 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             }
         }
 
-        // TODO: If the price impact of one single tx is larger than priceFluctuation, skip the check
-        // only for liquidate()
+        // If the price impact of one single tx is larger than priceFluctuation, skip the check
+        // only for partial liquidation
+        if (_isLiquidation) {
+            _isLiquidation = isSingleTxOverFluctuation(_dir, _quoteAssetAmount, baseAssetAmount);
+        }
 
-        updateReserve(_dir, _quoteAssetAmount, baseAssetAmount, false);
+        updateReserve(_dir, _quoteAssetAmount, baseAssetAmount, _isLiquidation);
         emit SwapInput(_dir, _quoteAssetAmount.toUint(), baseAssetAmount.toUint());
         return baseAssetAmount;
     }

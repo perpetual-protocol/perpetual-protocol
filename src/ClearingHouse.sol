@@ -458,7 +458,8 @@ contract ClearingHouse is
                     trader,
                     _quoteAssetAmount,
                     _leverage,
-                    _baseAssetAmountLimit
+                    _baseAssetAmountLimit,
+                    false
                 );
             }
 
@@ -617,7 +618,8 @@ contract ClearingHouse is
                     _trader,
                     partiallyLiquidatedPositionNotional,
                     Decimal.one(),
-                    Decimal.zero()
+                    Decimal.zero(),
+                    true
                 );
 
                 setPosition(_amm, _trader, positionResp.position);
@@ -857,7 +859,7 @@ contract ClearingHouse is
     ) internal returns (PositionResp memory positionResp) {
         address trader = _msgSender();
         Position memory oldPosition = getUnadjustedPosition(_amm, trader);
-        positionResp.exchangedPositionSize = swapInput(_amm, _side, _openNotional, _minPositionSize);
+        positionResp.exchangedPositionSize = swapInput(_amm, _side, _openNotional, _minPositionSize, false);
         SignedDecimal.signedDecimal memory newSize = oldPosition.size.addD(positionResp.exchangedPositionSize);
         // if size is 0 (means a new position), set the latest liquidity index
         uint256 liquidityHistoryIndex = oldPosition.liquidityHistoryIndex;
@@ -908,7 +910,8 @@ contract ClearingHouse is
         address _trader,
         Decimal.decimal memory _quoteAssetAmount,
         Decimal.decimal memory _leverage,
-        Decimal.decimal memory _baseAssetAmountLimit
+        Decimal.decimal memory _baseAssetAmountLimit,
+        bool _isLiquidation
     ) internal returns (PositionResp memory) {
         Decimal.decimal memory openNotional = _quoteAssetAmount.mulD(_leverage);
         (Decimal.decimal memory oldPositionNotional, SignedDecimal.signedDecimal memory unrealizedPnl) =
@@ -919,7 +922,13 @@ contract ClearingHouse is
         if (oldPositionNotional.toUint() > openNotional.toUint()) {
             updateOpenInterestNotional(_amm, MixedDecimal.fromDecimal(openNotional).mulScalar(-1));
             Position memory oldPosition = getUnadjustedPosition(_amm, _trader);
-            positionResp.exchangedPositionSize = swapInput(_amm, _side, openNotional, _baseAssetAmountLimit);
+            positionResp.exchangedPositionSize = swapInput(
+                _amm,
+                _side,
+                openNotional,
+                _baseAssetAmountLimit,
+                _isLiquidation
+            );
 
             // realizedPnl = unrealizedPnl * closedRatio
             // closedRatio = positionResp.exchangedPositionSiz / oldPosition.size
@@ -1059,11 +1068,12 @@ contract ClearingHouse is
         IAmm _amm,
         Side _side,
         Decimal.decimal memory _inputAmount,
-        Decimal.decimal memory _minOutputAmount
+        Decimal.decimal memory _minOutputAmount,
+        bool _isLiquidation
     ) internal returns (SignedDecimal.signedDecimal memory) {
         IAmm.Dir dir = (_side == Side.BUY) ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM;
         SignedDecimal.signedDecimal memory outputAmount =
-            MixedDecimal.fromDecimal(_amm.swapInput(dir, _inputAmount, _minOutputAmount));
+            MixedDecimal.fromDecimal(_amm.swapInput(dir, _inputAmount, _minOutputAmount, _isLiquidation));
         if (IAmm.Dir.REMOVE_FROM_AMM == dir) {
             return outputAmount.mulScalar(-1);
         }
