@@ -224,6 +224,9 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             }
         }
 
+        // TODO: If the price impact of one single tx is larger than priceFluctuation, skip the check
+        // only for liquidate()
+
         updateReserve(_dir, _quoteAssetAmount, baseAssetAmount, false);
         emit SwapInput(_dir, _quoteAssetAmount.toUint(), baseAssetAmount.toUint());
         return baseAssetAmount;

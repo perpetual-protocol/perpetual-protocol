@@ -1199,18 +1199,18 @@ describe("ClearingHouse Test", () => {
             }
         }
 
-        it.only("liquidate one position within the fluctuation limit", async () => {
-            await amm.setFluctuationLimitRatio(toDecimal(0.148))
+        it("partially liquidate one position within the fluctuation limit", async () => {
+            await amm.setFluctuationLimitRatio(toDecimal(0.041))
 
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
             await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
 
-            // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
+            // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100
             // AMM after: 1100 : 90.9090909091
             await openSmallPositions(bob, Side.BUY, toDecimal(4), toDecimal(5), 5)
 
-            // when alice create a 20 margin * 5x long position when 7.5757575758 quoteAsset = 100 DAI
+            // when alice create a 20 margin * 5x long position when 7.5757575758 quoteAsset = 100
             // AMM after: 1200 : 83.3333333333
             // alice get: 90.9090909091 - 83.3333333333 = 7.5757575758
             await openSmallPositions(alice, Side.BUY, toDecimal(4), toDecimal(5), 5)
@@ -1218,22 +1218,22 @@ describe("ClearingHouse Test", () => {
             // AMM after: 1100 : 90.9090909091, price: 12.1
             await openSmallPositions(bob, Side.SELL, toDecimal(4), toDecimal(5), 5)
 
-            // liquidate -> return base asset to AMM
-            // 90.9090909091 + 7.5757575758 = 98.484848484848484854
-            // AMM after: 1015.384615384615384672 : 98.484848484848484854, price: 10.31
-            // fluctuation: (12.1 - 10.31) / 10.31 = 0.1479
+            // liquidate -> return 25% base asset to AMM
+            // 90.9090909091 + 1.89 = 92.8
+            // AMM after: 1077.55102 : 92.8, price: 11.61
+            // fluctuation: (12.1 - 11.61116202) / 12.1 = 0.04039983306
             // values can be retrieved with amm.quoteAssetReserve() & amm.baseAssetReserve()
             const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
             expectEvent(receipt, "PositionLiquidated")
 
             const baseAssetReserve = await amm.baseAssetReserve()
             const quoteAssetReserve = await amm.quoteAssetReserve()
-            expect(parseFloat(baseAssetReserve.toString().substr(0, 6)) / 10000).to.eq(98.4848)
-            expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 100).to.eq(1015.38)
+            expect(parseFloat(baseAssetReserve.toString().substr(0, 6)) / 10000).to.eq(92.803)
+            expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 100).to.eq(1077.55)
         })
 
-        it.only("liquidate two positions within the fluctuation limit", async () => {
-            await amm.setFluctuationLimitRatio(toDecimal(0.148))
+        it("partially liquidate two positions within the fluctuation limit", async () => {
+            await amm.setFluctuationLimitRatio(toDecimal(0.041))
             traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
             await transfer(admin, traderWallet1.address, 1000)
@@ -1245,12 +1245,12 @@ describe("ClearingHouse Test", () => {
             // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
             await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
 
-            // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
+            // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100
             // AMM after: 1100 : 90.9090909091
             // actual margin ratio is 19.99...9%
             await openSmallPositions(bob, Side.BUY, toDecimal(4), toDecimal(5), 5)
 
-            // when carol create a 10 margin * 5x long position when 7.5757575758 quoteAsset = 100 DAI
+            // when carol create a 10 margin * 5x long position when 7.5757575758 quoteAsset = 100
             // AMM after: quote = 1150
             await openSmallPositions(carol, Side.BUY, toDecimal(2), toDecimal(5), 5)
 
@@ -1258,21 +1258,22 @@ describe("ClearingHouse Test", () => {
             // AMM after: quote = 1200
             await openSmallPositions(alice, Side.BUY, toDecimal(2), toDecimal(5), 5)
 
+            // bob short 100
             // AMM after: 1100 : 90.9090909091, price: 12.1
             await openSmallPositions(bob, Side.SELL, toDecimal(4), toDecimal(5), 5)
 
-            // AMM after: 1015.384615384615384672 : 98.484848484848484854, price: 10.31
-            // fluctuation: (12.1 - 10.31) / 10.31 = 0.1479
+            // AMM after: 1077.55102 : 92.8, price: 11.61
+            // fluctuation: (12.1 - 11.61116202) / 12.1 = 0.04039983306
             await traderWallet1.twoLiquidations(amm.address, alice, carol)
 
             const baseAssetReserve = await amm.baseAssetReserve()
             const quoteAssetReserve = await amm.quoteAssetReserve()
-            expect(parseFloat(baseAssetReserve.toString().substr(0, 6)) / 10000).to.eq(98.4848)
-            expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 100).to.eq(1015.38)
+            expect(parseFloat(baseAssetReserve.toString().substr(0, 6)) / 10000).to.eq(92.803)
+            expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 100).to.eq(1077.55)
         })
 
-        it.only("liquidate three positions within the fluctuation limit", async () => {
-            await amm.setFluctuationLimitRatio(toDecimal(0.22))
+        it("partially liquidate three positions within the fluctuation limit", async () => {
+            await amm.setFluctuationLimitRatio(toDecimal(0.06))
             traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
             await transfer(admin, traderWallet1.address, 1000)
@@ -1286,11 +1287,56 @@ describe("ClearingHouse Test", () => {
             // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
             await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
 
-            // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
+            // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100
             // AMM after: 1100 : 90.9090909091
             await openSmallPositions(bob, Side.BUY, toDecimal(4), toDecimal(5), 5)
 
-            // when carol create a 10 margin * 5x long position when 7.5757575758 quoteAsset = 100 DAI
+            // when carol create a 10 margin * 5x long position when 7.5757575758 quoteAsset = 100
+            // AMM after: quote = 1150 : 86.9565217391
+            await openSmallPositions(carol, Side.BUY, toDecimal(2), toDecimal(5), 5)
+
+            // when alice create a 10 margin * 5x long position
+            // AMM after: quote = 1200 : 83.3333333333
+            await openSmallPositions(alice, Side.BUY, toDecimal(2), toDecimal(5), 5)
+
+            // when relayer create a 2 margin * 5x long position
+            // AMM after: quote = 1210 : 82.6446281
+            // alice + carol + relayer get: 90.9090909091 - 82.6446281 = 8.2644628091
+            await openSmallPositions(relayer, Side.BUY, toDecimal(0.4), toDecimal(5), 5)
+
+            // AMM after: 1110 : 90.09009009, price: 12.321
+            await openSmallPositions(bob, Side.SELL, toDecimal(4), toDecimal(5), 5)
+
+            // AMM after: close to 1079.066031 : 92.67273, price: 11.64383498
+            // fluctuation: (12.321 - 11.64383498) / 12.321 = 0.05496023212
+            await traderWallet1.threeLiquidations(amm.address, alice, carol, relayer)
+
+            const baseAssetReserve = await amm.baseAssetReserve()
+            const quoteAssetReserve = await amm.quoteAssetReserve()
+            expect(parseFloat(baseAssetReserve.toString().substr(0, 6)) / 10000).to.eq(92.6727)
+            expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 100).to.eq(1079.06)
+        })
+
+        it("partially liquidate two positions and completely liquidate one within the fluctuation limit", async () => {
+            await amm.setFluctuationLimitRatio(toDecimal(0.12))
+            traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
+
+            await transfer(admin, traderWallet1.address, 1000)
+            await transfer(admin, bob, 1000)
+            await transfer(admin, carol, 1000)
+            await transfer(admin, relayer, 1000)
+            await approve(alice, clearingHouse.address, 100)
+            await approve(bob, clearingHouse.address, 100)
+            await approve(carol, clearingHouse.address, 100)
+            await approve(relayer, clearingHouse.address, 100)
+            // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
+
+            // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100
+            // AMM after: 1100 : 90.9090909091
+            await openSmallPositions(bob, Side.BUY, toDecimal(4), toDecimal(5), 5)
+
+            // when carol create a 10 margin * 5x long position when 7.5757575758 quoteAsset = 100
             // AMM after: quote = 1150 : 86.9565217391
             await openSmallPositions(carol, Side.BUY, toDecimal(2), toDecimal(5), 5)
 
@@ -1306,19 +1352,20 @@ describe("ClearingHouse Test", () => {
             // AMM after: 1150 : 86.9565217391, price: 13.225
             await openSmallPositions(bob, Side.SELL, toDecimal(4), toDecimal(5), 5)
 
-            // 86.9565217391 + 10.9090909091 = 97.8656126482
-            // AMM after: close to 1021.8093699518 : 97.8656126482, price: 10.4409438852
-            // fluctuation: (13.225 - 10.4409438852) / 13.225 = 0.2105146401
+            // alice's & carol's positions are partially closed, while relayer's position is closed completely
+            // AMM after: close to 1084.789366 : 92.1837, price: 11.7676797
+            // fluctuation: (13.225 - 11.7676797) / 13.225 = 0.1101943516
             await traderWallet1.threeLiquidations(amm.address, alice, carol, relayer)
 
             const baseAssetReserve = await amm.baseAssetReserve()
             const quoteAssetReserve = await amm.quoteAssetReserve()
-            expect(parseFloat(baseAssetReserve.toString().substr(0, 6)) / 10000).to.eq(97.8656)
-            expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 100).to.eq(1021.8)
+            expect(parseFloat(baseAssetReserve.toString().substr(0, 6)) / 10000).to.eq(92.1837)
+            expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 100).to.eq(1084.78)
         })
 
         it("liquidates one position if the price impact of single tx exceeds the fluctuation limit ", async () => {
             await amm.setFluctuationLimitRatio(toDecimal(0.147))
+            await clearingHouse.setPartialLiquidationRatio(toDecimal(1))
 
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
@@ -1340,8 +1387,10 @@ describe("ClearingHouse Test", () => {
             expectEvent(await clearingHouse.liquidate(amm.address, alice, { from: carol }), "PositionLiquidated")
         })
 
-        it.only("force error, liquidate two positions while exceeding the fluctuation limit", async () => {
+        it("force error, liquidate two positions while exceeding the fluctuation limit", async () => {
             await amm.setFluctuationLimitRatio(toDecimal(0.147))
+            // trigger full liquidation
+            await clearingHouse.setPartialLiquidationRatio(toDecimal(1))
             traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
             await transfer(admin, traderWallet1.address, 1000)
@@ -1353,11 +1402,11 @@ describe("ClearingHouse Test", () => {
             // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
             await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
 
-            // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
+            // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100
             // AMM after: 1100 : 90.9090909091, price: 12.1
             await openSmallPositions(bob, Side.BUY, toDecimal(10), toDecimal(5), 2)
 
-            // when carol create a 10 margin * 5x long position when 7.5757575758 quoteAsset = 100 DAI
+            // when carol create a 10 margin * 5x long position when 7.5757575758 quoteAsset = 100
             // AMM after: 1150 : 86.9565
             await openSmallPositions(carol, Side.BUY, toDecimal(5), toDecimal(5), 2)
 
@@ -1369,15 +1418,18 @@ describe("ClearingHouse Test", () => {
             await openSmallPositions(bob, Side.SELL, toDecimal(10), toDecimal(5), 2)
 
             // AMM after: 1015.384615384615384672 : 98.484848484848484854, price: 10.31
-            // fluctuation: (12.1 - 10.31) / 10.31 = 0.1479
+            // fluctuation: (12.1 - 11.19) / 12.1 = 0.07520661157
+            // fluctuation: (11.19 - 10.31005917) / 11.19 = 0.07863635657
+            // fluctuation: (12.1 - 10.31005917) / 12.1 = 0.1479
             await expectRevert(
                 traderWallet1.twoLiquidations(amm.address, alice, carol),
                 "price is over fluctuation limit",
             )
         })
 
-        it.only("force error, liquidate three positions while exceeding the fluctuation limit", async () => {
+        it("force error, liquidate three positions while exceeding the fluctuation limit", async () => {
             await amm.setFluctuationLimitRatio(toDecimal(0.21))
+            await clearingHouse.setPartialLiquidationRatio(toDecimal(1))
             traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
             await transfer(admin, traderWallet1.address, 1000)

@@ -267,6 +267,7 @@ contract ClearingHouse is
      * @dev only owner can call
      */
     function setPartialLiquidationRatio(Decimal.decimal memory _ratio) external onlyOwner {
+        require(_ratio.cmp(Decimal.one()) <= 0, "invalid partial liquidation ratio");
         partialLiquidationRatio = _ratio;
     }
 
@@ -597,7 +598,10 @@ contract ClearingHouse is
             Decimal.decimal memory feeToInsuranceFund;
             IERC20 quoteAsset = _amm.quoteAsset();
 
-            if (marginRatio.toInt() > int256(liquidationFeeRatio.toUint())) {
+            if (
+                marginRatio.toInt() > int256(liquidationFeeRatio.toUint()) &&
+                partialLiquidationRatio.cmp(Decimal.one()) != 0
+            ) {
                 require(partialLiquidationRatio.toUint() > 0, "partialLiquidationRatio not set");
 
                 Position memory position = getPosition(_amm, _trader);
