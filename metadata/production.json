@@ -89,6 +89,10 @@
         "AAVEUSDC": {
           "name": "Amm",
           "address": "0x16A7ECF2c27Cb367Df36d39e389e66B42000E0dF"
+        },
+        "ChainlinkPriceFeed": {
+          "name": "ChainlinkPriceFeed",
+          "address": "0x6b984B28D3305B498A57329b3Db1b25a69FEfA94"
         }
       },
       "accounts": [],
