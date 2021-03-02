@@ -10,6 +10,27 @@ contract ClearingHouseFake is ClearingHouse {
     uint256 private timestamp = 1444004400;
     uint256 private number = 10001;
 
+    // openzeppelin doesn't support struct input
+    // https://github.com/OpenZeppelin/openzeppelin-sdk/issues/1523
+    function initialize(
+        uint256 _initMarginRatio,
+        uint256 _maintenanceMarginRatio,
+        uint256 _liquidationFeeRatio,
+        IInsuranceFund _insuranceFund,
+        address _trustedForwarder
+    ) public initializer {
+        require(address(_insuranceFund) != address(0), "Invalid IInsuranceFund");
+
+        __OwnerPausable_init();
+        __ReentrancyGuard_init();
+
+        initMarginRatio = Decimal.decimal(_initMarginRatio);
+        maintenanceMarginRatio = Decimal.decimal(_maintenanceMarginRatio);
+        liquidationFeeRatio = Decimal.decimal(_liquidationFeeRatio);
+        insuranceFund = _insuranceFund;
+        trustedForwarder = _trustedForwarder;
+    }
+
     function mock_setBlockTimestamp(uint256 _timestamp) public {
         timestamp = _timestamp;
     }
