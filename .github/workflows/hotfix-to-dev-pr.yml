@@ -2,7 +2,7 @@ name: Hotfix PR back to develop
 
 on:
   pull_request:
-    types: ['opened']
+    types: ['ready_for_review']
     branches:
       - master
       - release/*
