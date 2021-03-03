@@ -530,9 +530,9 @@ describe("Amm Unit Test", () => {
         it("can swapOutput(close long) even exceeds fluctuation limit if the price impact is larger than the limit, but the rest will fail during that block", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // BUY 2.5 base, reserve will be 1025.6 : 97.5, price is 1025.6 / 97.5 = 10.52
-            expectEvent(await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(2.5), toDecimal(0), false), "SwapOutput")
+            expectEvent(await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(2.5), toDecimal(0), true), "SwapOutput")
             await expectRevert(
-                amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(0.1), toDecimal(0), false),
+                amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(0.1), toDecimal(0), true),
                 "price is over fluctuation limit",
             )
         })
@@ -540,9 +540,9 @@ describe("Amm Unit Test", () => {
         it("can swapOutput(close short) even exceeds fluctuation limit if the price impact is larger than the limit, but the rest will fail during that block", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // SELL 2.7 base, reserve will be 973.7 : 102.7, price is 973.7 / 102.7 = 9.48
-            expectEvent(await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(2.7), toDecimal(0), false), "SwapOutput")
+            expectEvent(await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(2.7), toDecimal(0), true), "SwapOutput")
             await expectRevert(
-                amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(0.1), toDecimal(0), false),
+                amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(0.1), toDecimal(0), true),
                 "price is over fluctuation limit",
             )
         })
