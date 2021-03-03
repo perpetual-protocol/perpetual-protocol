@@ -89,6 +89,10 @@
         "SCEXUSDC": {
           "name": "Amm",
           "address": "0xEFB91c661a77aa40A4a9FF581C0c074Ac1c18aaD"
+        },
+        "ChainlinkPriceFeed": {
+          "name": "ChainlinkPriceFeed",
+          "address": "0xAE77D1342CDBC93842007C5190e5C096d65C1b9E"
         }
       },
       "accounts": [],

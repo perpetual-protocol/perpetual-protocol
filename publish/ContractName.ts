@@ -29,6 +29,7 @@ export enum ContractName {
     StakedPerpToken = "StakedPerpToken",
     TollPool = "TollPool",
     FeeTokenPoolDispatcherL1 = "FeeTokenPoolDispatcherL1",
+    ChainlinkPriceFeed = "ChainlinkPriceFeed",
 }
 
 export enum ContractInstanceName {
