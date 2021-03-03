@@ -920,28 +920,35 @@ describe("ClearingHouse Test", () => {
             )
 
             const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
+            // partially liquidate 25%
+            // positionNotional: getOutputPrice(20 (original position) * 0.25) = 68.455
+            // total pnl = openNotional - getOutputPrice(20) == 250 - 233.945 = 16.054(loss)
+            // realizedPnl = 16.054 * 0.25 = 4.01, unrealizedPnl = 16.054 - 4.01 = 12.04
+            // liquidationPenalty = liquidation fee + fee to InsuranceFund
+            //                    = 68.455 * 0.0125 + 68.455 * 0.0125 = 1.711
+            // remain margin = margin - realizedPnl - liquidationPenalty = 25 - 4.01 - 1.711 = 19.27
             expectEvent(receipt, "PositionLiquidated", {
                 amm: amm.address,
                 trader: alice,
                 positionNotional: "68455640744970299586",
-                positionSize: "5000000000000000000",
+                positionSize: toFullDigitStr(5),
                 liquidationFee: "855695509312128744",
                 liquidator: carol,
                 badDebt: "0",
             })
             expectEvent(receipt, "PositionChanged", {
-                margin: "20986372675303987180",
+                margin: "19274981656679729691",
                 positionNotional: "68455640744970299586",
-                exchangedPositionSize: "-5000000000000000000",
-                positionSizeAfter: "15000000000000000000",
+                exchangedPositionSize: toFullDigitStr(-5),
+                positionSizeAfter: toFullDigitStr(15),
                 realizedPnl: "-4013627324696012820",
                 unrealizedPnlAfter: "-12040881974088038460",
                 liquidationPenalty: "1711391018624257489",
                 badDebt: "0",
             })
 
-            expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq("20986372675303987180")
-            expect(await clearingHouse.getMarginRatio(amm.address, alice)).to.eq("50388406581494426")
+            expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq("19274981656679729691")
+            expect(await clearingHouse.getMarginRatio(amm.address, alice)).to.eq("40748436081649708")
             expect((await clearingHouse.getPosition(amm.address, alice)).size).to.eq(toFullDigit(15))
             expect(await quoteToken.balanceOf(carol)).to.eq("855695")
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("5000855695")
@@ -971,28 +978,35 @@ describe("ClearingHouse Test", () => {
             )
 
             const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
+            // partially liquidate 25%
+            // positionNotional: getOutputPrice(25 (original position) * 0.25) = 44.258
+            // total pnl = openNotional - getOutputPrice(25) == 200 - 211.255 = 11.255(loss)
+            // realizedPnl = 11.255 * 0.25 = 2.81, unrealizedPnl = 11.255 - 2.81 = 8.44
+            // liquidationPenalty = liquidation fee + fee to InsuranceFund
+            //                    = 44.258 * 0.0125 + 44.258 * 0.0125 = 1.106
+            // remain margin = margin - realizedPnl - liquidationPenalty = 20 - 2.81 - 1.106 = 16.079
             expectEvent(receipt, "PositionLiquidated", {
                 amm: amm.address,
                 trader: alice,
                 positionNotional: "44258754381889405651",
-                positionSize: "6250000000000000000",
+                positionSize: toFullDigitStr(6.25),
                 liquidationFee: "553234429773617570",
                 liquidator: carol,
                 badDebt: "0",
             })
             expectEvent(receipt, "PositionChanged", {
-                margin: "17186074023640928899",
+                margin: "16079605164093693758",
                 positionNotional: "44258754381889405651",
-                exchangedPositionSize: "6250000000000000000",
-                positionSizeAfter: "-18750000000000000000",
+                exchangedPositionSize: toFullDigitStr(6.25),
+                positionSizeAfter: toFullDigitStr(-18.75),
                 realizedPnl: "-2813925976359071101",
                 unrealizedPnlAfter: "-8441777929077213306",
                 liquidationPenalty: "1106468859547235141",
                 badDebt: "0",
             })
 
-            expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq("17186074023640928899")
-            expect(await clearingHouse.getMarginRatio(amm.address, alice)).to.eq("55149863650796949")
+            expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq("16079605164093693758")
+            expect(await clearingHouse.getMarginRatio(amm.address, alice)).to.eq("48171416663415124")
             expect((await clearingHouse.getPosition(amm.address, alice)).size).to.eq(toFullDigit(-18.75))
             expect(await quoteToken.balanceOf(carol)).to.eq("553234")
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("5000553234")
