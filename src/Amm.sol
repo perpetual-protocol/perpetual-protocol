@@ -195,13 +195,14 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
      * @param _dir ADD_TO_AMM for long, REMOVE_FROM_AMM for short
      * @param _quoteAssetAmount quote asset amount
      * @param _baseAssetAmountLimit minimum base asset amount expected to get to prevent front running
+     * @param _singleTxFluctuationCheck check fluctuation of a single tx if true, otherwise check fluctuation of a block
      * @return base asset amount
      */
     function swapInput(
         Dir _dir,
         Decimal.decimal calldata _quoteAssetAmount,
         Decimal.decimal calldata _baseAssetAmountLimit,
-        bool _isLiquidation
+        bool _singleTxFluctuationCheck
     ) external override onlyOpen onlyCounterParty returns (Decimal.decimal memory) {
         if (_quoteAssetAmount.toUint() == 0) {
             return Decimal.zero();
@@ -227,11 +228,12 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
         // If the price impact of one single tx is larger than priceFluctuation, skip the check
         // only for partial liquidation
-        if (_isLiquidation) {
-            _isLiquidation = isSingleTxOverFluctuation(_dir, _quoteAssetAmount, baseAssetAmount);
+        bool fluctuationCheckInBlock = !_singleTxFluctuationCheck;
+        if (_singleTxFluctuationCheck) {
+            fluctuationCheckInBlock = !isSingleTxOverFluctuation(_dir, _quoteAssetAmount, baseAssetAmount);
         }
 
-        updateReserve(_dir, _quoteAssetAmount, baseAssetAmount, _isLiquidation);
+        updateReserve(_dir, _quoteAssetAmount, baseAssetAmount, fluctuationCheckInBlock);
         emit SwapInput(_dir, _quoteAssetAmount.toUint(), baseAssetAmount.toUint());
         return baseAssetAmount;
     }
@@ -242,16 +244,16 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
      * @param _dir ADD_TO_AMM for short, REMOVE_FROM_AMM for long, opposite direction from swapInput
      * @param _baseAssetAmount base asset amount
      * @param _quoteAssetAmountLimit limit of quote asset amount; for slippage protection
-     * @param _skipFluctuationCheck false for checking fluctuationLimitRatio; true for no limit, only when closePosition()
+     * @param _fluctuationCheck true for checking fluctuationLimitRatio for liquidate(); false for no limit, for closePosition()
      * @return quote asset amount
      */
     function swapOutput(
         Dir _dir,
         Decimal.decimal calldata _baseAssetAmount,
         Decimal.decimal calldata _quoteAssetAmountLimit,
-        bool _skipFluctuationCheck
+        bool _fluctuationCheck
     ) external override onlyOpen onlyCounterParty returns (Decimal.decimal memory) {
-        return implSwapOutput(_dir, _baseAssetAmount, _quoteAssetAmountLimit, _skipFluctuationCheck);
+        return implSwapOutput(_dir, _baseAssetAmount, _quoteAssetAmountLimit, _fluctuationCheck);
     }
 
     /**
@@ -712,7 +714,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         Dir _dir,
         Decimal.decimal memory _baseAssetAmount,
         Decimal.decimal memory _quoteAssetAmountLimit,
-        bool _skipFluctuationCheck
+        bool _fluctuationCheck
     ) internal returns (Decimal.decimal memory) {
         if (_baseAssetAmount.toUint() == 0) {
             return Decimal.zero();
@@ -737,15 +739,15 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
         // If the price impact of one single tx is larger than priceFluctuation, skip the check
         // only for liquidate()
-        if (!_skipFluctuationCheck) {
-            _skipFluctuationCheck = isSingleTxOverFluctuation(_dir, quoteAssetAmount, _baseAssetAmount);
+        if (_fluctuationCheck) {
+            _fluctuationCheck = !isSingleTxOverFluctuation(_dir, quoteAssetAmount, _baseAssetAmount);
         }
 
         updateReserve(
             _dir == Dir.ADD_TO_AMM ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM,
             quoteAssetAmount,
             _baseAssetAmount,
-            _skipFluctuationCheck
+            _fluctuationCheck
         );
 
         emit SwapOutput(_dir, quoteAssetAmount.toUint(), _baseAssetAmount.toUint());
@@ -756,7 +758,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         Dir _dir,
         Decimal.decimal memory _quoteAssetAmount,
         Decimal.decimal memory _baseAssetAmount,
-        bool _skipFluctuationCheck
+        bool _fluctuationCheck
     ) internal {
         if (_dir == Dir.ADD_TO_AMM) {
             quoteAssetReserve = quoteAssetReserve.addD(_quoteAssetAmount);
@@ -775,7 +777,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         }
 
         // check if it's over fluctuationLimitRatio
-        if (!_skipFluctuationCheck) {
+        if (_fluctuationCheck) {
             checkFluctuationLimit(fluctuationLimitRatio);
         }
 
