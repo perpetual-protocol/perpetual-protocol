@@ -909,6 +909,23 @@ export class ContractPublisher {
             },
         ]
         this.taskBatchesMap.layer2.push(chainlinkBatch)
+
+        // layer 2, batch 13
+        const sushiAmmConfig = makeAmmConfig(
+            AmmInstanceName.SUSHIUSDC,
+            "SUSHI",
+            BigNumber.from(460_000).mul(DEFAULT_DIGITS),
+            DEFAULT_DIGITS.mul(5_000),
+            BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
+        )
+        const batch = makeAmmDeployBatch(
+            sushiAmmConfig,
+            this.factory,
+            this.externalContract,
+            this.deployConfig.confirmations,
+            true,
+        )
+        this.taskBatchesMap.layer2.push(batch)
     }
 
     get confirmations(): number {

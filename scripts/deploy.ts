@@ -80,6 +80,12 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
     )
 
     await asyncExec(`buidler --network ${layer2Network} ${TASK_DEPLOY_LAYER} ${stage} layer2 12`, options)
+
+    // deploy the market (production=SUSHI, staging=SUSHI)
+    await asyncExec(
+        `buidler --network ${layer2Network} --config buidler.flatten.amm.config.ts ${TASK_DEPLOY_LAYER} ${stage} layer2 13`,
+        options,
+    )
 }
 
 /* eslint-disable no-console */

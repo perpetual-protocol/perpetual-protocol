@@ -93,6 +93,10 @@
         "ChainlinkPriceFeed": {
           "name": "ChainlinkPriceFeed",
           "address": "0xAE77D1342CDBC93842007C5190e5C096d65C1b9E"
+        },
+        "SUSHIUSDC": {
+          "name": "Amm",
+          "address": "0xC38108217bd3ceF28CCfa2bb74C670601c77995D"
         }
       },
       "accounts": [],
