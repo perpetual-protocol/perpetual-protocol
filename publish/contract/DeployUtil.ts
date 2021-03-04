@@ -3,7 +3,7 @@ import { TASK_COMPILE } from "@nomiclabs/buidler/builtin-tasks/task-names"
 import { SRC_DIR } from "../../constants"
 import { ExternalContracts } from "../../scripts/common"
 import { flatten } from "../../scripts/flatten"
-import { ChainlinkPriceFeed, ClearingHouse, L2PriceFeed } from "../../types/ethers"
+import { ChainlinkPriceFeed, ClearingHouse } from "../../types/ethers"
 import { ContractName } from "../ContractName"
 import { ContractWrapperFactory } from "./ContractWrapperFactory"
 import { AmmConfig } from "./DeployConfig"
@@ -27,7 +27,7 @@ export function makeAmmDeployBatch(
         async (): Promise<void> => {
             console.log(`deploy ${ammConfig.name} amm...`)
             const filename = `${ContractName.Amm}.sol`
-            const l2PriceFeedContract = factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
+            const chainlinkPriceFeedContract = factory.create<ChainlinkPriceFeed>(ContractName.ChainlinkPriceFeed)
 
             if (needFlatten) {
                 // after flatten sol file we must re-compile again
@@ -39,7 +39,7 @@ export function makeAmmDeployBatch(
             const quoteTokenAddr = externalContract.usdc!
             await ammContract.deployUpgradableContract(
                 ammConfig.deployArgs,
-                l2PriceFeedContract.address!,
+                chainlinkPriceFeedContract.address!,
                 quoteTokenAddr,
             )
         },
