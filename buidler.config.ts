@@ -19,7 +19,7 @@ import {
     XDAI_MNEMONIC,
     XDAI_URL,
 } from "./constants"
-import { TASK_CHECK_CHAINLINK, TASK_DEPLOY_LAYER } from "./scripts/common"
+import { TASK_CHECK_CHAINLINK, TASK_MIGRATE } from "./scripts/common"
 
 usePlugin("@nomiclabs/buidler-truffle5")
 usePlugin("@nomiclabs/buidler-ethers")
@@ -49,18 +49,16 @@ task(TASK_CHECK_CHAINLINK, "Check Chainlink")
         await checkChainlink(address, bre)
     })
 
-task(TASK_DEPLOY_LAYER, "Deploy a layer")
+task(TASK_MIGRATE, "Migrate contract deployment")
     .addPositionalParam("stage", "Target stage of the deployment")
-    .addPositionalParam("layer", "Target layer of the deployment")
-    .addPositionalParam("batch", "Target batch of the deployment")
-    .setAction(async ({ stage, layer, batch }, bre) => {
+    .addPositionalParam("migrationPath", "Target migration")
+    .setAction(async ({ stage, migrationPath }, bre) => {
         // only load dependencies when deploy is in action
         // because it depends on built artifacts and creates circular dependencies
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const { deployLayer } = require("./scripts/deploy-layer")
+        const { migrate } = await import("./publish/Migration")
 
         await bre.run(TASK_COMPILE)
-        await deployLayer(stage, layer, +batch, bre)
+        await migrate(stage, migrationPath, bre)
     })
 
 // stop using `BuidlerConfig` type in order to add `gasReporter` key which is not in current typing

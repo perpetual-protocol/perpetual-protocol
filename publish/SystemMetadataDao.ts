@@ -83,12 +83,20 @@ export class SystemMetadataDao {
         ShellString(JSON.stringify(this.systemMetadataCache, null, 2)).to(this.metadataFile)
     }
 
-    clearMetadata(layerType: Layer): void {
-        this.systemMetadataCache.layers[layerType] = {
-            network: this.settingsDao.getNetwork(layerType),
-            accounts: [],
-            contracts: {},
-            externalContracts: {},
+    clearMetadata(): void {
+        this.systemMetadataCache.layers = {
+            [Layer.Layer1]: {
+                network: this.settingsDao.getNetwork(Layer.Layer1),
+                accounts: [],
+                contracts: {},
+                externalContracts: {},
+            },
+            [Layer.Layer2]: {
+                network: this.settingsDao.getNetwork(Layer.Layer2),
+                accounts: [],
+                contracts: {},
+                externalContracts: {},
+            },
         }
         this.setMetadata(this.systemMetadataCache)
     }

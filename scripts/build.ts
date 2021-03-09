@@ -5,7 +5,7 @@ import { ARTIFACTS_DIR } from "../constants"
 import { SettingsDao } from "../publish/SettingsDao"
 import { SystemMetadataDao } from "../publish/SystemMetadataDao"
 import { asyncExec } from "../scripts/helper"
-import { ContractMetadata } from "./common"
+import { ContractMetadata, Layer } from "./common"
 
 function printByteCodeSize(contractName: string, artifactPath: string): number {
     const jsonStr = fs.readFileSync(artifactPath, "utf8")
@@ -65,7 +65,7 @@ function generateContractMetadata(): void {
     const settingsDao = new SettingsDao("test")
     const systemMetadataDao = new SystemMetadataDao(settingsDao)
     systemMetadataDao.setLayerMetadata(
-        "layer2", // for now, test stage builds put everything in layer2
+        Layer.Layer2, // for now, test stage builds put everything in layer2
         {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             network: "localhost",
