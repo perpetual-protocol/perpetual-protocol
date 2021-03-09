@@ -515,7 +515,7 @@ contract ClearingHouse is
         // update position
         address trader = _msgSender();
         adjustPositionForLiquidityChanged(_amm, trader);
-        PositionResp memory positionResp = internalClosePosition(_amm, trader, _quoteAssetAmountLimit, false);
+        PositionResp memory positionResp = internalClosePosition(_amm, trader, _quoteAssetAmountLimit);
 
         {
             // add scope for stack too deep error
@@ -965,7 +965,7 @@ contract ClearingHouse is
     ) internal returns (PositionResp memory positionResp) {
         // new position size is larger than or equal to the old position size
         // so either close or close then open a larger position
-        PositionResp memory closePositionResp = internalClosePosition(_amm, _trader, Decimal.zero(), false);
+        PositionResp memory closePositionResp = internalClosePosition(_amm, _msgSender(), Decimal.zero());
 
         // the old position is underwater. trader should close a position first
         require(closePositionResp.badDebt.toUint() == 0, "reduce an underwater position");
@@ -1007,8 +1007,7 @@ contract ClearingHouse is
     function internalClosePosition(
         IAmm _amm,
         address _trader,
-        Decimal.decimal memory _quoteAssetAmountLimit,
-        bool _fluctuationCheck
+        Decimal.decimal memory _quoteAssetAmountLimit
     ) private returns (PositionResp memory positionResp) {
         // check conditions
         Position memory oldPosition = getUnadjustedPosition(_amm, _trader);
@@ -1030,10 +1029,9 @@ contract ClearingHouse is
         positionResp.marginToVault = MixedDecimal.fromDecimal(remainMargin).mulScalar(-1);
         // for amm.swapOutput, the direction is in base asset, from the perspective of Amm
         positionResp.exchangedQuoteAssetAmount = _amm.swapOutput(
-            oldPosition.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
-            oldPosition.size.abs(),
-            _quoteAssetAmountLimit,
-            _fluctuationCheck
+            oldPositionSize.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
+            oldPositionSize.abs(),
+            _quoteAssetAmountLimit
         );
 
         // bankrupt position's bad debt will be also consider as a part of the open interest

@@ -134,6 +134,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     //**********************************************************//
 
     //◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤ add state variables below ◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤//
+    uint256 public overFluctuationBlockNumber;
 
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
     uint256[50] private __gap;
@@ -244,16 +245,14 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
      * @param _dirOfBase ADD_TO_AMM for short, REMOVE_FROM_AMM for long, opposite direction from swapInput
      * @param _baseAssetAmount base asset amount
      * @param _quoteAssetAmountLimit limit of quote asset amount; for slippage protection
-     * @param _fluctuationCheck true for checking fluctuationLimitRatio for liquidate(); false for no limit, for closePosition()
      * @return quote asset amount
      */
     function swapOutput(
         Dir _dirOfBase,
         Decimal.decimal calldata _baseAssetAmount,
-        Decimal.decimal calldata _quoteAssetAmountLimit,
-        bool _fluctuationCheck
+        Decimal.decimal calldata _quoteAssetAmountLimit
     ) external override onlyOpen onlyCounterParty returns (Decimal.decimal memory) {
-        return implSwapOutput(_dirOfBase, _baseAssetAmount, _quoteAssetAmountLimit, _fluctuationCheck);
+        return implSwapOutput(_dir, _baseAssetAmount, _quoteAssetAmountLimit);
     }
 
     /**
@@ -713,8 +712,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     function implSwapOutput(
         Dir _dirOfBase,
         Decimal.decimal memory _baseAssetAmount,
-        Decimal.decimal memory _quoteAssetAmountLimit,
-        bool _fluctuationCheck
+        Decimal.decimal memory _quoteAssetAmountLimit
     ) internal returns (Decimal.decimal memory) {
         if (_baseAssetAmount.toUint() == 0) {
             return Decimal.zero();
@@ -737,14 +735,22 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             }
         }
 
-        // If the price impact of one single tx is larger than priceFluctuation, skip the check
-        // only for liquidate()
-        Dir dirOfQuote = _dirOfBase == Dir.ADD_TO_AMM ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM;
-        if (_fluctuationCheck) {
-            _fluctuationCheck = !isSingleTxOverFluctuation(dirOfQuote, quoteAssetAmount, _baseAssetAmount);
+        // only the FIRST tx in a block whose price impact is larger than fluctuationLimitRatio can skip the fluctuation check
+        bool skipFluctuationCheck;
+        if (isSingleTxOverFluctuation(_dir, quoteAssetAmount, _baseAssetAmount)) {
+            uint256 currentBlock = _blockNumber();
+            require(overFluctuationBlockNumber != currentBlock, "price is over fluctuation limit twice");
+
+            skipFluctuationCheck = true;
+            overFluctuationBlockNumber = currentBlock;
         }
 
-        updateReserve(dirOfQuote, quoteAssetAmount, _baseAssetAmount, _fluctuationCheck);
+        updateReserve(
+            _dir == Dir.ADD_TO_AMM ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM,
+            quoteAssetAmount,
+            _baseAssetAmount,
+            skipFluctuationCheck
+        );
 
         emit SwapOutput(_dirOfBase, quoteAssetAmount.toUint(), _baseAssetAmount.toUint());
         return quoteAssetAmount;
