@@ -4,15 +4,20 @@ import { asyncExec } from "./helper"
 
 export const FLATTEN_BASE_DIR = "./flattened"
 
-export async function flatten(fromDir: string, toDir: string, filename: string): Promise<void> {
+export async function flatten(
+    fromDir: string,
+    toDir: string,
+    filename: string,
+    toFilename: string = filename,
+): Promise<void> {
     let licenseDeclared = false
     let versionDeclared = false
     let abiV2Declared = false
     const fromFile = join(fromDir, filename)
-    const toFile = join(toDir, filename)
+    const toFile = join(toDir, toFilename)
     mkdir("-p", toDir)
     const flattened = await asyncExec(`truffle-flattener ${fromFile}`)
-    console.log(flattened)
+    // console.log(flattened)
     const trimmed = flattened.split("\n").filter(line => {
         if (line.indexOf("SPDX-License-Identifier") !== -1) {
             if (!licenseDeclared) {

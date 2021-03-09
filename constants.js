@@ -4,6 +4,7 @@ dotenv.config({ path: resolve(__dirname, "..", "..", ".env") })
 
 const ROOT_DIR = __dirname
 const SRC_DIR_NAME = "src"
+const LEGACY_SRC_DIR_NAME = join(SRC_DIR_NAME, "legacy")
 
 module.exports = {
     COVERAGE_URL: "http://127.0.0.1:8555",
@@ -26,5 +27,6 @@ module.exports = {
     ROOT_DIR,
     SRC_DIR_NAME,
     SRC_DIR: join(ROOT_DIR, SRC_DIR_NAME),
+    LEGACY_SRC_DIR: join(ROOT_DIR, LEGACY_SRC_DIR_NAME),
     ETHERSCAN_API_KEY: process.env["ETHERSCAN_API_KEY"] || "",
 }

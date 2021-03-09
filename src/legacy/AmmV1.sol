@@ -10,9 +10,9 @@ import { Decimal } from "../utils/Decimal.sol";
 import { SignedDecimal } from "../utils/SignedDecimal.sol";
 import { MixedDecimal } from "../utils/MixedDecimal.sol";
 import { PerpFiOwnableUpgrade } from "../utils/PerpFiOwnableUpgrade.sol";
-import { IAmmV1 } from "./IAmmV1.sol";
+import { IAmm } from "./IAmmV1.sol";
 
-contract AmmV1 is IAmmV1, PerpFiOwnableUpgrade, BlockContext {
+contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     using SafeMath for uint256;
     using Decimal for Decimal.decimal;
     using SignedDecimal for SignedDecimal.signedDecimal;
