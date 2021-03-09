@@ -21,6 +21,7 @@ export enum ContractName {
     ClearingHouse = "ClearingHouse",
     ClearingHouseViewer = "ClearingHouseViewer",
     Amm = "Amm",
+    AmmV1 = "AmmV1",
     AmmReader = "AmmReader",
     ClientBridge = "ClientBridge",
     RootBridge = "RootBridge",

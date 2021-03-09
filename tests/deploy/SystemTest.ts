@@ -12,6 +12,7 @@ import RootBridgeArtifact from "../../build/contracts/RootBridge.json"
 import { AmmInstanceName, ContractName } from "../../publish/ContractName"
 import { SettingsDao } from "../../publish/SettingsDao"
 import { SystemMetadataDao } from "../../publish/SystemMetadataDao"
+import { Layer } from "../../scripts/common"
 import {
     Amm,
     ChainlinkL1,
@@ -37,26 +38,26 @@ describe.skip("SystemTest Spec", () => {
     const settingsDao: SettingsDao = new SettingsDao(STAGE)
     const systemMetadataDao: SystemMetadataDao = new SystemMetadataDao(settingsDao)
 
-    const perpToken = settingsDao.getExternalContracts("layer1").perp!
-    const chainLinkL1 = systemMetadataDao.getContractMetadata("layer1", ContractName.ChainlinkL1)
-    const rootBridge = systemMetadataDao.getContractMetadata("layer1", ContractName.RootBridge)
-    const multiTokenMediatorL1 = settingsDao.getExternalContracts("layer1").multiTokenMediatorOnEth
-    const ambBridgeL1 = settingsDao.getExternalContracts("layer1").ambBridgeOnEth
+    const perpToken = settingsDao.getExternalContracts(Layer.Layer1).perp!
+    const chainLinkL1 = systemMetadataDao.getContractMetadata(Layer.Layer1, ContractName.ChainlinkL1)
+    const rootBridge = systemMetadataDao.getContractMetadata(Layer.Layer1, ContractName.RootBridge)
+    const multiTokenMediatorL1 = settingsDao.getExternalContracts(Layer.Layer1).multiTokenMediatorOnEth
+    const ambBridgeL1 = settingsDao.getExternalContracts(Layer.Layer1).ambBridgeOnEth
 
-    const l2PriceFeed = systemMetadataDao.getContractMetadata("layer2", ContractName.L2PriceFeed)
-    const metaTxGateway = systemMetadataDao.getContractMetadata("layer2", ContractName.MetaTxGateway)
-    const insuranceFund = systemMetadataDao.getContractMetadata("layer2", ContractName.InsuranceFund)
-    const clearingHouse = systemMetadataDao.getContractMetadata("layer2", ContractName.ClearingHouse)
-    const clientBridge = systemMetadataDao.getContractMetadata("layer2", ContractName.ClientBridge)
-    const ETHUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.ETHUSDC)
-    const BTCUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.BTCUSDC)
-    const YFIUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.YFIUSDC)
-    const DOTUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.DOTUSDC)
-    const SNXUSDC = systemMetadataDao.getContractMetadata("layer2", AmmInstanceName.SNXUSDC)
-    const ambBridgeL2 = settingsDao.getExternalContracts("layer2").ambBridgeOnXDai
-    const multiTokenMediatorL2 = settingsDao.getExternalContracts("layer2").multiTokenMediatorOnXDai
-    const usdc = settingsDao.getExternalContracts("layer2").usdc
-    const multiTokenMediator = settingsDao.getExternalContracts("layer2").multiTokenMediatorOnXDai
+    const l2PriceFeed = systemMetadataDao.getContractMetadata(Layer.Layer2, ContractName.L2PriceFeed)
+    const metaTxGateway = systemMetadataDao.getContractMetadata(Layer.Layer2, ContractName.MetaTxGateway)
+    const insuranceFund = systemMetadataDao.getContractMetadata(Layer.Layer2, ContractName.InsuranceFund)
+    const clearingHouse = systemMetadataDao.getContractMetadata(Layer.Layer2, ContractName.ClearingHouse)
+    const clientBridge = systemMetadataDao.getContractMetadata(Layer.Layer2, ContractName.ClientBridge)
+    const ETHUSDC = systemMetadataDao.getContractMetadata(Layer.Layer2, AmmInstanceName.ETHUSDC)
+    const BTCUSDC = systemMetadataDao.getContractMetadata(Layer.Layer2, AmmInstanceName.BTCUSDC)
+    const YFIUSDC = systemMetadataDao.getContractMetadata(Layer.Layer2, AmmInstanceName.YFIUSDC)
+    const DOTUSDC = systemMetadataDao.getContractMetadata(Layer.Layer2, AmmInstanceName.DOTUSDC)
+    const SNXUSDC = systemMetadataDao.getContractMetadata(Layer.Layer2, AmmInstanceName.SNXUSDC)
+    const ambBridgeL2 = settingsDao.getExternalContracts(Layer.Layer2).ambBridgeOnXDai
+    const multiTokenMediatorL2 = settingsDao.getExternalContracts(Layer.Layer2).multiTokenMediatorOnXDai
+    const usdc = settingsDao.getExternalContracts(Layer.Layer2).usdc
+    const multiTokenMediator = settingsDao.getExternalContracts(Layer.Layer2).multiTokenMediatorOnXDai
 
     describe("RootBridge", () => {
         let instance: RootBridge
@@ -78,7 +79,7 @@ describe.skip("SystemTest Spec", () => {
         })
 
         it("own by gov", async () => {
-            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer1").foundationGovernance)
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts(Layer.Layer1).foundationGovernance)
         })
     })
 
@@ -98,7 +99,7 @@ describe.skip("SystemTest Spec", () => {
         })
 
         it("own by gov", async () => {
-            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer1").foundationGovernance)
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts(Layer.Layer1).foundationGovernance)
         })
     })
 
@@ -119,7 +120,7 @@ describe.skip("SystemTest Spec", () => {
         })
 
         it("own by gov", async () => {
-            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts(Layer.Layer2).foundationGovernance)
         })
     })
 
@@ -143,7 +144,7 @@ describe.skip("SystemTest Spec", () => {
         })
 
         it("own by gov", async () => {
-            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts(Layer.Layer2).foundationGovernance)
         })
     })
 
@@ -196,7 +197,7 @@ describe.skip("SystemTest Spec", () => {
         it.skip("has inflationMonitor", async () => {})
 
         it("own by gov", async () => {
-            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts(Layer.Layer2).foundationGovernance)
         })
     })
 
@@ -216,7 +217,7 @@ describe.skip("SystemTest Spec", () => {
         })
 
         it("own by gov", async () => {
-            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts(Layer.Layer2).foundationGovernance)
         })
     })
 
@@ -247,7 +248,7 @@ describe.skip("SystemTest Spec", () => {
         })
 
         it("own by gov", async () => {
-            expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+            expect(await instance.owner()).eq(settingsDao.getExternalContracts(Layer.Layer2).foundationGovernance)
         })
     })
 
@@ -271,7 +272,7 @@ describe.skip("SystemTest Spec", () => {
             })
 
             it("own by gov", async () => {
-                expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+                expect(await instance.owner()).eq(settingsDao.getExternalContracts(Layer.Layer2).foundationGovernance)
             })
 
             it("has correct config", async () => {
@@ -307,7 +308,7 @@ describe.skip("SystemTest Spec", () => {
             })
 
             it("own by gov", async () => {
-                expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+                expect(await instance.owner()).eq(settingsDao.getExternalContracts(Layer.Layer2).foundationGovernance)
             })
 
             it("has correct config", async () => {
@@ -343,7 +344,7 @@ describe.skip("SystemTest Spec", () => {
             })
 
             it("own by gov", async () => {
-                expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+                expect(await instance.owner()).eq(settingsDao.getExternalContracts(Layer.Layer2).foundationGovernance)
             })
 
             it("has correct config", async () => {
@@ -379,7 +380,7 @@ describe.skip("SystemTest Spec", () => {
             })
 
             it("own by gov", async () => {
-                expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+                expect(await instance.owner()).eq(settingsDao.getExternalContracts(Layer.Layer2).foundationGovernance)
             })
 
             it("has correct config", async () => {
@@ -415,7 +416,7 @@ describe.skip("SystemTest Spec", () => {
             })
 
             it("own by gov", async () => {
-                expect(await instance.owner()).eq(settingsDao.getExternalContracts("layer2").foundationGovernance)
+                expect(await instance.owner()).eq(settingsDao.getExternalContracts(Layer.Layer2).foundationGovernance)
             })
 
             it("has correct config", async () => {
@@ -435,18 +436,18 @@ describe.skip("SystemTest Spec", () => {
 
     describe("proxyAdmin", () => {
         it("own by gov at L1", async () => {
-            const proxyAdminOnEth = settingsDao.getExternalContracts("layer1").proxyAdmin!
+            const proxyAdminOnEth = settingsDao.getExternalContracts(Layer.Layer1).proxyAdmin!
             const instance = new ethers.Contract(proxyAdminOnEth, OwnableArtifact.abi, l1Provider) as Ownable
             const owner = await instance.owner()
-            const gov = settingsDao.getExternalContracts("layer1").foundationGovernance
+            const gov = settingsDao.getExternalContracts(Layer.Layer1).foundationGovernance
             expect(owner).eq(gov)
         })
 
         it("own by gov at L2", async () => {
-            const proxyAdminOnXdai = settingsDao.getExternalContracts("layer2").proxyAdmin!
+            const proxyAdminOnXdai = settingsDao.getExternalContracts(Layer.Layer2).proxyAdmin!
             const instance = new ethers.Contract(proxyAdminOnXdai, OwnableArtifact.abi, l2Provider) as Ownable
             const owner = await instance.owner()
-            const gov = settingsDao.getExternalContracts("layer2").foundationGovernance
+            const gov = settingsDao.getExternalContracts(Layer.Layer2).foundationGovernance
             expect(owner).eq(gov)
         })
     })

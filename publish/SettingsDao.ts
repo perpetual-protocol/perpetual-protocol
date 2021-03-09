@@ -1,6 +1,6 @@
 /* eslint-disable no-console, @typescript-eslint/no-non-null-assertion */
 import { ShellString } from "shelljs"
-import { ExternalContracts, Layer, Network, Stage, SystemDeploySettings } from "../scripts/common"
+import { ExternalContracts, Layer, MigrationIndex, Network, Stage, SystemDeploySettings } from "../scripts/common"
 import { getSettingsDir } from "../scripts/path"
 import production from "./settings/production.json"
 import staging from "./settings/staging.json"
@@ -25,7 +25,6 @@ export class SettingsDao {
                             layer1: {
                                 chainId: 31337,
                                 network: "localhost",
-                                version: "0",
                                 externalContracts: {
                                     foundationGovernance: "0xa230A4f6F38D904C2eA1eE95d8b2b8b7350e3d79",
                                     rewardGovernance: "0x9FE5f5bbbD3f2172Fa370068D26185f3d82ed9aC",
@@ -38,7 +37,6 @@ export class SettingsDao {
                             layer2: {
                                 chainId: 31337,
                                 network: "localhost",
-                                version: "0",
                                 externalContracts: {
                                     foundationGovernance: "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
                                     ambBridgeOnXDai: "0xc38D4991c951fE8BCE1a12bEef2046eF36b0FA4A",
@@ -48,6 +46,10 @@ export class SettingsDao {
                                     perp: "0x0C6c3C47A1f650809B0D1048FDf9603e09473D7E",
                                 },
                             },
+                        },
+                        nextMigration: {
+                            batchIndex: 0,
+                            taskIndex: 0,
                         },
                     }
                 }
@@ -62,11 +64,6 @@ export class SettingsDao {
         return `${getSettingsDir()}/${this.stage}.json`
     }
 
-    setVersion(layerType: Layer, n: number): void {
-        this.settingsCached.layers[layerType]!.version = n.toString()
-        ShellString(JSON.stringify(this.settingsCached, null, 2)).to(this.settingsFilePath)
-    }
-
     getStage(): Stage {
         return this.stage
     }
@@ -75,16 +72,32 @@ export class SettingsDao {
         return this.settingsCached
     }
 
-    getVersion(layerType: Layer): number {
-        return Number(this.settingsCached.layers[layerType]!.version)
+    getNextMigration(): MigrationIndex {
+        return this.getSystemDeploySettings().nextMigration
     }
 
-    increaseVersion(layerType: Layer): void {
-        const layer = this.settingsCached.layers[layerType]!
-        const increased = Number(layer.version) + 1
-        layer.version = increased.toString()
+    resetNextMigration(): void {
+        this.settingsCached.nextMigration.batchIndex = 0
+        this.settingsCached.nextMigration.taskIndex = 0
         ShellString(JSON.stringify(this.settingsCached, null, 2)).to(this.settingsFilePath)
-        console.log(`increase ${this.stage}:${layerType} version to ${layer.version}`)
+        console.log(`reset next migration to [0, 0]`)
+    }
+
+    increaseTaskIndex(): void {
+        this.settingsCached.nextMigration.taskIndex++
+        ShellString(JSON.stringify(this.settingsCached, null, 2)).to(this.settingsFilePath)
+        console.log(`increase task index to ${this.settingsCached.nextMigration.taskIndex}`)
+    }
+
+    increaseBatchIndex(): void {
+        this.settingsCached.nextMigration.taskIndex = 0
+        this.settingsCached.nextMigration.batchIndex++
+        ShellString(JSON.stringify(this.settingsCached, null, 2)).to(this.settingsFilePath)
+        console.log(`increase batch index to ${this.settingsCached.nextMigration.batchIndex}`)
+    }
+
+    inSameLayer(): boolean {
+        return this.getChainId(Layer.Layer1) === this.getChainId(Layer.Layer2)
     }
 
     getExternalContracts(layerType: Layer): ExternalContracts {

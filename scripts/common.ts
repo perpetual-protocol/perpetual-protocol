@@ -1,7 +1,10 @@
 // all lower-case, no dash; otherwise AWS deployment might fail
 export type Stage = "production" | "staging" | "test"
 export type Network = "homestead" | "rinkeby" | "ropsten" | "kovan" | "xdai" | "sokol" | "localhost"
-export type Layer = "layer1" | "layer2"
+export enum Layer {
+    Layer1 = "layer1",
+    Layer2 = "layer2",
+}
 
 // openzeppelin can't recognize xdai network
 // so we use this this to map the network to openzeppelin config json file name
@@ -75,14 +78,19 @@ export interface LayerDeploySettings {
     chainId: number
     network: Network
     externalContracts: ExternalContracts
-    version: string
+}
+
+export interface MigrationIndex {
+    batchIndex: number
+    taskIndex: number
 }
 
 export interface SystemDeploySettings {
     layers: {
         [key in Layer]?: LayerDeploySettings
     }
+    nextMigration: MigrationIndex
 }
 
-export const TASK_DEPLOY_LAYER = "deploy:layer"
 export const TASK_CHECK_CHAINLINK = "check:chainlink"
+export const TASK_MIGRATE = "migrate"

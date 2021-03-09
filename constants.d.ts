@@ -18,4 +18,5 @@ export declare const ARTIFACTS_DIR: string
 export declare const ROOT_DIR: string
 export declare const SRC_DIR: string
 export declare const SRC_DIR_NAME: string
+export declare const LEGACY_SRC_DIR: string
 export declare const ETHERSCAN_API_KEY: string
