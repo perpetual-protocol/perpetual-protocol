@@ -1915,7 +1915,7 @@ describe("ClearingHouse Test", () => {
             // price fluctuation: (12.1000000012 - 10) / 12.1000000012 = 0.1735537191
             await expectRevert(
                 clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob }),
-                "price is over fluctuation limit twice",
+                "price is over fluctuation limit",
             )
         })
 

@@ -133,9 +133,6 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     //    The above state variables can not change the order    //
     //**********************************************************//
 
-    //◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤ add state variables below ◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤//
-    uint256 public overFluctuationBlockNumber;
-
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
     uint256[50] private __gap;
 
@@ -736,13 +733,13 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         }
 
         // only the FIRST tx in a block whose price impact is larger than fluctuationLimitRatio can skip the fluctuation check
+        // otherwise some position will never be able to closed or liquidated
         bool skipFluctuationCheck;
-        if (isSingleTxOverFluctuation(_dir, quoteAssetAmount, _baseAssetAmount)) {
-            uint256 currentBlock = _blockNumber();
-            require(overFluctuationBlockNumber != currentBlock, "price is over fluctuation limit twice");
-
+        if (
+            !isOverFluctuationLimitRatio(fluctuationLimitRatio) &&
+            isSingleTxOverFluctuation(_dir, quoteAssetAmount, _baseAssetAmount)
+        ) {
             skipFluctuationCheck = true;
-            overFluctuationBlockNumber = currentBlock;
         }
 
         updateReserve(
@@ -781,7 +778,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
         // check if it's over fluctuationLimitRatio
         if (_fluctuationCheck) {
-            checkFluctuationLimit(fluctuationLimitRatio);
+            require(!isOverFluctuationLimitRatio(fluctuationLimitRatio), "price is over fluctuation limit");
         }
 
         // addReserveSnapshot must be after checking price fluctuation
@@ -914,7 +911,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             );
     }
 
-    function checkFluctuationLimit(Decimal.decimal memory _fluctuationLimitRatio) internal view {
+    function isOverFluctuationLimitRatio(Decimal.decimal memory _fluctuationLimitRatio) internal view returns (bool) {
         // Skip the check if the limit is 0
         if (_fluctuationLimitRatio.toUint() > 0) {
             uint256 len = reserveSnapshots.length;
@@ -925,15 +922,14 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
                 latestSnapshot = reserveSnapshots[len - 2];
             }
 
-            require(
-                !isOverFluctuationLimit(
+            return
+                isOverFluctuationLimit(
                     quoteAssetReserve.divD(baseAssetReserve),
                     _fluctuationLimitRatio,
                     latestSnapshot
-                ),
-                "price is over fluctuation limit"
-            );
+                );
         }
+        return false;
     }
 
     function checkLiquidityMultiplierLimit(

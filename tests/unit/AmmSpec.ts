@@ -563,7 +563,7 @@ describe("Amm Unit Test", () => {
             // SELL 3 base again, reserve will be 943.396 : 106, price is 970.873 / 106 = 8.899
             await expectRevert(
                 amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(3), toDecimal(0)),
-                "price is over fluctuation limit twice",
+                "price is over fluctuation limit",
             )
         })
 
