@@ -46,6 +46,15 @@ contract ClearingHouse is
     );
     event PositionSettled(address indexed amm, address indexed trader, uint256 valueTransferred);
     event RestrictionModeEntered(address amm, uint256 blockNumber);
+    event ReferredPositionOpened(
+        address amm,
+        uint256 side,
+        uint256 quoteAssetAmount,
+        uint256 leverage,
+        address trader,
+        bytes32 referralCode
+    );
+    event ReferredPositionClosed(address amm, address trader, bytes32 referralCode);
 
     /// @notice This event is emitted when position change
     /// @param trader the address which execute this transaction
@@ -391,6 +400,34 @@ contract ClearingHouse is
     //   move the remain margin to insuranceFund
 
     /**
+     * @notice open a position with referral code
+     * @param _amm amm address
+     * @param _side enum Side; BUY for long and SELL for short
+     * @param _quoteAssetAmount quote asset amount in 18 digits. Can Not be 0
+     * @param _leverage leverage  in 18 digits. Can Not be 0
+     * @param _baseAssetAmountLimit minimum base asset amount expected to get to prevent from slippage.
+     * @param _referralCode referral code
+     */
+    function openPositionWithReferral(
+        IAmm _amm,
+        Side _side,
+        Decimal.decimal calldata _quoteAssetAmount,
+        Decimal.decimal calldata _leverage,
+        Decimal.decimal calldata _baseAssetAmountLimit,
+        bytes32 _referralCode
+    ) external {
+        openPosition(_amm, _side, _quoteAssetAmount, _leverage, _baseAssetAmountLimit);
+        emit ReferredPositionOpened(
+            address(_amm),
+            uint256(_side),
+            _quoteAssetAmount.toUint(),
+            _leverage.toUint(),
+            _msgSender(),
+            _referralCode
+        );
+    }
+
+    /**
      * @notice open a position
      * @param _amm amm address
      * @param _side enum Side; BUY for long and SELL for short
@@ -401,10 +438,10 @@ contract ClearingHouse is
     function openPosition(
         IAmm _amm,
         Side _side,
-        Decimal.decimal calldata _quoteAssetAmount,
-        Decimal.decimal calldata _leverage,
-        Decimal.decimal calldata _baseAssetAmountLimit
-    ) external whenNotPaused() nonReentrant() {
+        Decimal.decimal memory _quoteAssetAmount,
+        Decimal.decimal memory _leverage,
+        Decimal.decimal memory _baseAssetAmountLimit
+    ) public whenNotPaused() nonReentrant() {
         requireAmm(_amm, true);
         requireNonZeroInput(_quoteAssetAmount);
         requireNonZeroInput(_leverage);
@@ -476,11 +513,25 @@ contract ClearingHouse is
     }
 
     /**
+     * @notice close position with referral code
+     * @param _amm IAmm address
+     * @param _referralCode referral code
+     */
+    function closePositionWithReferral(
+        IAmm _amm,
+        Decimal.decimal calldata _quoteAssetAmountLimit,
+        bytes32 _referralCode
+    ) external {
+        closePosition(_amm, _quoteAssetAmountLimit);
+        emit ReferredPositionClosed(address(_amm), _msgSender(), _referralCode);
+    }
+
+    /**
      * @notice close all the positions
      * @param _amm IAmm address
      */
-    function closePosition(IAmm _amm, Decimal.decimal calldata _quoteAssetAmountLimit)
-        external
+    function closePosition(IAmm _amm, Decimal.decimal memory _quoteAssetAmountLimit)
+        public
         whenNotPaused()
         nonReentrant()
     {
