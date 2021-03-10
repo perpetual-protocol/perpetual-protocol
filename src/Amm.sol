@@ -732,11 +732,12 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             }
         }
 
-        // only the FIRST tx in a block whose price impact is larger than fluctuationLimitRatio can skip the fluctuation check
-        // otherwise some position will never be able to closed or liquidated
+        // Only the FIRST tx in a block whose price impact is larger than fluctuationLimitRatio can skip the fluctuation check
+        // otherwise, some positions can never be closed or liquidated
+        // As reserves are not yet updated here, calling isOverBlockFluctuationLimit for the first tx over fluctuationLimitRatio returns false
         bool skipFluctuationCheck;
         if (
-            !isOverFluctuationLimitRatio(fluctuationLimitRatio) &&
+            !isOverBlockFluctuationLimit(fluctuationLimitRatio) &&
             isSingleTxOverFluctuation(_dir, quoteAssetAmount, _baseAssetAmount)
         ) {
             skipFluctuationCheck = true;
@@ -777,8 +778,8 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         }
 
         // check if it's over fluctuationLimitRatio
-        if (_fluctuationCheck) {
-            require(!isOverFluctuationLimitRatio(fluctuationLimitRatio), "price is over fluctuation limit");
+        if (!_skipFluctuationCheck) {
+            require(!isOverBlockFluctuationLimit(fluctuationLimitRatio), "price is over fluctuation limit");
         }
 
         // addReserveSnapshot must be after checking price fluctuation
@@ -911,7 +912,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             );
     }
 
-    function isOverFluctuationLimitRatio(Decimal.decimal memory _fluctuationLimitRatio) internal view returns (bool) {
+    function isOverBlockFluctuationLimit(Decimal.decimal memory _fluctuationLimitRatio) internal view returns (bool) {
         // Skip the check if the limit is 0
         if (_fluctuationLimitRatio.toUint() > 0) {
             uint256 len = reserveSnapshots.length;
