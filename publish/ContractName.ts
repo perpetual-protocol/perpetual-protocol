@@ -10,6 +10,8 @@ export enum AmmInstanceName {
     SCEXUSDC = "SCEXUSDC",
     AAVEUSDC = "AAVEUSDC",
     SUSHIUSDC = "SUSHIUSDC",
+    COMPUSDC = "COMPUSDC",
+    XAGUSDC = "XAGUSDC",
 }
 
 export enum ContractName {
