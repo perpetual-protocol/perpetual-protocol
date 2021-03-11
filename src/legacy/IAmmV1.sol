@@ -6,7 +6,7 @@ import { IERC20 } from "@openzeppelin/contracts-ethereum-package/contracts/token
 import { Decimal } from "../utils/Decimal.sol";
 import { SignedDecimal } from "../utils/SignedDecimal.sol";
 
-interface IAmm {
+interface IAmmV1 {
     /**
      * @notice asset direction, used in getInputPrice, getOutputPrice, swapInput and swapOutput
      * @param ADD_TO_AMM add asset to Amm
