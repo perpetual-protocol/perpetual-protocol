@@ -97,6 +97,10 @@
         "SUSHIUSDC": {
           "name": "Amm",
           "address": "0xF559668108Ff57745D5e3077B0A7Dd92FFc6300c"
+        },
+        "COMPUSDC": {
+          "name": "Amm",
+          "address": "0x33FbaeFb2dCc3B7e0B80afbB4377C2EB64AF0a3A"
         }
       },
       "accounts": [],
