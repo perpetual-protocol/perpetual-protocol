@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import bre, { ethers } from "@nomiclabs/buidler"
-import { TASK_COMPILE } from "@nomiclabs/buidler/builtin-tasks/task-names"
+import hre, { ethers } from "hardhat"
+import { TASK_COMPILE } from "hardhat/builtin-tasks/task-names"
 import { SRC_DIR } from "../../constants"
 import { flatten } from "../../scripts/flatten"
 import { ClearingHouse, InsuranceFund, MetaTxGateway } from "../../types/ethers"
-import { ContractName } from "../ContractName"
+import { ContractFullyQualifiedName, ContractName } from "../ContractName"
 import { MigrationContext, MigrationDefinition } from "../Migration"
 
 const migration: MigrationDefinition = {
-    configPath: "buidler.flatten.clearinghouse.config.ts",
+    configPath: "hardhat.flatten.clearinghouse.config.ts",
 
     // batch 7
     // deploy the flattened clearingHouse and init it just in case
@@ -18,16 +18,22 @@ const migration: MigrationDefinition = {
             const filename = `${ContractName.ClearingHouse}.sol`
 
             // after flatten sol file we must re-compile again
-            await flatten(SRC_DIR, bre.config.paths.sources, filename)
-            await bre.run(TASK_COMPILE)
+            await flatten(SRC_DIR, hre.config.paths.sources, filename)
+            await hre.run(TASK_COMPILE)
 
             // deploy clearing house implementation
-            const clearingHouseContract = await context.factory.create<ClearingHouse>(ContractName.ClearingHouse)
+            const clearingHouseContract = await context.factory.create<ClearingHouse>(
+                ContractFullyQualifiedName.FlattenClearingHouse,
+            )
             const implContractAddr = await clearingHouseContract.prepareUpgradeContract()
 
             // in normal case we don't need to do anything to the implementation contract
-            const insuranceFundContract = context.factory.create<InsuranceFund>(ContractName.InsuranceFund)
-            const metaTxGatewayContract = context.factory.create<MetaTxGateway>(ContractName.MetaTxGateway)
+            const insuranceFundContract = context.factory.create<InsuranceFund>(
+                ContractFullyQualifiedName.FlattenInsuranceFund,
+            )
+            const metaTxGatewayContract = context.factory.create<MetaTxGateway>(
+                ContractFullyQualifiedName.FlattenMetaTxGateway,
+            )
             const clearingHouseImplInstance = (await ethers.getContractAt(
                 ContractName.ClearingHouse,
                 implContractAddr,

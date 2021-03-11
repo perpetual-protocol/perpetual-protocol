@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import { ethers } from "@nomiclabs/buidler"
-import PerpRewardVestingArtifact from "../../build/contracts/PerpRewardVesting.json"
+import { artifacts, ethers } from "hardhat"
 import { PerpRewardVesting } from "../../types/ethers"
 import { getImplementation } from "../contract/DeployUtil"
-import { ContractInstanceName, ContractName } from "../ContractName"
+import { ContractFullyQualifiedName, ContractInstanceName } from "../ContractName"
 import { MigrationContext, MigrationDefinition } from "../Migration"
 
 const migration: MigrationDefinition = {
@@ -15,7 +14,10 @@ const migration: MigrationDefinition = {
             console.log("deploy PerpRewardVesting with 0 vesting...")
             const perpAddr = context.settingsDao.getExternalContracts(context.layer).perp!
             await context.factory
-                .create<PerpRewardVesting>(ContractName.PerpRewardVesting, ContractInstanceName.PerpRewardNoVesting)
+                .create<PerpRewardVesting>(
+                    ContractFullyQualifiedName.PerpRewardVesting,
+                    ContractInstanceName.PerpRewardNoVesting,
+                )
                 .deployUpgradableContract(perpAddr, 0)
         },
         async (): Promise<void> => {
@@ -24,7 +26,10 @@ const migration: MigrationDefinition = {
                 `transferring PerpRewardNoVesting's owner to governance=${gov}...please remember to claim the ownership`,
             )
             const reward = await context.factory
-                .create<PerpRewardVesting>(ContractName.PerpRewardVesting, ContractInstanceName.PerpRewardNoVesting)
+                .create<PerpRewardVesting>(
+                    ContractFullyQualifiedName.PerpRewardVesting,
+                    ContractInstanceName.PerpRewardNoVesting,
+                )
                 .instance()
             await (await reward.setOwner(gov)).wait(context.deployConfig.confirmations)
         },
@@ -33,7 +38,7 @@ const migration: MigrationDefinition = {
             const perpAddr = context.settingsDao.getExternalContracts(context.layer).perp!
             await context.factory
                 .create<PerpRewardVesting>(
-                    ContractName.PerpRewardVesting,
+                    ContractFullyQualifiedName.PerpRewardVesting,
                     ContractInstanceName.PerpRewardTwentySixWeeksVesting,
                 )
                 .deployUpgradableContract(perpAddr, context.deployConfig.defaultPerpRewardVestingPeriod)
@@ -45,7 +50,7 @@ const migration: MigrationDefinition = {
             )
             const reward = await context.factory
                 .create<PerpRewardVesting>(
-                    ContractName.PerpRewardVesting,
+                    ContractFullyQualifiedName.PerpRewardVesting,
                     ContractInstanceName.PerpRewardTwentySixWeeksVesting,
                 )
                 .instance()
@@ -55,7 +60,7 @@ const migration: MigrationDefinition = {
             console.log("call PerpRewardTwentySixWeeksVesting.initialize() on implementation to avoid security issue")
             const reward = await context.factory
                 .create<PerpRewardVesting>(
-                    ContractName.PerpRewardVesting,
+                    ContractFullyQualifiedName.PerpRewardVesting,
                     ContractInstanceName.PerpRewardTwentySixWeeksVesting,
                 )
                 .instance()
@@ -66,6 +71,7 @@ const migration: MigrationDefinition = {
             }
             const impAddr = await getImplementation(proxyAdminAddr, reward.address)
             console.log("implementation: ", impAddr)
+            const PerpRewardVestingArtifact = await artifacts.readArtifact(ContractFullyQualifiedName.PerpRewardVesting)
             const imp = await ethers.getContractAt(PerpRewardVestingArtifact.abi, impAddr)
             const tx = await imp.initialize(perpAddr, context.deployConfig.defaultPerpRewardVestingPeriod)
             await tx.wait(context.deployConfig.confirmations)

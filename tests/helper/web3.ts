@@ -1,4 +1,4 @@
-import { web3 } from "@nomiclabs/buidler"
+import { web3 } from "hardhat"
 
 export interface EIP712Domain {
     name: string
@@ -35,16 +35,31 @@ const MetaTxTypes = [
     { name: "functionSignature", type: "bytes" },
 ]
 
+function getSendFunction(web3: Web3) {
+    const provider = web3.currentProvider
+    if (typeof provider === "string") {
+        throw new TypeError("web3.currentProvider should not be a string")
+    }
+    if (provider === null || provider === undefined) {
+        throw new TypeError("web3.currentProvider should not be null or undefined")
+    }
+    if (!provider.send) {
+        throw new TypeError("web3.currentProvider.send() does not exist")
+    }
+    return provider.send
+}
+
 export function changeBlockTime(time: number): Promise<void> {
     return new Promise((resolve, reject) => {
-        web3.currentProvider.send(
+        const send = getSendFunction(web3)
+        send(
             {
                 jsonrpc: "2.0",
                 method: "evm_increaseTime",
                 params: [time],
                 id: 0,
             },
-            (err: Error, res: any) => {
+            (err: Error | null, res: any) => {
                 if (err) {
                     reject(err)
                 } else {
@@ -67,7 +82,8 @@ export function signEIP712MetaTx(signer: string, domain: EIP712Domain, metaTx: M
     }
 
     return new Promise((resolve, reject) => {
-        web3.currentProvider.send(
+        const send = getSendFunction(web3)
+        send(
             {
                 jsonrpc: "2.0",
                 id: 999999999999,

@@ -1,10 +1,8 @@
 import { Fragment, JsonFragment } from "@ethersproject/abi"
 import { Contract, ethers, utils } from "ethers"
+import { artifacts } from "hardhat"
 import fetch from "node-fetch"
-import AmmArtifact from "../build/contracts/Amm.json"
-import ClearingHouseArtifact from "../build/contracts/ClearingHouse.json"
-import ERC20Artifact from "../build/contracts/ERC20.json"
-import InsuranceFundArtifact from "../build/contracts/InsuranceFund.json"
+import { ContractFullyQualifiedName } from "../publish/ContractName"
 import { Amm, ClearingHouse, ERC20, InsuranceFund } from "../types/ethers"
 
 // TODO move to another standalone repo with SystemTest
@@ -21,6 +19,11 @@ async function healthCheck(): Promise<void> {
     const results = await fetch(`https://metadata.perp.exchange/production.json`)
     const json = await results.json()
     const layer2 = json["layers"]["layer2"]
+
+    const AmmArtifact = await artifacts.readArtifact(ContractFullyQualifiedName.Amm)
+    const ClearingHouseArtifact = await artifacts.readArtifact(ContractFullyQualifiedName.ClearingHouse)
+    const ERC20Artifact = await artifacts.readArtifact(ContractFullyQualifiedName.IERC20)
+    const InsuranceFundArtifact = await artifacts.readArtifact(ContractFullyQualifiedName.InsuranceFund)
 
     const usdc = instance(layer2["externalContracts"]["usdc"], ERC20Artifact.abi) as ERC20
     const arbitrageur = layer2["externalContracts"]["arbitrageur"]

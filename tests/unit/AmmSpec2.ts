@@ -2,19 +2,22 @@ import { use } from "chai"
 import { deployContract, deployMockContract, MockContract, MockProvider, solidity } from "ethereum-waffle"
 import { BigNumber, constants, utils } from "ethers"
 import { parseEther } from "ethers/lib/utils"
-import AmmArtifact from "../../build/contracts/Amm.json"
-import IERC20Artifact from "../../build/contracts/IERC20.json"
-import L2PriceFeedArtifact from "../../build/contracts/L2PriceFeed.json"
+import { artifacts } from "hardhat"
+import { ContractFullyQualifiedName } from "../../publish/ContractName"
 import { Amm } from "../../types/ethers/Amm"
 
 use(solidity)
 
-describe("Amm Unit Test 2 (Waffle)", () => {
+describe("Amm Unit Test 2 (Waffle)", async () => {
     const [wallet1, wallet2] = new MockProvider().getWallets()
     let amm: Amm
     let l2PriceFeed: MockContract
     let quoteToken: MockContract
     let clearingHouse: MockContract
+
+    const AmmArtifact = await artifacts.readArtifact(ContractFullyQualifiedName.Amm)
+    const IERC20Artifact = await artifacts.readArtifact(ContractFullyQualifiedName.IERC20)
+    const L2PriceFeedArtifact = await artifacts.readArtifact(ContractFullyQualifiedName.L2PriceFeed)
 
     beforeEach(async () => {
         quoteToken = await deployMockContract(wallet1, IERC20Artifact.abi)

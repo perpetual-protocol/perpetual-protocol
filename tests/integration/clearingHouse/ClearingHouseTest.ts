@@ -1,8 +1,8 @@
-import { web3 } from "@nomiclabs/buidler"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { default as BigNumber, default as BN } from "bn.js"
 import { expect, use } from "chai"
-import ClearingHouseArtifact from "../../../build/contracts/ClearingHouse.json"
+import { artifacts, web3 } from "hardhat"
+import { ContractFullyQualifiedName } from "../../../publish/ContractName"
 import {
     AmmFakeInstance,
     ClearingHouseFakeInstance,
@@ -1519,10 +1519,12 @@ describe("ClearingHouse Test", () => {
         it("clearingHouse should take openPosition meta tx", async () => {
             await approve(bob, clearingHouse.address, 200)
 
-            const clearingHouseWeb3Contract = new web3.eth.Contract(
+            const ClearingHouseArtifact = await artifacts.readArtifact(ContractFullyQualifiedName.ClearingHouse)
+            // see: https://github.com/ethereum-ts/TypeChain/blob/master/examples/web3-v1/src/index.ts#L13
+            const clearingHouseWeb3Contract = (new web3.eth.Contract(
                 ClearingHouseArtifact.abi,
                 clearingHouse.address,
-            ) as ClearingHouse
+            ) as unknown) as ClearingHouse
 
             const metaTx = {
                 from: bob,

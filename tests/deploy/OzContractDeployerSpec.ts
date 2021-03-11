@@ -1,18 +1,18 @@
-import { ethers, upgrades } from "@nomiclabs/buidler"
 import { use } from "chai"
 import { MockProvider, solidity } from "ethereum-waffle"
 import { ContractFactory } from "ethers"
+import { ethers, upgrades } from "hardhat"
 import { OzContractDeployer } from "../../publish/OzContractDeployer"
 import { UpgradableContractV1, UpgradableContractV2 } from "../../types/ethers"
 
 use(solidity)
 
-// conflict with buidler-gas-reporter without proxyResolver
+// conflict with hardhat-gas-reporter without proxyResolver
 describe.skip("OzContractDeployer Spec", () => {
     const [wallet] = new MockProvider().getWallets()
     const ozContractDeployer: OzContractDeployer = new OzContractDeployer()
-    const contractNameV1 = "UpgradableContractV1"
-    const contractNameV2 = "UpgradableContractV2"
+    const contractNameV1 = "src/mock/UpgradableContractV1.sol:UpgradableContractV1"
+    const contractNameV2 = "src/mock/UpgradableContractV2.sol:UpgradableContractV2"
     let v1: UpgradableContractV1
     let v2: UpgradableContractV2
     let factoryV2: ContractFactory

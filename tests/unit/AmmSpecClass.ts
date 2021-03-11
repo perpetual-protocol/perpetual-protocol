@@ -1,4 +1,4 @@
-import { web3 } from "@nomiclabs/buidler"
+import { web3 } from "hardhat"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { suite, test } from "@testdeck/mocha"
 import { default as BigNumber } from "bn.js"

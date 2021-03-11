@@ -1,15 +1,15 @@
-import { asyncExec } from "./helper"
 import { ARTIFACTS_DIR } from "../constants"
+import { asyncExec } from "./helper"
 
 async function testContract(): Promise<void> {
     if (process.env["COVERAGE"]) {
         try {
-            await asyncExec(`buidler coverage --temp ${ARTIFACTS_DIR} --network coverage`)
+            await asyncExec(`hardhat coverage --temp ${ARTIFACTS_DIR} --network coverage`)
         } catch (e) {
             console.log("run coverage failed but it is okay since regular test is passed, ignore it")
         }
     } else {
-        await asyncExec("buidler test")
+        await asyncExec("hardhat test")
         // TODO should we include this?
         // await asyncExec("npm run test:deploy")
     }

@@ -1,4 +1,4 @@
-import { web3 } from "@nomiclabs/buidler"
+import { web3 } from "hardhat"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { default as BigNumber, default as BN } from "bn.js"
 import { expect, use } from "chai"

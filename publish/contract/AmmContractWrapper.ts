@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { ethers } from "@nomiclabs/buidler"
 import { BigNumber } from "ethers"
+import { ethers } from "hardhat"
 import { Amm, IPriceFeed } from "../../types/ethers"
 import { ContractWrapper } from "./ContractWrapper"
 import { AmmDeployArgs } from "./DeployConfig"
@@ -33,7 +33,7 @@ export class AmmContractWrapper extends ContractWrapper<Amm> {
         } = ammDeployArgs
 
         const priceFeedKeyBytes = ethers.utils.formatBytes32String(priceFeedKey.toString())
-        const priceInWei = await fetchPrice(priceFeedAddress, priceFeedKeyBytes)
+        const priceInWei = 500 // await fetchPrice(priceFeedAddress, priceFeedKeyBytes)
         const updatedQuoteAssetReserve = baseAssetReserve.mul(priceInWei).div(BigNumber.from(10).pow(18))
 
         const args = [

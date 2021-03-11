@@ -60,7 +60,7 @@ Deploy contracts on rinkeby without versioning requires two environment variable
 Once these two variables are set, the deployment script is needed. For example, we want to deploy the "PerpRewardVesting" contract, and the deploy script should be similar to this code snippet:
 
 ```typescript
-import { ethers, upgrades } from "@nomiclabs/buidler"
+import { ethers, upgrades } from "hardhat"
 import { ContractName } from "../publish/ContractName"
 
 async function main() {
@@ -68,7 +68,7 @@ async function main() {
     const options = {
         unsafeAllowCustomTypes: true,
     }
-    const Vesting = await ethers.getContractFactory(ContractName.PerpRewardVesting)
+    const Vesting = await ethers.getContractFactory(ContractFullyQualifiedName.PerpRewardVesting)
     const instance = await upgrades.deployProxy(Vesting, [perpAddress], options)
     await instance.deployed()
 }
@@ -80,27 +80,27 @@ main()
 execute the below commands:
 
 ```shell
-./node_modules/.bin/buidler --network rinkeby run scripts/deploy-reward-vesting.ts
+./node_modules/.bin/hardhat --network rinkeby run scripts/deploy-reward-vesting.ts
 ```
 
 And the contract should be deployed on rinkeby, and the file ".openzeppelin/rinkeby.json" is modified with new contract addresses, but the changes can be ignored for testing purposes.
 
 ### Checking Chainlink aggregator
 
-When we create a new AMM, we always need to execute `addAggregator()` to add a chainlink aggregator. Still, the arguments are all hex format numbers, and pretty easy to type the wrong parameters. There is a buidler task "check:chainlink" to show all major information. We can use this information to check on gnosis multisign.
+When we create a new AMM, we always need to execute `addAggregator()` to add a chainlink aggregator. Still, the arguments are all hex format numbers, and pretty easy to type the wrong parameters. There is a hardhat task "check:chainlink" to show all major information. We can use this information to check on gnosis multisign.
 
 First step: go to https://docs.chain.link/docs/ethereum-addresses to find which price feed we need for the new AMM. e.g. if you want to check SNX/USD on homestead, please execute:
 
 ```shell
-$ ./node_modules/.bin/buidler check:chainlink  --network homestead --address 0xDC3EA94CD0AC27d9A86C180091e7f78C683d3699
+$ ./node_modules/.bin/hardhat check:chainlink  --network homestead --address 0xDC3EA94CD0AC27d9A86C180091e7f78C683d3699
 ```
 
 it will print basic information for SNX/USD:
 
 ```
-When we create a new AMM, we always need to execute `addAggregator()` to add a chainlink aggregator. Still, the arguments are all hex format numbers, and pretty easy to type wrong parameters. There is a buidler task "check:chainlink" to show all major information. We can use this information to check on gnosis multisign.
+When we create a new AMM, we always need to execute `addAggregator()` to add a chainlink aggregator. Still, the arguments are all hex format numbers, and pretty easy to type wrong parameters. There is a hardhat task "check:chainlink" to show all major information. We can use this information to check on gnosis multisign.
 First step: go to https://docs.chain.link/docs/ethereum-addresses to find which price feed we need for the new AMM. e.g. if you want to check SNX/USD on homestead, please execute:
-$ ./node_modules/.bin/buidler check:chainlink  --network homestead --address 0xDC3EA94CD0AC27d9A86C180091e7f78C683d3699
+$ ./node_modules/.bin/hardhat check:chainlink  --network homestead --address 0xDC3EA94CD0AC27d9A86C180091e7f78C683d3699
 it will print basic information for SNX/USD:
 pair: SNX / USD
 base symbol: SNX

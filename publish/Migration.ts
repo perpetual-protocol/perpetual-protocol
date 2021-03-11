@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { ethers } from "@nomiclabs/buidler"
-import { BuidlerRuntimeEnvironment } from "@nomiclabs/buidler/types"
+import { ethers } from "hardhat"
+import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { basename } from "path"
 import { cp, mkdir, rm, test } from "shelljs"
 import { AccountMetadata, ExternalContracts, Layer, Network, ozNetworkFile, Stage } from "../scripts/common"
@@ -105,12 +105,12 @@ export async function loadMigration(migrationPath: string): Promise<Migration> {
     return { ...migrationDef, ...migrationMetadata }
 }
 
-export async function migrate(stage: Stage, migrationPath: string, bre: BuidlerRuntimeEnvironment): Promise<void> {
-    const network = bre.buidlerArguments.network! as Network
+export async function migrate(stage: Stage, migrationPath: string, hre: HardhatRuntimeEnvironment): Promise<void> {
+    const network = hre.hardhatArguments.network! as Network
 
     // only expose accounts when deploy on local node, otherwise assign a empty array
     const isLocalhost: boolean = network === "localhost"
-    const accounts = isLocalhost ? (bre.config.networks.buidlerevm.accounts as AccountMetadata[]) : []
+    const accounts = isLocalhost ? (hre.config.networks.hardhat.accounts as AccountMetadata[]) : []
 
     // Get nextMigration from setting file
     const settingsDao = new SettingsDao(stage)

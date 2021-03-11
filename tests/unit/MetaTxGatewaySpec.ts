@@ -1,9 +1,8 @@
-import { web3 } from "@nomiclabs/buidler"
 import { expectRevert } from "@openzeppelin/test-helpers"
 import { suite, test } from "@testdeck/mocha"
 import { default as BigNumber } from "bn.js"
 import { expect, use } from "chai"
-import MetaTxRecipientMockArtifact from "../../build/contracts/MetaTxRecipientMock.json"
+import { artifacts, web3 } from "hardhat"
 import { MetaTxGatewayInstance } from "../../types/truffle"
 import { MetaTxRecipientMock } from "../../types/web3/MetaTxRecipientMock"
 import { assertionHelper } from "../helper/assertion-plugin"
@@ -32,6 +31,10 @@ class MetaTxGatewaySpec {
         this.relayer = accounts[2]
 
         this.l1ChainId = 1234
+
+        const MetaTxRecipientMockArtifact = await artifacts.readArtifact(
+            "src/mock/mocks/MetaTxRecipientMock.sol:MetaTxRecipientMock",
+        )
 
         this.metaTxGateway = await deployMetaTxGateway("Test", "1", this.l1ChainId)
         this.metaTxRecipientMock = ((await new web3.eth.Contract(MetaTxRecipientMockArtifact.abi)
@@ -98,7 +101,7 @@ class MetaTxGatewaySpec {
             this.alice,
             {
                 ...this.domain,
-                chainId: 31337, // default buidler evm chain ID
+                chainId: 31337, // default hardhat evm chain ID
             },
             metaTx,
         )
@@ -340,7 +343,7 @@ class MetaTxGatewaySpec {
             this.alice,
             {
                 ...this.domain,
-                chainId: 31337, // default buidler evm chain ID
+                chainId: 31337, // default hardhat evm chain ID
             },
             metaTx,
         )

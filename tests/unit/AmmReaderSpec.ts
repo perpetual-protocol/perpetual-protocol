@@ -1,4 +1,4 @@
-import { web3 } from "@nomiclabs/buidler"
+import { web3 } from "hardhat"
 import { default as BN } from "bn.js"
 import { expect, use } from "chai"
 import { AmmFakeInstance, AmmReaderInstance, ERC20FakeInstance, L2PriceFeedMockInstance } from "../../types/truffle"

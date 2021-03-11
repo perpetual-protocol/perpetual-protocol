@@ -1,4 +1,4 @@
-import { web3 } from "@nomiclabs/buidler"
+import { web3 } from "hardhat"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { expect, use } from "chai"
 import { FeeRewardPoolMockInstance, PerpTokenInstance, StakedPerpTokenFakeInstance } from "../../types/truffle"
