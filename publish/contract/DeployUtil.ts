@@ -79,15 +79,13 @@ export function makeLegacyAmmDeployMigrationTasks(
 export function makeAmmDeployMigrationTasks(
     context: MigrationContext,
     ammConfig: AmmConfig,
+    priceFeedAddress: string,
     needFlatten = false,
 ): MigrationTask[] {
     return [
         async (): Promise<void> => {
             console.log(`deploy ${ammConfig.name} amm...`)
             const filename = `${ContractName.Amm}.sol`
-            const chainlinkPriceFeedContract = context.factory.create<ChainlinkPriceFeed>(
-                ContractName.ChainlinkPriceFeed,
-            )
 
             if (needFlatten) {
                 // after flatten sol file we must re-compile again
@@ -97,11 +95,7 @@ export function makeAmmDeployMigrationTasks(
 
             const ammContract = context.factory.createAmm(ammConfig.name)
             const quoteTokenAddr = context.externalContract.usdc!
-            await ammContract.deployUpgradableContract(
-                ammConfig.deployArgs,
-                chainlinkPriceFeedContract.address!,
-                quoteTokenAddr,
-            )
+            await ammContract.deployUpgradableContract(ammConfig.deployArgs, priceFeedAddress, quoteTokenAddr)
         },
         async (): Promise<void> => {
             console.log(`set ${ammConfig.name} amm Cap...`)

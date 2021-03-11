@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import { BigNumber } from "ethers"
+import { ChainlinkPriceFeed } from "../../types/ethers"
 import { DEFAULT_DIGITS, makeAmmConfig } from "../contract/DeployConfig"
 import { makeAmmDeployMigrationTasks } from "../contract/DeployUtil"
-import { AmmInstanceName } from "../ContractName"
+import { AmmInstanceName, ContractName } from "../ContractName"
 import { MigrationContext, MigrationDefinition, MigrationTask } from "../Migration"
 
 const sushiAmmConfig = makeAmmConfig(
@@ -18,7 +19,9 @@ const migration: MigrationDefinition = {
     configPath: "buidler.flatten.amm.config.ts",
 
     getTasks: (context: MigrationContext): MigrationTask[] => {
-        return makeAmmDeployMigrationTasks(context, sushiAmmConfig, true)
+        const chainlinkPriceFeedContract = context.factory.create<ChainlinkPriceFeed>(ContractName.ChainlinkPriceFeed)
+
+        return makeAmmDeployMigrationTasks(context, sushiAmmConfig, chainlinkPriceFeedContract.address!, true)
     },
 }
 

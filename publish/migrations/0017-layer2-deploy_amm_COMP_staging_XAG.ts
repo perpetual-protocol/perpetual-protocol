@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import { BigNumber } from "ethers"
+import { L2PriceFeed } from "../../types/ethers"
 import { DEFAULT_DIGITS, makeAmmConfig } from "../contract/DeployConfig"
 import { makeAmmDeployMigrationTasks } from "../contract/DeployUtil"
-import { AmmInstanceName } from "../ContractName"
+import { AmmInstanceName, ContractName } from "../ContractName"
 import { MigrationContext, MigrationDefinition, MigrationTask } from "../Migration"
 
 const compAmmConfig = makeAmmConfig(
@@ -26,10 +27,13 @@ const migration: MigrationDefinition = {
     configPath: "buidler.flatten.amm.config.ts",
 
     getTasks: (context: MigrationContext): MigrationTask[] => {
+        const l2PriceFeedContract = context.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
+        const priceFeedAddress = l2PriceFeedContract.address!
+
         if (context.stage === "production") {
-            return makeAmmDeployMigrationTasks(context, compAmmConfig, true)
+            return makeAmmDeployMigrationTasks(context, compAmmConfig, priceFeedAddress, true)
         } else {
-            return makeAmmDeployMigrationTasks(context, xagAmmConfig, true)
+            return makeAmmDeployMigrationTasks(context, xagAmmConfig, priceFeedAddress, true)
         }
     },
 }
