@@ -13,6 +13,9 @@ export async function checkChainlink(address: string, env: BuidlerRuntimeEnviron
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const chainlinkInterface = new Interface(require("../build/contracts/ChainlinkL1.json").abi)
 
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const l2PriceFeedInterface = new Interface(require("../build/contracts/L2PriceFeed").abi)
+
     const [decimals, pair, latestPrice] = await Promise.all([
         aggregator.decimals(),
         aggregator.description(),
@@ -20,14 +23,16 @@ export async function checkChainlink(address: string, env: BuidlerRuntimeEnviron
     ])
     const [baseSymbol, quoteSymbol] = pair.split("/").map((symbol: string) => symbol.trim())
     const priceFeedKey = formatBytes32String(baseSymbol)
-    const functionData = chainlinkInterface.encodeFunctionData("addAggregator", [priceFeedKey, address])
+    const functionDataL1 = chainlinkInterface.encodeFunctionData("addAggregator", [priceFeedKey, address])
+    const functionDataL2 = l2PriceFeedInterface.encodeFunctionData("addAggregator", [priceFeedKey])
     const lines = [
         `pair: ${pair}`,
         `base symbol: ${baseSymbol}`,
         `quote symbol: ${quoteSymbol}`,
         `latest price: ${formatUnits(latestPrice, decimals)}`,
         `price feed key: ${priceFeedKey}`,
-        `functionData: ${functionData}`,
+        `functionData(ChainlinkL1,ChainlinkPriceFeed): ${functionDataL1}`,
+        `functionData(L2PriceFeed): ${functionDataL2}`,
     ]
 
     console.log(lines.join("\n"))
