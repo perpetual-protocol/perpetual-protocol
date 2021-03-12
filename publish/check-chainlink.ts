@@ -31,8 +31,8 @@ export async function checkChainlink(address: string, env: BuidlerRuntimeEnviron
         `quote symbol: ${quoteSymbol}`,
         `latest price: ${formatUnits(latestPrice, decimals)}`,
         `price feed key: ${priceFeedKey}`,
-        `functionData(L1): ${functionDataL1}`,
-        `functionData(L2): ${functionDataL2}`,
+        `functionData(ChainlinkL1,ChainlinkPriceFeed): ${functionDataL1}`,
+        `functionData(L2PriceFeed): ${functionDataL2}`,
     ]
 
     console.log(lines.join("\n"))
