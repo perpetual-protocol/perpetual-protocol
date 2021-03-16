@@ -9,7 +9,7 @@ import { toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 
-describe("Amm Unit Test", () => {
+describe.only("Amm Unit Test", () => {
     const ETH_PRICE = 100
 
     let amm: AmmFakeInstance
@@ -474,7 +474,7 @@ describe("Amm Unit Test", () => {
         })
     })
 
-    describe("restrict price fluctuation", () => {
+    describe.only("restrict price fluctuation", () => {
         beforeEach(async () => {
             await amm.setFluctuationLimitRatio(toDecimal(0.05))
             await amm.setOpen(true)
@@ -485,6 +485,14 @@ describe("Amm Unit Test", () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // BUY 24, reserve will be 1024 : 97.66, price is 1024 / 97.66 = 10.49
             const receipt = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(24), toDecimal(0), false)
+            expectEvent(receipt, "SwapInput")
+        })
+
+        it("swapInput, price up and over fluctuation", async () => {
+            // fluctuation is 5%, price is between 9.5 ~ 10.5
+            // BUY 25, reserve will be 1025 : 97.56, price is 1025 / 97.56 = 10.50625
+            // but _singleTxFluctuationCheck is true so it's ok to skip the check
+            const receipt = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(25), toDecimal(0), true)
             expectEvent(receipt, "SwapInput")
         })
 
