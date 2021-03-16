@@ -74,14 +74,13 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     //
     // FUNCTIONS
     //
-    function initialize(IERC20 _perpToken, IStakeModule _stakeModule) external initializer {
-        require(address(_perpToken) != address(0) && address(_stakeModule) != address(0), "Invalid input.");
+    function initialize(IERC20 _perpToken) external initializer {
+        require(address(_perpToken) != address(0), "Invalid input.");
         __Ownable_init();
         name = "Staked Perpetual";
         symbol = "sPERP";
         decimals = 18;
         perpToken = _perpToken;
-        stakeModules.push(address(_stakeModule));
     }
 
     function stake(Decimal.decimal calldata _amount) external {

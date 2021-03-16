@@ -64,7 +64,7 @@ import {
     SupplyScheduleFakeContract,
     SupplyScheduleFakeInstance,
     TollPoolContract,
-    TollPoolInstance,
+    TollPoolInstance
 } from "../../types/truffle"
 import { Decimal, toFullDigit } from "./number"
 
@@ -382,10 +382,9 @@ export async function deployL2KeeperReward(perpToken: string): Promise<KeeperRew
 
 export async function deployStakedPerpToken(
     perpToken: string,
-    feeRewardPool: string,
 ): Promise<StakedPerpTokenFakeInstance> {
     const instance = await StakedPerpToken.new()
-    await instance.initialize(perpToken, feeRewardPool)
+    await instance.initialize(perpToken)
     return instance
 }
 
