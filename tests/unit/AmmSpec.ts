@@ -9,7 +9,7 @@ import { toDecimal, toFullDigit } from "../helper/number"
 
 use(assertionHelper)
 
-describe.only("Amm Unit Test", () => {
+describe("Amm Unit Test", () => {
     const ETH_PRICE = 100
 
     let amm: AmmFakeInstance
@@ -474,7 +474,7 @@ describe.only("Amm Unit Test", () => {
         })
     })
 
-    describe.only("restrict price fluctuation", () => {
+    describe("restrict price fluctuation", () => {
         beforeEach(async () => {
             await amm.setFluctuationLimitRatio(toDecimal(0.05))
             await amm.setOpen(true)

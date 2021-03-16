@@ -195,7 +195,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
      * @param _dir ADD_TO_AMM for long, REMOVE_FROM_AMM for short
      * @param _quoteAssetAmount quote asset amount
      * @param _baseAssetAmountLimit minimum base asset amount expected to get to prevent front running
-     * @param _singleTxFluctuationCheck check fluctuation of a single tx if true, otherwise check fluctuation of a block
+     * @param _singleTxFluctuationCheck check fluctuation of a single tx if true, otherwise check fluctuation of a block. only for partial liquidation
      * @return base asset amount
      */
     function swapInput(
@@ -739,16 +739,12 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
         // If the price impact of one single tx is larger than priceFluctuation, skip the check
         // only for liquidate()
+        Dir dirOfQuoteAsset = _dir == Dir.ADD_TO_AMM ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM;
         if (_fluctuationCheck) {
-            _fluctuationCheck = !isSingleTxOverFluctuation(_dir, quoteAssetAmount, _baseAssetAmount);
+            _fluctuationCheck = !isSingleTxOverFluctuation(dirOfQuoteAsset, quoteAssetAmount, _baseAssetAmount);
         }
 
-        updateReserve(
-            _dir == Dir.ADD_TO_AMM ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM,
-            quoteAssetAmount,
-            _baseAssetAmount,
-            _fluctuationCheck
-        );
+        updateReserve(dirOfQuoteAsset, quoteAssetAmount, _baseAssetAmount, _fluctuationCheck);
 
         emit SwapOutput(_dir, quoteAssetAmount.toUint(), _baseAssetAmount.toUint());
         return quoteAssetAmount;
@@ -893,6 +889,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         revert("not supported option");
     }
 
+    // the dir is in quoteAsset's perspective
     function isSingleTxOverFluctuation(
         Dir _dir,
         Decimal.decimal memory _quoteAssetAmount,
@@ -900,8 +897,8 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     ) internal view returns (bool) {
         Decimal.decimal memory priceAfterReserveUpdated =
             (_dir == Dir.ADD_TO_AMM)
-                ? quoteAssetReserve.subD(_quoteAssetAmount).divD(baseAssetReserve.addD(_baseAssetAmount))
-                : quoteAssetReserve.addD(_quoteAssetAmount).divD(baseAssetReserve.subD(_baseAssetAmount));
+                ? quoteAssetReserve.addD(_quoteAssetAmount).divD(baseAssetReserve.subD(_baseAssetAmount))
+                : quoteAssetReserve.subD(_quoteAssetAmount).divD(baseAssetReserve.addD(_baseAssetAmount));
         return
             isOverFluctuationLimit(
                 priceAfterReserveUpdated,
