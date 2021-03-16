@@ -2,6 +2,10 @@ import { ARTIFACTS_DIR } from "../constants"
 import { asyncExec } from "./helper"
 
 async function testContract(): Promise<void> {
+    await asyncExec(`hardhat typechain --config hardhat-configs/hardhat.typechain.truffle.config.ts`)
+    await asyncExec(`hardhat typechain --config hardhat-configs/hardhat.typechain.ethers.config.ts`)
+    await asyncExec(`hardhat typechain --config hardhat-configs/hardhat.typechain.web3.config.ts`)
+
     if (process.env["COVERAGE"]) {
         try {
             await asyncExec(`hardhat coverage --temp ${ARTIFACTS_DIR} --network coverage`)

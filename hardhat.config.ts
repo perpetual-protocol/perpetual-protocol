@@ -32,14 +32,6 @@ import {
 } from "./constants"
 import { TASK_CHECK_CHAINLINK, TASK_MIGRATE } from "./scripts/common"
 
-// task(TASK_COMPILE_GET_COMPILER_INPUT).setAction(async (_, env, runSuper) => {
-//     const input = await runSuper()
-//     if (env.network.name === "coverage") {
-//         input.settings.metadata.useLiteralContent = false
-//     }
-//     return input
-// })
-
 task(TASK_CHECK_CHAINLINK, "Check Chainlink")
     .addParam("address", "a Chainlink aggregator address")
     .setAction(async ({ address }, hre) => {
