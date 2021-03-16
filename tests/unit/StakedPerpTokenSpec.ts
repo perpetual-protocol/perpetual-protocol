@@ -37,7 +37,8 @@ describe("StakedPerpTokenSpec", () => {
         perpToken = await deployPerpToken(toFullDigit(2000000))
         feeRewardPoolMock1 = await deployFeeRewardPoolMock()
         feeRewardPoolMock2 = await deployFeeRewardPoolMock()
-        stakedPerpToken = await deployStakedPerpToken(perpToken.address, feeRewardPoolMock1.address)
+        stakedPerpToken = await deployStakedPerpToken(perpToken.address)
+        await stakedPerpToken.addStakeModule(feeRewardPoolMock1.address)
 
         await perpToken.transfer(alice, toFullDigit(2000))
         await perpToken.approve(stakedPerpToken.address, toFullDigit(2000), { from: alice })
