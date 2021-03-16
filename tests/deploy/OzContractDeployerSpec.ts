@@ -1,4 +1,4 @@
-import { use } from "chai"
+import { expect, use } from "chai"
 import { MockProvider, solidity } from "ethereum-waffle"
 import { ContractFactory } from "ethers"
 import { ethers, upgrades } from "hardhat"
