@@ -33,7 +33,7 @@ export class AmmContractWrapper extends ContractWrapper<Amm> {
         } = ammDeployArgs
 
         const priceFeedKeyBytes = ethers.utils.formatBytes32String(priceFeedKey.toString())
-        const priceInWei = 500 // await fetchPrice(priceFeedAddress, priceFeedKeyBytes)
+        const priceInWei = await fetchPrice(priceFeedAddress, priceFeedKeyBytes)
         const updatedQuoteAssetReserve = baseAssetReserve.mul(priceInWei).div(BigNumber.from(10).pow(18))
 
         const args = [
