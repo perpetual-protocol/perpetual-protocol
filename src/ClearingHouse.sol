@@ -887,7 +887,7 @@ contract ClearingHouse is
         Decimal.decimal memory _quoteAssetAmount,
         Decimal.decimal memory _leverage,
         Decimal.decimal memory _baseAssetAmountLimit,
-        bool _singleTxFluctuationCheck
+        bool _isLiquidation
     ) internal returns (PositionResp memory) {
         Decimal.decimal memory openNotional = _quoteAssetAmount.mulD(_leverage);
         (Decimal.decimal memory oldPositionNotional, SignedDecimal.signedDecimal memory unrealizedPnl) =
@@ -903,7 +903,7 @@ contract ClearingHouse is
                 _side,
                 openNotional,
                 _baseAssetAmountLimit,
-                _singleTxFluctuationCheck
+                _isLiquidation
             );
 
             // realizedPnl = unrealizedPnl * closedRatio
