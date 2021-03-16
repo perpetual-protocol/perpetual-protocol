@@ -9,7 +9,7 @@ async function testContract(): Promise<void> {
             console.log("run coverage failed but it is okay since regular test is passed, ignore it")
         }
     } else {
-        await asyncExec("hardhat test")
+        await asyncExec("hardhat test --max-memory 4096")
         // TODO should we include this?
         // await asyncExec("npm run test:deploy")
     }
