@@ -73,7 +73,7 @@ export async function checkChainlink(address: string, env: BuidlerRuntimeEnviron
         `base symbol: ${baseSymbol}`,
         `quote symbol: ${quoteSymbol}`,
         `latest price: ${latestPriceNum}`,
-        `maxHoldingBaseAsset (personal): ${10_000 / latestPriceNum}`,
+        `maxHoldingBaseAsset (personal): ${100_000 / latestPriceNum}`,
         `openInterestNotionalCap (total): 2_000_000`,
         ``,
         `price feed key: ${priceFeedKey}`,

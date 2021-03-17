@@ -11,7 +11,7 @@ const prodAmmConfig = makeAmmConfig(
     AmmInstanceName.RENUSDC,
     "REN",
     BigNumber.from(7_500_000).mul(DEFAULT_DIGITS),
-    DEFAULT_DIGITS.mul(9300),
+    DEFAULT_DIGITS.mul(100_000),
     BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
 )
 
@@ -19,7 +19,7 @@ const stagAmmConfig = makeAmmConfig(
     AmmInstanceName.AUDUSDC,
     "AUD",
     BigNumber.from(7_500_000).mul(DEFAULT_DIGITS),
-    DEFAULT_DIGITS.mul(9300),
+    DEFAULT_DIGITS.mul(100_000),
     BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
 )
 
