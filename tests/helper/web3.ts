@@ -87,7 +87,7 @@ export function signEIP712MetaTx(signer: string, domain: EIP712Domain, metaTx: M
             {
                 jsonrpc: "2.0",
                 id: 999999999999,
-                method: "eth_signTypedData",
+                method: "eth_signTypedData_v4",
                 params: [signer, dataToSign],
             },
             async function(err: any, result: any) {
