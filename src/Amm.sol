@@ -192,14 +192,14 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     /**
      * @notice Swap your quote asset to base asset, the impact of the price MUST be less than `fluctuationLimitRatio`
      * @dev Only clearingHouse can call this function
-     * @param _dir ADD_TO_AMM for long, REMOVE_FROM_AMM for short
+     * @param _dirOfQuote ADD_TO_AMM for long, REMOVE_FROM_AMM for short
      * @param _quoteAssetAmount quote asset amount
      * @param _baseAssetAmountLimit minimum base asset amount expected to get to prevent front running
      * @param _singleTxFluctuationCheck check fluctuation of a single tx if true, otherwise check fluctuation of a block. only for partial liquidation
      * @return base asset amount
      */
     function swapInput(
-        Dir _dir,
+        Dir _dirOfQuote,
         Decimal.decimal calldata _quoteAssetAmount,
         Decimal.decimal calldata _baseAssetAmountLimit,
         bool _singleTxFluctuationCheck
@@ -207,19 +207,19 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         if (_quoteAssetAmount.toUint() == 0) {
             return Decimal.zero();
         }
-        if (_dir == Dir.REMOVE_FROM_AMM) {
+        if (_dirOfQuote == Dir.REMOVE_FROM_AMM) {
             require(
                 quoteAssetReserve.mulD(tradeLimitRatio).toUint() >= _quoteAssetAmount.toUint(),
                 "over trading limit"
             );
         }
 
-        Decimal.decimal memory baseAssetAmount = getInputPrice(_dir, _quoteAssetAmount);
+        Decimal.decimal memory baseAssetAmount = getInputPrice(_dirOfQuote, _quoteAssetAmount);
         // If LONG, exchanged base amount should be more than _baseAssetAmountLimit,
         // otherwise(SHORT), exchanged base amount should be less than _baseAssetAmountLimit.
         // In SHORT case, more position means more debt so should not be larger than _baseAssetAmountLimit
         if (_baseAssetAmountLimit.toUint() != 0) {
-            if (_dir == Dir.ADD_TO_AMM) {
+            if (_dirOfQuote == Dir.ADD_TO_AMM) {
                 require(baseAssetAmount.toUint() >= _baseAssetAmountLimit.toUint(), "Less than minimal base token");
             } else {
                 require(baseAssetAmount.toUint() <= _baseAssetAmountLimit.toUint(), "More than maximal base token");
@@ -230,30 +230,30 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         // only for partial liquidation
         bool fluctuationCheckInBlock = !_singleTxFluctuationCheck;
         if (_singleTxFluctuationCheck) {
-            fluctuationCheckInBlock = !isSingleTxOverFluctuation(_dir, _quoteAssetAmount, baseAssetAmount);
+            fluctuationCheckInBlock = !isSingleTxOverFluctuation(_dirOfQuote, _quoteAssetAmount, baseAssetAmount);
         }
 
-        updateReserve(_dir, _quoteAssetAmount, baseAssetAmount, fluctuationCheckInBlock);
-        emit SwapInput(_dir, _quoteAssetAmount.toUint(), baseAssetAmount.toUint());
+        updateReserve(_dirOfQuote, _quoteAssetAmount, baseAssetAmount, fluctuationCheckInBlock);
+        emit SwapInput(_dirOfQuote, _quoteAssetAmount.toUint(), baseAssetAmount.toUint());
         return baseAssetAmount;
     }
 
     /**
      * @notice swap your base asset to quote asset; the impact of the price can be restricted with fluctuationLimitRatio
      * @dev only clearingHouse can call this function
-     * @param _dir ADD_TO_AMM for short, REMOVE_FROM_AMM for long, opposite direction from swapInput
+     * @param _dirOfBase ADD_TO_AMM for short, REMOVE_FROM_AMM for long, opposite direction from swapInput
      * @param _baseAssetAmount base asset amount
      * @param _quoteAssetAmountLimit limit of quote asset amount; for slippage protection
      * @param _fluctuationCheck true for checking fluctuationLimitRatio for liquidate(); false for no limit, for closePosition()
      * @return quote asset amount
      */
     function swapOutput(
-        Dir _dir,
+        Dir _dirOfBase,
         Decimal.decimal calldata _baseAssetAmount,
         Decimal.decimal calldata _quoteAssetAmountLimit,
         bool _fluctuationCheck
     ) external override onlyOpen onlyCounterParty returns (Decimal.decimal memory) {
-        return implSwapOutput(_dir, _baseAssetAmount, _quoteAssetAmountLimit, _fluctuationCheck);
+        return implSwapOutput(_dirOfBase, _baseAssetAmount, _quoteAssetAmountLimit, _fluctuationCheck);
     }
 
     /**
@@ -434,63 +434,63 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     /**
      * @notice get input twap amount.
      * returns how many base asset you will get with the input quote amount based on twap price.
-     * @param _dir ADD_TO_AMM for long, REMOVE_FROM_AMM for short.
+     * @param _dirOfQuote ADD_TO_AMM for long, REMOVE_FROM_AMM for short.
      * @param _quoteAssetAmount quote asset amount
      * @return base asset amount
      */
-    function getInputTwap(Dir _dir, Decimal.decimal memory _quoteAssetAmount)
+    function getInputTwap(Dir _dirOfQuote, Decimal.decimal memory _quoteAssetAmount)
         public
         view
         override
         returns (Decimal.decimal memory)
     {
-        return implGetInputAssetTwapPrice(_dir, _quoteAssetAmount, QuoteAssetDir.QUOTE_IN, 15 minutes);
+        return implGetInputAssetTwapPrice(_dirOfQuote, _quoteAssetAmount, QuoteAssetDir.QUOTE_IN, 15 minutes);
     }
 
     /**
      * @notice get output twap amount.
      * return how many quote asset you will get with the input base amount on twap price.
-     * @param _dir ADD_TO_AMM for short, REMOVE_FROM_AMM for long, opposite direction from `getInputTwap`.
+     * @param _dirOfBase ADD_TO_AMM for short, REMOVE_FROM_AMM for long, opposite direction from `getInputTwap`.
      * @param _baseAssetAmount base asset amount
      * @return quote asset amount
      */
-    function getOutputTwap(Dir _dir, Decimal.decimal memory _baseAssetAmount)
+    function getOutputTwap(Dir _dirOfBase, Decimal.decimal memory _baseAssetAmount)
         public
         view
         override
         returns (Decimal.decimal memory)
     {
-        return implGetInputAssetTwapPrice(_dir, _baseAssetAmount, QuoteAssetDir.QUOTE_OUT, 15 minutes);
+        return implGetInputAssetTwapPrice(_dirOfBase, _baseAssetAmount, QuoteAssetDir.QUOTE_OUT, 15 minutes);
     }
 
     /**
      * @notice get input amount. returns how many base asset you will get with the input quote amount.
-     * @param _dir ADD_TO_AMM for long, REMOVE_FROM_AMM for short.
+     * @param _dirOfQuote ADD_TO_AMM for long, REMOVE_FROM_AMM for short.
      * @param _quoteAssetAmount quote asset amount
      * @return base asset amount
      */
-    function getInputPrice(Dir _dir, Decimal.decimal memory _quoteAssetAmount)
+    function getInputPrice(Dir _dirOfQuote, Decimal.decimal memory _quoteAssetAmount)
         public
         view
         override
         returns (Decimal.decimal memory)
     {
-        return getInputPriceWithReserves(_dir, _quoteAssetAmount, quoteAssetReserve, baseAssetReserve);
+        return getInputPriceWithReserves(_dirOfQuote, _quoteAssetAmount, quoteAssetReserve, baseAssetReserve);
     }
 
     /**
      * @notice get output price. return how many quote asset you will get with the input base amount
-     * @param _dir ADD_TO_AMM for short, REMOVE_FROM_AMM for long, opposite direction from `getInput`.
+     * @param _dirOfBase ADD_TO_AMM for short, REMOVE_FROM_AMM for long, opposite direction from `getInput`.
      * @param _baseAssetAmount base asset amount
      * @return quote asset amount
      */
-    function getOutputPrice(Dir _dir, Decimal.decimal memory _baseAssetAmount)
+    function getOutputPrice(Dir _dirOfBase, Decimal.decimal memory _baseAssetAmount)
         public
         view
         override
         returns (Decimal.decimal memory)
     {
-        return getOutputPriceWithReserves(_dir, _baseAssetAmount, quoteAssetReserve, baseAssetReserve);
+        return getOutputPriceWithReserves(_dirOfBase, _baseAssetAmount, quoteAssetReserve, baseAssetReserve);
     }
 
     /**
@@ -607,7 +607,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
      **/
 
     function getInputPriceWithReserves(
-        Dir _dir,
+        Dir _dirOfQuote,
         Decimal.decimal memory _quoteAssetAmount,
         Decimal.decimal memory _quoteAssetPoolAmount,
         Decimal.decimal memory _baseAssetPoolAmount
@@ -616,7 +616,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             return Decimal.zero();
         }
 
-        bool isAddToAmm = _dir == Dir.ADD_TO_AMM;
+        bool isAddToAmm = _dirOfQuote == Dir.ADD_TO_AMM;
         SignedDecimal.signedDecimal memory invariant =
             MixedDecimal.fromDecimal(_quoteAssetPoolAmount.mulD(_baseAssetPoolAmount));
         SignedDecimal.signedDecimal memory baseAssetAfter;
@@ -645,7 +645,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     }
 
     function getOutputPriceWithReserves(
-        Dir _dir,
+        Dir _dirOfBase,
         Decimal.decimal memory _baseAssetAmount,
         Decimal.decimal memory _quoteAssetPoolAmount,
         Decimal.decimal memory _baseAssetPoolAmount
@@ -654,7 +654,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             return Decimal.zero();
         }
 
-        bool isAddToAmm = _dir == Dir.ADD_TO_AMM;
+        bool isAddToAmm = _dirOfBase == Dir.ADD_TO_AMM;
         SignedDecimal.signedDecimal memory invariant =
             MixedDecimal.fromDecimal(_quoteAssetPoolAmount.mulD(_baseAssetPoolAmount));
         SignedDecimal.signedDecimal memory quoteAssetAfter;
@@ -711,7 +711,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     }
 
     function implSwapOutput(
-        Dir _dir,
+        Dir _dirOfBase,
         Decimal.decimal memory _baseAssetAmount,
         Decimal.decimal memory _quoteAssetAmountLimit,
         bool _fluctuationCheck
@@ -719,16 +719,16 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         if (_baseAssetAmount.toUint() == 0) {
             return Decimal.zero();
         }
-        if (_dir == Dir.REMOVE_FROM_AMM) {
+        if (_dirOfBase == Dir.REMOVE_FROM_AMM) {
             require(baseAssetReserve.mulD(tradeLimitRatio).toUint() >= _baseAssetAmount.toUint(), "over trading limit");
         }
 
-        Decimal.decimal memory quoteAssetAmount = getOutputPrice(_dir, _baseAssetAmount);
+        Decimal.decimal memory quoteAssetAmount = getOutputPrice(_dirOfBase, _baseAssetAmount);
         // If SHORT, exchanged quote amount should be less than _quoteAssetAmountLimit,
         // otherwise(LONG), exchanged base amount should be more than _quoteAssetAmountLimit.
         // In the SHORT case, more quote assets means more payment so should not be more than _quoteAssetAmountLimit
         if (_quoteAssetAmountLimit.toUint() != 0) {
-            if (_dir == Dir.ADD_TO_AMM) {
+            if (_dirOfBase == Dir.ADD_TO_AMM) {
                 // SHORT
                 require(quoteAssetAmount.toUint() >= _quoteAssetAmountLimit.toUint(), "Less than minimal quote token");
             } else {
@@ -739,24 +739,25 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
         // If the price impact of one single tx is larger than priceFluctuation, skip the check
         // only for liquidate()
-        Dir dirOfQuoteAsset = _dir == Dir.ADD_TO_AMM ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM;
+        Dir dirOfQuote = _dirOfBase == Dir.ADD_TO_AMM ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM;
         if (_fluctuationCheck) {
-            _fluctuationCheck = !isSingleTxOverFluctuation(dirOfQuoteAsset, quoteAssetAmount, _baseAssetAmount);
+            _fluctuationCheck = !isSingleTxOverFluctuation(dirOfQuote, quoteAssetAmount, _baseAssetAmount);
         }
 
-        updateReserve(dirOfQuoteAsset, quoteAssetAmount, _baseAssetAmount, _fluctuationCheck);
+        updateReserve(dirOfQuote, quoteAssetAmount, _baseAssetAmount, _fluctuationCheck);
 
-        emit SwapOutput(_dir, quoteAssetAmount.toUint(), _baseAssetAmount.toUint());
+        emit SwapOutput(_dirOfBase, quoteAssetAmount.toUint(), _baseAssetAmount.toUint());
         return quoteAssetAmount;
     }
 
+    // the direction is in quote asset
     function updateReserve(
-        Dir _dir,
+        Dir _dirOfQuote,
         Decimal.decimal memory _quoteAssetAmount,
         Decimal.decimal memory _baseAssetAmount,
         bool _fluctuationCheck
     ) internal {
-        if (_dir == Dir.ADD_TO_AMM) {
+        if (_dirOfQuote == Dir.ADD_TO_AMM) {
             quoteAssetReserve = quoteAssetReserve.addD(_quoteAssetAmount);
             baseAssetReserve = baseAssetReserve.subD(_baseAssetAmount);
             // DEPRECATED only for backward compatibility before we upgrade ClearingHouse
@@ -782,7 +783,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     }
 
     function implGetInputAssetTwapPrice(
-        Dir _dir,
+        Dir _dirOfQuote,
         Decimal.decimal memory _assetAmount,
         QuoteAssetDir _inOut,
         uint256 _interval
@@ -790,7 +791,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         TwapPriceCalcParams memory params;
         params.opt = TwapCalcOption.INPUT_ASSET;
         params.snapshotIndex = reserveSnapshots.length.sub(1);
-        params.asset.dir = _dir;
+        params.asset.dir = _dirOfQuote;
         params.asset.assetAmount = _assetAmount;
         params.asset.inOrOut = _inOut;
         return calcTwap(params, _interval);
@@ -889,14 +890,14 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         revert("not supported option");
     }
 
-    // the dir is in quoteAsset's perspective
+    // the direction is in quote asset
     function isSingleTxOverFluctuation(
-        Dir _dir,
+        Dir _dirOfQuote,
         Decimal.decimal memory _quoteAssetAmount,
         Decimal.decimal memory _baseAssetAmount
     ) internal view returns (bool) {
         Decimal.decimal memory priceAfterReserveUpdated =
-            (_dir == Dir.ADD_TO_AMM)
+            (_dirOfQuote == Dir.ADD_TO_AMM)
                 ? quoteAssetReserve.addD(_quoteAssetAmount).divD(baseAssetReserve.subD(_baseAssetAmount))
                 : quoteAssetReserve.subD(_quoteAssetAmount).divD(baseAssetReserve.addD(_baseAssetAmount));
         return

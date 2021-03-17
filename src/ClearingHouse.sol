@@ -1027,6 +1027,7 @@ contract ClearingHouse is
         positionResp.badDebt = badDebt;
         positionResp.fundingPayment = fundingPayment;
         positionResp.marginToVault = MixedDecimal.fromDecimal(remainMargin).mulScalar(-1);
+        // for amm.swapOutput, the direction is in base asset, from the perspective of Amm
         positionResp.exchangedQuoteAssetAmount = _amm.swapOutput(
             oldPosition.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
             oldPosition.size.abs(),
@@ -1046,6 +1047,7 @@ contract ClearingHouse is
         Decimal.decimal memory _minOutputAmount,
         bool _isLiquidation
     ) internal returns (SignedDecimal.signedDecimal memory) {
+        // for amm.swapInput, the direction is in quote asset, from the perspective of Amm
         IAmm.Dir dir = (_side == Side.BUY) ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM;
         SignedDecimal.signedDecimal memory outputAmount =
             MixedDecimal.fromDecimal(_amm.swapInput(dir, _inputAmount, _minOutputAmount, _isLiquidation));
