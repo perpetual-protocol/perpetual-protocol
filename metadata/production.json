@@ -101,6 +101,10 @@
         "COMPUSDC": {
           "name": "Amm",
           "address": "0x33FbaeFb2dCc3B7e0B80afbB4377C2EB64AF0a3A"
+        },
+        "RENUSDC": {
+          "name": "Amm",
+          "address": "0x922F28072BaBe6EA0C0c25cCD367Fda0748a5EC7"
         }
       },
       "accounts": [],
