@@ -101,6 +101,10 @@
         "XAGUSDC": {
           "name": "Amm",
           "address": "0x8308091357Ac72570969957cfE85C82b37Ea750F"
+        },
+        "AUDUSDC": {
+          "name": "Amm",
+          "address": "0xC86837ad9c153F1F9DA6abE697FA99f455C0AaF4"
         }
       },
       "accounts": [],
