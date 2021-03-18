@@ -645,7 +645,7 @@ contract ClearingHouse is
     //
 
     /**
-     * @notice get margin ratio, marginRatio = (margin + funding payments + unrealized Pnl) / openNotional
+     * @notice get margin ratio, marginRatio = (margin + funding payment + unrealized Pnl) / positionNotional
      * use spot and twap price to calculate unrealized Pnl, final unrealized Pnl depends on which one is higher
      * @param _amm IAmm address
      * @param _trader trader address
@@ -654,18 +654,19 @@ contract ClearingHouse is
     function getMarginRatio(IAmm _amm, address _trader) public view returns (SignedDecimal.signedDecimal memory) {
         Position memory position = getPosition(_amm, _trader);
         requirePositionSize(position.size);
-        requireNonZeroInput(position.openNotional);
 
-        (, SignedDecimal.signedDecimal memory spotPricePnl) =
+        (Decimal.decimal memory spotPositionNotional, SignedDecimal.signedDecimal memory spotPricePnl) =
             (getPositionNotionalAndUnrealizedPnl(_amm, _trader, PnlCalcOption.SPOT_PRICE));
-        (, SignedDecimal.signedDecimal memory twapPricePnl) =
+        (Decimal.decimal memory twapPositionNotional, SignedDecimal.signedDecimal memory twapPricePnl) =
             (getPositionNotionalAndUnrealizedPnl(_amm, _trader, PnlCalcOption.TWAP));
-        SignedDecimal.signedDecimal memory unrealizedPnl =
-            spotPricePnl.toInt() > twapPricePnl.toInt() ? spotPricePnl : twapPricePnl;
+        (SignedDecimal.signedDecimal memory unrealizedPnl, Decimal.decimal memory positionNotional) =
+            spotPricePnl.toInt() > twapPricePnl.toInt()
+                ? (spotPricePnl, spotPositionNotional)
+                : (twapPricePnl, twapPositionNotional);
 
         (Decimal.decimal memory remainMargin, Decimal.decimal memory badDebt, , ) =
             calcRemainMarginWithFundingPayment(_amm, position, unrealizedPnl);
-        return MixedDecimal.fromDecimal(remainMargin).subD(badDebt).divD(position.openNotional);
+        return MixedDecimal.fromDecimal(remainMargin).subD(badDebt).divD(positionNotional);
     }
 
     /**
