@@ -1,12 +1,12 @@
 import { NonceManager } from "@ethersproject/experimental"
-import { ethers, upgrades } from "@nomiclabs/buidler"
+import { ethers, upgrades } from "hardhat"
 
 // @openzeppelin wrapper
 export class OzContractDeployer {
     constructor(readonly confirmations: number = 1, readonly ozInitMethodName = "initialize") {}
 
     static async transferProxyAdminOwnership(newAdmin: string): Promise<void> {
-        // TODO this is a hack due to @openzeppelin/buidler-upgrades doesn't expose "admin" in type-extensions.d.ts
+        // TODO this is a hack due to @openzeppelin/hardhat-upgrades doesn't expose "admin" in type-extensions.d.ts
         await (upgrades as any).admin.transferProxyAdminOwnership(newAdmin)
     }
 

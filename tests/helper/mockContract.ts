@@ -1,4 +1,4 @@
-import { artifacts } from "@nomiclabs/buidler"
+import { artifacts } from "hardhat"
 import {
     AmmMockContract,
     AmmMockInstance,

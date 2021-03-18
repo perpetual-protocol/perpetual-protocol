@@ -1,4 +1,4 @@
-import { artifacts, web3 } from "@nomiclabs/buidler"
+import { artifacts, web3 } from "hardhat"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { PerpFiOwnableUpgradeFakeContract, PerpFiOwnableUpgradeFakeInstance } from "../../types/truffle"
 

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import { RootBridge } from "../../types/ethers"
-import { ContractName } from "../ContractName"
+import { ContractFullyQualifiedName } from "../ContractName"
 import { MigrationContext, MigrationDefinition } from "../Migration"
 
 const migration: MigrationDefinition = {
@@ -9,7 +9,7 @@ const migration: MigrationDefinition = {
         async (): Promise<void> => {
             console.log("deploy root bridge")
             await context.factory
-                .create<RootBridge>(ContractName.RootBridge)
+                .create<RootBridge>(ContractFullyQualifiedName.RootBridge)
                 .deployUpgradableContract(
                     context.externalContract.ambBridgeOnEth!,
                     context.externalContract.multiTokenMediatorOnEth!,

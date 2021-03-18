@@ -31,7 +31,7 @@ export async function deploy(stage: Stage, options?: ExecOptions): Promise<void>
         console.info(`Start migration: ${filename}`)
         const network = settings.getNetwork(layer)
         const configPathParam = configPath ? `--config ${configPath}` : ""
-        const cmd = `buidler --network ${network} ${configPathParam} ${TASK_MIGRATE} ${stage} ${migrationPath}`
+        const cmd = `hardhat --network ${network} ${configPathParam} ${TASK_MIGRATE} ${stage} ${migrationPath}`
         await asyncExec(cmd, options)
     }
 }

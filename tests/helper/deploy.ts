@@ -108,7 +108,7 @@ export async function fullDeploy(args: ContractDeployArgs): Promise<PerpContract
         baseAssetReserve = DEFAULT_CONTRACT_DEPLOY_ARGS.baseAssetReserve,
         startSchedule = DEFAULT_CONTRACT_DEPLOY_ARGS.startSchedule,
     } = args
-    const metaTxGateway = await deployMetaTxGateway("Perp", "1", 1234) // default buidler evm chain ID
+    const metaTxGateway = await deployMetaTxGateway("Perp", "1", 1234) // default hardhat evm chain ID
     const quoteToken = await deployErc20Fake(quoteTokenAmount, "Tether", "USDT", new BN(quoteTokenDecimals))
     const priceFeed = await deployL2MockPriceFeed(toFullDigit(100))
 

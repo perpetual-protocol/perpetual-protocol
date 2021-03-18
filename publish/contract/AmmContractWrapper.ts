@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { ethers } from "@nomiclabs/buidler"
 import { BigNumber } from "ethers"
+import { ethers } from "hardhat"
 import { Amm, IPriceFeed } from "../../types/ethers"
 import { ContractWrapper } from "./ContractWrapper"
 import { AmmDeployArgs } from "./DeployConfig"

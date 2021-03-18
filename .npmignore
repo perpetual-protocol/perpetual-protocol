@@ -14,7 +14,7 @@ types
 .prettierrc.yaml
 .solcover.js
 .solhint.json
-buidler.config.ts
+hardhat.config.ts
 codecov.yml
 constants.d.ts
 constants.js

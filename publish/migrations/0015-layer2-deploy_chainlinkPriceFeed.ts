@@ -2,7 +2,7 @@
 
 import { ChainlinkPriceFeed } from "../../types/ethers"
 import { addAggregator } from "../contract/DeployUtil"
-import { ContractName } from "../ContractName"
+import { ContractFullyQualifiedName } from "../ContractName"
 import { MigrationContext, MigrationDefinition } from "../Migration"
 
 const migration: MigrationDefinition = {
@@ -10,7 +10,9 @@ const migration: MigrationDefinition = {
     getTasks: (context: MigrationContext) => [
         async (): Promise<void> => {
             console.log("deploy chainlink price feed on layer 2...")
-            await context.factory.create<ChainlinkPriceFeed>(ContractName.ChainlinkPriceFeed).deployUpgradableContract()
+            await context.factory
+                .create<ChainlinkPriceFeed>(ContractFullyQualifiedName.ChainlinkPriceFeed)
+                .deployUpgradableContract()
         },
         async (): Promise<void> => {
             if (context.stage !== "test") {
@@ -67,7 +69,7 @@ const migration: MigrationDefinition = {
                 `transferring chainlinkPriceFeed's owner to governance=${gov}...please remember to claim the ownership`,
             )
             const chainlinkPriceFeed = await context.factory
-                .create<ChainlinkPriceFeed>(ContractName.ChainlinkPriceFeed)
+                .create<ChainlinkPriceFeed>(ContractFullyQualifiedName.ChainlinkPriceFeed)
                 .instance()
             await (await chainlinkPriceFeed.setOwner(gov)).wait(context.deployConfig.confirmations)
         },

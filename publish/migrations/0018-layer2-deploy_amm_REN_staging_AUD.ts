@@ -4,7 +4,7 @@ import { BigNumber } from "ethers"
 import { L2PriceFeed } from "../../types/ethers"
 import { DEFAULT_DIGITS, makeAmmConfig } from "../contract/DeployConfig"
 import { makeAmmDeployMigrationTasks } from "../contract/DeployUtil"
-import { AmmInstanceName, ContractName } from "../ContractName"
+import { AmmInstanceName, ContractFullyQualifiedName } from "../ContractName"
 import { MigrationContext, MigrationDefinition, MigrationTask } from "../Migration"
 
 const prodAmmConfig = makeAmmConfig(
@@ -24,11 +24,11 @@ const stagAmmConfig = makeAmmConfig(
 )
 
 const migration: MigrationDefinition = {
-    configPath: "buidler.flatten.amm.config.ts",
+    configPath: "hardhat.flatten.amm.config.ts",
 
     getTasks: (context: MigrationContext): MigrationTask[] => {
         // change to ChainlinkPriceFeed if chainlink deploy price feed on xdai!
-        const l2PriceFeedContract = context.factory.create<L2PriceFeed>(ContractName.L2PriceFeed)
+        const l2PriceFeedContract = context.factory.create<L2PriceFeed>(ContractFullyQualifiedName.L2PriceFeed)
         const priceFeedAddress = l2PriceFeedContract.address!
 
         if (context.stage === "production") {

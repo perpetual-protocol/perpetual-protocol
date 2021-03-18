@@ -2,7 +2,7 @@
 
 import { BigNumber } from "ethers"
 import { DEFAULT_DIGITS, makeAmmConfig } from "../contract/DeployConfig"
-import { makeLegacyAmmDeployMigrationTasks } from "../contract/DeployUtil"
+import { makeAmmV1DeployMigrationTasks } from "../contract/DeployUtil"
 import { AmmInstanceName } from "../ContractName"
 import { MigrationContext, MigrationDefinition, MigrationTask } from "../Migration"
 
@@ -23,13 +23,13 @@ const trxAmmConfig = makeAmmConfig(
 )
 
 const migration: MigrationDefinition = {
-    configPath: "buidler.flatten.amm.config.ts",
+    configPath: "hardhat.flatten.amm.config.ts",
 
     getTasks: (context: MigrationContext): MigrationTask[] => {
         if (context.stage === "production") {
-            return makeLegacyAmmDeployMigrationTasks(context, linkAmmConfig)
+            return makeAmmV1DeployMigrationTasks(context, linkAmmConfig)
         } else {
-            return makeLegacyAmmDeployMigrationTasks(context, trxAmmConfig)
+            return makeAmmV1DeployMigrationTasks(context, trxAmmConfig)
         }
     },
 }

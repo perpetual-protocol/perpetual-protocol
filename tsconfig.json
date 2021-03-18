@@ -18,7 +18,6 @@
     },
     "include": [
         "./tests/**/*",
-        "./build/contracts/**/*.json",
         "./scripts/**/*",
         "./publish/*.ts",
         "./publish/**/*.ts",
@@ -28,12 +27,12 @@
     ],
     "exclude": ["./src"],
     "files": [
-        "./buidler.config.ts",
+        "./hardhat.config.ts",
         "./index.d.ts",
-        "./node_modules/@nomiclabs/buidler-web3/src/type-extensions.d.ts",
-        "./node_modules/@nomiclabs/buidler-truffle5/src/type-extensions.d.ts",
-        "./node_modules/@nomiclabs/buidler-waffle/src/type-extensions.d.ts",
-        "./node_modules/@nomiclabs/buidler-ethers/src/type-extensions.d.ts",
-        "./node_modules/@openzeppelin/buidler-upgrades/src/type-extensions.d.ts",
+        "./node_modules/@nomiclabs/hardhat-web3/src/type-extensions.d.ts",
+        "./node_modules/@nomiclabs/hardhat-truffle5/src/type-extensions.d.ts",
+        "./node_modules/@nomiclabs/hardhat-waffle/src/type-extensions.d.ts",
+        "./node_modules/@nomiclabs/hardhat-ethers/src/type-extensions.d.ts",
+        "./node_modules/@openzeppelin/hardhat-upgrades/src/type-extensions.d.ts",
     ]
 }

@@ -1,4 +1,4 @@
-import { artifacts } from "@nomiclabs/buidler"
+import { artifacts } from "hardhat"
 import { expectRevert } from "@openzeppelin/test-helpers"
 import BN from "bn.js"
 import { expect, use } from "chai"
