@@ -24,11 +24,6 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     uint256 public constant TOKEN_AMOUNT_LIMIT = 20;
 
     //
-    // CONSTANT
-    //
-    uint256 public constant COOLDOWN_PERIOD = 1 weeks;
-
-    //
     // EVENTS
     //
     event Staked(address staker, uint256 amount);
@@ -61,6 +56,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
 
     address[] public stakeModules;
     IERC20 public perpToken;
+    uint256 public cooldownPeriod;
 
     //**********************************************************//
     //    The above state variables can not change the order    //
@@ -74,13 +70,14 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
     //
     // FUNCTIONS
     //
-    function initialize(IERC20 _perpToken) external initializer {
+    function initialize(IERC20 _perpToken, uint256 _cooldownPeriod) external initializer {
         require(address(_perpToken) != address(0), "Invalid input.");
         __Ownable_init();
         name = "Staked Perpetual";
         symbol = "sPERP";
         decimals = 18;
         perpToken = _perpToken;
+        cooldownPeriod = _cooldownPeriod;
     }
 
     function stake(Decimal.decimal calldata _amount) external {
@@ -122,7 +119,7 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
 
         _burn(msgSender, balance);
 
-        stakerCooldown[msgSender] = _blockTimestamp().add(COOLDOWN_PERIOD);
+        stakerCooldown[msgSender] = _blockTimestamp().add(cooldownPeriod);
         stakerWithdrawPendingBalance[msgSender] = balance;
 
         // Have to update balance first

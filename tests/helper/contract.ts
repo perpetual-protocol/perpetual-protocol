@@ -1,5 +1,5 @@
-import { artifacts, web3 } from "hardhat"
 import BN from "bn.js"
+import { artifacts, web3 } from "hardhat"
 import {
     AMBBridgeMockContract,
     AMBBridgeMockInstance,
@@ -64,7 +64,7 @@ import {
     SupplyScheduleFakeContract,
     SupplyScheduleFakeInstance,
     TollPoolContract,
-    TollPoolInstance
+    TollPoolInstance,
 } from "../../types/truffle"
 import { Decimal, toFullDigit } from "./number"
 
@@ -382,9 +382,10 @@ export async function deployL2KeeperReward(perpToken: string): Promise<KeeperRew
 
 export async function deployStakedPerpToken(
     perpToken: string,
+    cooldownPeriod: BN,
 ): Promise<StakedPerpTokenFakeInstance> {
     const instance = await StakedPerpToken.new()
-    await instance.initialize(perpToken)
+    await instance.initialize(perpToken, cooldownPeriod)
     return instance
 }
 
