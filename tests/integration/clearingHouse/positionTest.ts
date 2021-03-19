@@ -1,7 +1,7 @@
-import { web3 } from "hardhat"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { default as BN } from "bn.js"
 import { use } from "chai"
+import { web3 } from "hardhat"
 import {
     AmmFakeInstance,
     ClearingHouseFakeInstance,
@@ -846,7 +846,7 @@ describe("ClearingHouse - open/close position Test", () => {
             )
         })
 
-        it("alice take profit from bob's unrealized under-collateral position, then bob close", async () => {
+        it("alice takes profit from bob's position, putting his position underwater, then bob closes", async () => {
             // alice opens short position
             await approve(alice, clearingHouse.address, 20)
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
@@ -885,7 +885,7 @@ describe("ClearingHouse - open/close position Test", () => {
             expect(await quoteToken.balanceOf(clearingHouse.address)).eq(0)
         })
 
-        it("alice take profit from bob's unrealized under-collateral position, then bob got liquidate", async () => {
+        it("alice takes profit from bob's position, putting his position underwater, then bob gets liquidated", async () => {
             // alice opens short position
             await approve(alice, clearingHouse.address, 20)
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
@@ -925,7 +925,8 @@ describe("ClearingHouse - open/close position Test", () => {
             expect(await quoteToken.balanceOf(carol)).eq("14705882")
         })
 
-        it("alice's position got liquidated but still has enough margin left for paying liquidation fee", async () => {
+        // the test for pointing out the calculation of margin ratio should be based on positionNotional instead of openNotional
+        it("alice's position has enough margin left, thus won't get liquidated", async () => {
             // alice opens long position
             await approve(alice, clearingHouse.address, 300)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(300), toDecimal(2), toDecimal(0), {
@@ -938,23 +939,15 @@ describe("ClearingHouse - open/close position Test", () => {
                 from: bob,
             })
 
-            // alice's margin ratio = (margin + unrealizedPnl) / openNotional = (300 + (-278.77)) / 600 = 3.53%
-            const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
-
-            // liquidationFee = 321.23 * 5% = 16.06
-            // remainMargin = margin + unrealizedPnl = 300 + (-278.77) = 21.23
-            // Since 21.23 - 16.06 >= 0, both badDebts = 0
-            // Trader total PnL = -278.77 - 21.23 = -300 since she lost her remaining margin to the insurance fund
-
-            expectEvent(receipt, "PositionChanged", {
-                realizedPnl: "-278761061946902654868",
-                badDebt: "0",
-                liquidationPenalty: "21238938053097345132",
-            })
-            expectEvent(receipt, "PositionLiquidated", {
-                liquidationFee: "16061946902654867256",
-                badDebt: "0",
-            })
+            // unrealizedPnl: -278.77
+            // positionNotional: 600 - 278.77 = 321.23
+            // remainMargin: 300 - 278.77 = 21.23
+            // liquidationFee: 321.23 * 5% = 16.06
+            // margin ratio: = (margin + unrealizedPnl) / positionNotional = 21.23 / 321.23 = 6.608971765%
+            await expectRevert(
+                clearingHouse.liquidate(amm.address, alice, { from: carol }),
+                "Margin ratio not meet criteria",
+            )
         })
 
         it("alice's position got liquidated and not enough margin left for paying liquidation fee", async () => {
