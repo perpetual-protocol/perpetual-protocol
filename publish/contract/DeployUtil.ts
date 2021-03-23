@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import hre, { ethers } from "hardhat"
+import hre, { artifacts, ethers, upgrades } from "hardhat"
 import { TASK_COMPILE } from "hardhat/builtin-tasks/task-names"
 import { LEGACY_SRC_DIR, SRC_DIR } from "../../constants"
 import { flatten } from "../../scripts/flatten"
@@ -12,10 +12,27 @@ import { AmmConfig } from "./DeployConfig"
 
 export type DeployTask = () => Promise<void>
 
-export async function getImplementation(proxyAdminAddr: string, proxyAddr: string) {
-    const proxyAdminAbi = ["function getProxyImplementation(address proxy) view returns (address)"]
-    const proxyAdmin = await ethers.getContractAt(proxyAdminAbi, proxyAdminAddr)
+export async function getImplementation(proxyAddr: string) {
+    const proxyAdmin = await upgrades.admin.getInstance()
+    // const proxyAdminAbi = ["function getProxyImplementation(address proxy) view returns (address)"]
+    // const proxyAdminAddr = (await upgrades.admin.getInstance()).address
+    // const proxyAdmin = await ethers.getContractAt(proxyAdminAbi, proxyAdminAddr)
+
     return proxyAdmin.getProxyImplementation(proxyAddr)
+}
+
+export async function initImplementation(
+    impAddr: string,
+    contractFullyQualifiedName: string,
+    confirmations: number,
+    args: any[],
+): Promise<void> {
+    const artifact = await artifacts.readArtifact(contractFullyQualifiedName)
+    const imp = await ethers.getContractAt(artifact.abi, impAddr)
+
+    const tx = await imp.initialize(...args)
+    await tx.wait(confirmations)
+    console.log(`implementation of ${contractFullyQualifiedName} initialized!`)
 }
 
 export function makeAmmV1DeployMigrationTasks(

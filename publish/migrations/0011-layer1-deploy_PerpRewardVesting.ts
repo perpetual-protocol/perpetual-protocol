@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import { artifacts, ethers, upgrades } from "hardhat"
+import { artifacts, ethers } from "hardhat"
 import { PerpRewardVesting } from "../../types/ethers"
 import { getImplementation } from "../contract/DeployUtil"
 import { ContractFullyQualifiedName, ContractInstanceName } from "../ContractName"
@@ -65,12 +65,9 @@ const migration: MigrationDefinition = {
                 )
                 .instance()
             const perpAddr = context.settingsDao.getExternalContracts(context.layer).perp!
-            const proxyAdminAddr = (await upgrades.admin.getInstance()).address
-            if (!proxyAdminAddr) {
-                throw new Error('Address of "proxyAdmin" not set!!')
-            }
-            const impAddr = await getImplementation(proxyAdminAddr, reward.address)
-            console.log("implementation: ", impAddr)
+            const impAddr = await getImplementation(reward.address)
+            console.log("implementation address: ", impAddr)
+
             const PerpRewardVestingArtifact = await artifacts.readArtifact(ContractFullyQualifiedName.PerpRewardVesting)
             const imp = await ethers.getContractAt(PerpRewardVestingArtifact.abi, impAddr)
             const tx = await imp.initialize(perpAddr, context.deployConfig.defaultPerpRewardVestingPeriod)
