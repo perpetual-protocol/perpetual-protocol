@@ -27,7 +27,7 @@ const migration: MigrationDefinition = {
 
             // deploy amm implementation
             const DOTUSDC = context.factory.createAmm(AmmInstanceName.DOTUSDC, ContractFullyQualifiedName.FlattenAmm)
-            const dotUsdcImplAddr = await DOTUSDC.prepareUpgradeContract()
+            const dotUsdcImplAddr = await DOTUSDC.prepareUpgradeContractLegacy()
 
             // in normal case we don't need to do anything to the implementation contract
             const ammImplInstance = (await ethers.getContractAt(ContractName.Amm, dotUsdcImplAddr)) as Amm

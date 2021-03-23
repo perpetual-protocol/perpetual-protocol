@@ -11,7 +11,7 @@ const migration: MigrationDefinition = {
     configPath: "hardhat.flatten.amm.config.ts",
 
     // batch 4
-    // prepareUpgrade the flatten YFI AMM
+    // prepareUpgradeLegacy the flatten YFI AMM
     getTasks: (context: MigrationContext) => [
         async (): Promise<void> => {
             const filename = `${ContractName.AmmV1}.sol`
@@ -23,7 +23,7 @@ const migration: MigrationDefinition = {
 
             // deploy amm implementation
             const YFIUSDC = context.factory.createAmm(AmmInstanceName.YFIUSDC, ContractFullyQualifiedName.FlattenAmm)
-            await YFIUSDC.prepareUpgradeContract()
+            await YFIUSDC.prepareUpgradeContractLegacy()
         },
     ],
 }

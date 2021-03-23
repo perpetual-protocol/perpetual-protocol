@@ -35,7 +35,7 @@ describe.skip("OzContractDeployer Spec", () => {
 
     describe("upgrade to v2", async () => {
         beforeEach(async () => {
-            await ozContractDeployer.upgrade(proxyAddr, contractNameV2)
+            await ozContractDeployer.upgrade(proxyAddr, contractNameV2, [])
             v2 = (await ethers.getContractAt(contractNameV2, proxyAddr)) as UpgradableContractV2
         })
 
@@ -83,10 +83,10 @@ describe.skip("OzContractDeployer Spec", () => {
         it("can't transfer and upgrade once transfer admin to others, but can deploy new and prepareUpgrade", async () => {
             await OzContractDeployer.transferProxyAdminOwnership(wallet.address)
             await expect(OzContractDeployer.transferProxyAdminOwnership(wallet.address)).to.be.reverted
-            await expect(ozContractDeployer.upgrade(proxyAddr, contractNameV2)).to.be.reverted
+            await expect(ozContractDeployer.upgrade(proxyAddr, contractNameV2, [])).to.be.reverted
             await upgrades.prepareUpgrade(v1.address, factoryV2)
             const newProxy = await ozContractDeployer.deploy(contractNameV2, [])
-            await expect(ozContractDeployer.upgrade(newProxy, contractNameV1)).to.be.reverted
+            await expect(ozContractDeployer.upgrade(newProxy, contractNameV1, [])).to.be.reverted
         })
 
         // once transferProxyAdminOwnership has been called, every admin-only tx won't be able to test

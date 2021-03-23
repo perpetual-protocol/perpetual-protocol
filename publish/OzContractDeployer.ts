@@ -31,28 +31,49 @@ export class OzContractDeployer {
         await this.syncNonce(proxyInstance.deployTransaction.hash)
 
         const impAddr = await getImplementation(proxyInstance.address)
+        console.log(
+            `deploy: contractFullyQualifiedName=${contractFullyQualifiedName}, proxy=${proxyInstance.address}, implementation=${impAddr}`,
+        )
         await initImplementation(impAddr, contractFullyQualifiedName, this.confirmations, args)
         return proxyInstance.address
     }
 
-    async prepareUpgrade(proxy: string, contractFullyQualifiedName: string): Promise<string> {
+    async prepareUpgrade(proxy: string, contractFullyQualifiedName: string, args: any[]): Promise<string> {
         const factory = await ethers.getContractFactory(contractFullyQualifiedName)
         const impAddr = await upgrades.prepareUpgrade(proxy, factory, {
             unsafeAllowCustomTypes: true,
         })
         console.log(
-            `prepareUpgrade proxy=${proxy}, contractFullyQualifiedName=${contractFullyQualifiedName}, address=${address}`,
+            `prepareUpgrade: contractFullyQualifiedName=${contractFullyQualifiedName}, proxy=${proxy}, implementation=${impAddr}`,
         )
-        // await initImplementation(impAddr, contractFullyQualifiedName, this.confirmations, args)
+
+        await initImplementation(impAddr, contractFullyQualifiedName, this.confirmations, args)
         return impAddr
     }
 
     // only admin
-    async upgrade(proxy: string, contractFileName: string): Promise<void> {
-        const contract = await ethers.getContractFactory(contractFileName)
-        const instance = await upgrades.upgradeProxy(proxy, contract, {
+    async upgrade(proxy: string, contractFullyQualifiedName: string, args: any[]): Promise<void> {
+        const contract = await ethers.getContractFactory(contractFullyQualifiedName)
+        const proxyInstance = await upgrades.upgradeProxy(proxy, contract, {
             unsafeAllowCustomTypes: true,
         })
-        await this.syncNonce(instance.deployTransaction.hash)
+
+        const impAddr = await getImplementation(proxyInstance.address)
+        console.log(
+            `upgrade: contractFullyQualifiedName=${contractFullyQualifiedName}, proxy=${proxy}, implementation=${impAddr}`,
+        )
+        await initImplementation(impAddr, contractFullyQualifiedName, this.confirmations, args)
+        await this.syncNonce(proxyInstance.deployTransaction.hash)
+    }
+
+    async prepareUpgradeLegacy(proxy: string, contractFullyQualifiedName: string): Promise<string> {
+        const factory = await ethers.getContractFactory(contractFullyQualifiedName)
+        const impAddr = await upgrades.prepareUpgrade(proxy, factory, {
+            unsafeAllowCustomTypes: true,
+        })
+        console.log(
+            `prepareUpgradeLegacy proxy=${proxy}, contractFullyQualifiedName=${contractFullyQualifiedName}, address=${impAddr}`,
+        )
+        return impAddr
     }
 }

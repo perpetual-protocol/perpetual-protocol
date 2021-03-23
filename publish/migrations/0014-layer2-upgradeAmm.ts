@@ -23,7 +23,7 @@ const migration: MigrationDefinition = {
             // deploy clearing house implementation
             // proxy does not use here, we just use createAmm to create an implementation
             const contract = context.factory.createAmm(AmmInstanceName.BTCUSDC, ContractFullyQualifiedName.FlattenAmm)
-            const impAddress = await contract.prepareUpgradeContract()
+            const impAddress = await contract.prepareUpgradeContractLegacy()
             const amm = (await ethers.getContractAt(ContractName.Amm, impAddress)) as Amm
             const wei = BigNumber.from(1)
             const emptyAddr = "0x0000000000000000000000000000000000000001"
