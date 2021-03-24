@@ -8,7 +8,7 @@ import { UpgradableContractV1, UpgradableContractV2 } from "../../types/ethers"
 use(solidity)
 
 // conflict with hardhat-gas-reporter without proxyResolver
-describe.skip("OzContractDeployer Spec", () => {
+describe("OzContractDeployer Spec", () => {
     const [wallet] = new MockProvider().getWallets()
     const ozContractDeployer: OzContractDeployer = new OzContractDeployer()
     const contractNameV1 = "src/mock/UpgradableContractV1.sol:UpgradableContractV1"
@@ -33,7 +33,7 @@ describe.skip("OzContractDeployer Spec", () => {
         await expect(wrongV2.increaseVersion()).to.be.reverted
     })
 
-    describe("upgrade to v2", async () => {
+    describe("upgrade to v2", () => {
         beforeEach(async () => {
             await ozContractDeployer.upgrade(proxyAddr, contractNameV2, [])
             v2 = (await ethers.getContractAt(contractNameV2, proxyAddr)) as UpgradableContractV2
@@ -53,7 +53,7 @@ describe.skip("OzContractDeployer Spec", () => {
         })
     })
 
-    describe("prepareUpgrade to v2", async () => {
+    describe("prepareUpgrade to v2", () => {
         let v2implAddr: string
 
         beforeEach(async () => {
@@ -74,7 +74,7 @@ describe.skip("OzContractDeployer Spec", () => {
         })
     })
 
-    describe("transferProxyAdminOwnership to others", async () => {
+    describe("transferProxyAdminOwnership to others", () => {
         it("can't transfer to empty address", async () => {
             await expect(OzContractDeployer.transferProxyAdminOwnership("0x0000000000000000000000000000000000000000"))
                 .to.be.reverted

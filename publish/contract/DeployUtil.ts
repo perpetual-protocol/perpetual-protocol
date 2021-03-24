@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
+import { BigNumber } from "ethers"
 import hre, { artifacts, ethers, upgrades } from "hardhat"
 import { TASK_COMPILE } from "hardhat/builtin-tasks/task-names"
 import { LEGACY_SRC_DIR, SRC_DIR } from "../../constants"
@@ -30,9 +31,20 @@ export async function initImplementation(
     const artifact = await artifacts.readArtifact(contractFullyQualifiedName)
     const imp = await ethers.getContractAt(artifact.abi, impAddr)
 
-    const tx = await imp.initialize(...args)
-    await tx.wait(confirmations)
-    console.log(`implementation of ${contractFullyQualifiedName} initialized!`)
+    const ownableAbi = ["function owner() view returns (address) "]
+    const ownable = await ethers.getContractAt(ownableAbi, impAddr)
+    const owner = (await ownable.owner()).toString()
+
+    if (BigNumber.from(owner).eq(BigNumber.from("0"))) {
+        console.log("implementation initializing...")
+
+        const tx = await imp.initialize(...args)
+        await tx.wait(confirmations)
+
+        console.log(`implementation of ${contractFullyQualifiedName} initialized!`)
+    } else {
+        console.log(`implementation of ${contractFullyQualifiedName} has already been initialized!`)
+    }
 }
 
 export function makeAmmV1DeployMigrationTasks(
