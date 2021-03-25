@@ -38,12 +38,12 @@ export class ContractWrapper<T extends Contract> {
         return await this.instance()
     }
 
-    async prepareUpgradeContract(): Promise<string> {
-        return await this.ozContractDeployer.prepareUpgrade(this.address!, this.fullyQualifiedContractName)
+    async prepareUpgradeContract(...args: any[]): Promise<string> {
+        return await this.ozContractDeployer.prepareUpgrade(this.address!, this.fullyQualifiedContractName, args)
     }
 
-    async upgradeContract(): Promise<void> {
-        await this.ozContractDeployer.upgrade(this.address!, this.fullyQualifiedContractName)
+    async upgradeContract(...args: any[]): Promise<void> {
+        await this.ozContractDeployer.upgrade(this.address!, this.fullyQualifiedContractName, args)
     }
 
     async instance(): Promise<T> {
@@ -72,5 +72,9 @@ export class ContractWrapper<T extends Contract> {
             name: contractName,
             address: address,
         })
+    }
+
+    async prepareUpgradeContractLegacy(): Promise<string> {
+        return await this.ozContractDeployer.prepareUpgradeLegacy(this.address!, this.fullyQualifiedContractName)
     }
 }

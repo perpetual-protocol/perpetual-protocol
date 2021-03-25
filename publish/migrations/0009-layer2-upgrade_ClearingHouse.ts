@@ -25,7 +25,7 @@ const migration: MigrationDefinition = {
             const clearingHouseContract = await context.factory.create<ClearingHouse>(
                 ContractFullyQualifiedName.FlattenClearingHouse,
             )
-            const implContractAddr = await clearingHouseContract.prepareUpgradeContract()
+            const implContractAddr = await clearingHouseContract.prepareUpgradeContractLegacy()
 
             // in normal case we don't need to do anything to the implementation contract
             const insuranceFundContract = context.factory.create<InsuranceFund>(

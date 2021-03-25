@@ -23,7 +23,7 @@ const migration: MigrationDefinition = {
 
             // deploy clearing house implementation
             const contract = context.factory.create<ClearingHouse>(ContractFullyQualifiedName.FlattenClearingHouse)
-            await contract.prepareUpgradeContract()
+            await contract.prepareUpgradeContractLegacy()
         },
     ],
 }

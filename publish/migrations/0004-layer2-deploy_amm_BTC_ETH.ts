@@ -23,10 +23,10 @@ const migration: MigrationDefinition = {
 
             // deploy amm implementation
             const ETHUSDC = context.factory.createAmm(AmmInstanceName.ETHUSDC, ContractFullyQualifiedName.FlattenAmm)
-            await ETHUSDC.prepareUpgradeContract()
+            await ETHUSDC.prepareUpgradeContractLegacy()
 
             const BTCUSDC = context.factory.createAmm(AmmInstanceName.BTCUSDC, ContractFullyQualifiedName.FlattenAmm)
-            await BTCUSDC.prepareUpgradeContract()
+            await BTCUSDC.prepareUpgradeContractLegacy()
         },
     ],
 }

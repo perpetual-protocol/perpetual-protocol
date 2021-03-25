@@ -65,12 +65,9 @@ const migration: MigrationDefinition = {
                 )
                 .instance()
             const perpAddr = context.settingsDao.getExternalContracts(context.layer).perp!
-            const proxyAdminAddr = context.settingsDao.getExternalContracts(context.layer).proxyAdmin!
-            if (!proxyAdminAddr) {
-                throw new Error('Address of "proxyAdmin" not set!!')
-            }
-            const impAddr = await getImplementation(proxyAdminAddr, reward.address)
-            console.log("implementation: ", impAddr)
+            const impAddr = await getImplementation(reward.address)
+            console.log("implementation address: ", impAddr)
+
             const PerpRewardVestingArtifact = await artifacts.readArtifact(ContractFullyQualifiedName.PerpRewardVesting)
             const imp = await ethers.getContractAt(PerpRewardVestingArtifact.abi, impAddr)
             const tx = await imp.initialize(perpAddr, context.deployConfig.defaultPerpRewardVestingPeriod)
