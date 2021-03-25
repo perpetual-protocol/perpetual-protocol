@@ -34,7 +34,7 @@ const migration: MigrationDefinition = {
                     ContractInstanceName.PerpStakingRewardVesting,
                 )
                 .instance()
-            const gov = context.externalContract.foundationGovernance!
+            const gov = context.externalContract.rewardGovernance!
             await perpRewardVesting.setOwner(gov!)
         },
     ],
