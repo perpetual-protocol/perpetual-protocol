@@ -1,3 +1,4 @@
+/src
 .github
 .openzeppelin
 .vscode
@@ -5,7 +6,6 @@ cache
 docs
 publish
 scripts
-src
 tests
 types
 .eslintignore
