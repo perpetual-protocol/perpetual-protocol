@@ -38,6 +38,7 @@ export class OzContractDeployer {
         return proxyInstance.address
     }
 
+    // different from deploy() and upgrade(), this function returns the "implementation" address
     async prepareUpgrade(proxy: string, contractFullyQualifiedName: string, args: any[]): Promise<string> {
         const factory = await ethers.getContractFactory(contractFullyQualifiedName)
         const impAddr = await upgrades.prepareUpgrade(proxy, factory)

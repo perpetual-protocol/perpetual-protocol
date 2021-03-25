@@ -1,3 +1,4 @@
+import { expectRevert } from "@openzeppelin/test-helpers"
 import { expect, use } from "chai"
 import { MockProvider, solidity } from "ethereum-waffle"
 import { ContractFactory } from "ethers"
@@ -13,10 +14,16 @@ describe("OzContractDeployer Spec", () => {
     const ozContractDeployer: OzContractDeployer = new OzContractDeployer()
     const contractNameV1 = "src/mock/UpgradableContractV1.sol:UpgradableContractV1"
     const contractNameV2 = "src/mock/UpgradableContractV2.sol:UpgradableContractV2"
+    // the following two are proxys
     let v1: UpgradableContractV1
     let v2: UpgradableContractV2
     let factoryV2: ContractFactory
     let proxyAddr: string
+
+    async function getImplementation(proxyAddr: string) {
+        const proxyAdmin = await upgrades.admin.getInstance()
+        return proxyAdmin.getProxyImplementation(proxyAddr)
+    }
 
     beforeEach(async () => {
         factoryV2 = await ethers.getContractFactory(contractNameV2)
@@ -31,6 +38,12 @@ describe("OzContractDeployer Spec", () => {
     it("doesn't have increaseVersion function", async () => {
         const wrongV2 = factoryV2.attach(proxyAddr) as UpgradableContractV2
         await expect(wrongV2.increaseVersion()).to.be.reverted
+    })
+
+    it("force error, initialization is included in ozContractDeployer.deploy()", async () => {
+        const v1ImplAddr = await getImplementation(proxyAddr)
+        const v1Impl = (await ethers.getContractAt(contractNameV1, v1ImplAddr)) as UpgradableContractV1
+        await expectRevert(v1Impl.initialize(), "Contract instance has already been initialized")
     })
 
     describe("upgrade to v2", () => {
@@ -51,17 +64,23 @@ describe("OzContractDeployer Spec", () => {
             await v2.increaseVersion()
             expect((await v1.version()).toString()).eq("2")
         })
+
+        it("force error, initialization is included in ozContractDeployer.upgrade()", async () => {
+            const v2ImplAddr = await getImplementation(v2.address)
+            const v2Impl = (await ethers.getContractAt(contractNameV2, v2ImplAddr)) as UpgradableContractV2
+            await expectRevert(v2Impl.initialize(), "Contract instance has already been initialized")
+        })
     })
 
     describe("prepareUpgrade to v2", () => {
-        let v2implAddr: string
+        let v2ImplAddr: string
 
         beforeEach(async () => {
-            v2implAddr = await upgrades.prepareUpgrade(v1.address, factoryV2)
+            v2ImplAddr = await ozContractDeployer.prepareUpgrade(proxyAddr, contractNameV2, [])
         })
 
-        it("is not the same proxy address", async () => {
-            expect(v2implAddr).not.eq(proxyAddr)
+        it("ozContractDeployer.prepareUpgrade() returns the implementation address; will be different from proxy address", async () => {
+            expect(v2ImplAddr).not.eq(proxyAddr)
         })
 
         it("won't change state", async () => {
@@ -71,6 +90,11 @@ describe("OzContractDeployer Spec", () => {
         it("proxy still has no new function", async () => {
             const wrongV2 = factoryV2.attach(proxyAddr) as UpgradableContractV2
             await expect(wrongV2.increaseVersion()).to.be.reverted
+        })
+
+        it("force error, initialization is included in ozContractDeployer.prepareUpgrade()", async () => {
+            const v2Impl = (await ethers.getContractAt(contractNameV2, v2ImplAddr)) as UpgradableContractV2
+            await expectRevert(v2Impl.initialize(), "Contract instance has already been initialized")
         })
     })
 
