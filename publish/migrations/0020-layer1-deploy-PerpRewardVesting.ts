@@ -20,6 +20,20 @@ const migration: MigrationDefinition = {
                     .deployUpgradableContract(context.externalContract.perp!, BigNumber.from(60 * 5))
             }
         },
+        async (): Promise<void> => {
+            console.log("PerpRewardVesting.setOwner")
+            let instanceName: ContractInstanceName
+            if (context.stage === "production") {
+                instanceName = ContractInstanceName.PerpStakingReward182DaysVesting
+            } else {
+                instanceName = ContractInstanceName.PerpStakingReward5MinutesVesting
+            }
+            const perpRewardVesting = await context.factory
+                .create<PerpRewardVesting>(ContractFullyQualifiedName.PerpRewardVesting, instanceName)
+                .instance()
+            const gov = context.externalContract.foundationGovernance!
+            await perpRewardVesting.setOwner(gov!)
+        },
     ],
 }
 
