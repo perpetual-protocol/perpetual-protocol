@@ -13,8 +13,8 @@ export function getOpenZeppelinConfigFile(network: Network) {
     return `${getOpenZeppelinDir()}/${ozNetworkFile[network]}.json`
 }
 
-export function getSettingsDir() {
-    return `${getRootDir()}/publish/settings`
+export function getSettingsFile(stage: Stage) {
+    return `${getRootDir()}/publish/settings/${stage}.json`
 }
 
 export function getContractMetadataFile(stage: Stage) {
