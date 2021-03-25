@@ -17,18 +17,6 @@
         "PerpRewardTwentySixWeeksVesting": {
           "name": "PerpRewardVesting",
           "address": "0x0607C2540c62aea495996Bb2C39b658FEb8d8978"
-        },
-        "FeeTokenPoolDispatcherL1": {
-          "name": "FeeTokenPoolDispatcherL1",
-          "address": "0xA345eD65688845DE5F5B2fb35b008Ab5f282241e"
-        },
-        "StakedPerpToken": {
-          "name": "StakedPerpToken",
-          "address": "0x2448d5ef6Cc90F1C810D6637CF7233cFc3280F57"
-        },
-        "FeeRewardPoolL1": {
-          "name": "FeeRewardPoolL1",
-          "address": "0x6D98208E6FA936047466800bAe05ee2532e31975"
         }
       },
       "accounts": [],
