@@ -17,6 +17,7 @@ system-local.json
 
 /.serverless
 /.env.staging
+/typechain
 
 
 cache

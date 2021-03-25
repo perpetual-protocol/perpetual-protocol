@@ -1,6 +1,7 @@
-import { web3 } from "hardhat"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
+import BN from "bn.js"
 import { expect, use } from "chai"
+import { web3 } from "hardhat"
 import { FeeRewardPoolMockInstance, PerpTokenInstance, StakedPerpTokenFakeInstance } from "../../types/truffle"
 import { assertionHelper } from "../helper/assertion-plugin"
 import { deployPerpToken, deployStakedPerpToken } from "../helper/contract"
@@ -37,14 +38,14 @@ describe("StakedPerpTokenSpec", () => {
         perpToken = await deployPerpToken(toFullDigit(2000000))
         feeRewardPoolMock1 = await deployFeeRewardPoolMock()
         feeRewardPoolMock2 = await deployFeeRewardPoolMock()
-        stakedPerpToken = await deployStakedPerpToken(perpToken.address)
+        stakedPerpToken = await deployStakedPerpToken(perpToken.address, new BN(60 * 60 * 24 * 7))
         await stakedPerpToken.addStakeModule(feeRewardPoolMock1.address)
 
         await perpToken.transfer(alice, toFullDigit(2000))
         await perpToken.approve(stakedPerpToken.address, toFullDigit(2000), { from: alice })
         await perpToken.approve(stakedPerpToken.address, toFullDigit(5000), { from: admin })
 
-        cooldownPeriod = (await stakedPerpToken.COOLDOWN_PERIOD()).toNumber()
+        cooldownPeriod = (await stakedPerpToken.cooldownPeriod()).toNumber()
     })
 
     describe("assert ERC20 config", () => {

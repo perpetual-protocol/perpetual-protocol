@@ -34,6 +34,7 @@ export enum ContractName {
     PerpRewardVesting = "PerpRewardVesting",
     StakedPerpToken = "StakedPerpToken",
     TollPool = "TollPool",
+    FeeRewardPoolL1 = "FeeRewardPoolL1",
     FeeTokenPoolDispatcherL1 = "FeeTokenPoolDispatcherL1",
     ChainlinkPriceFeed = "ChainlinkPriceFeed",
 }
@@ -56,6 +57,7 @@ export enum ContractFullyQualifiedName {
     PerpRewardVesting = "src/staking/PerpRewardVesting.sol:PerpRewardVesting",
     StakedPerpToken = "src/staking/StakedPerpToken.sol:StakedPerpToken",
     TollPool = "src/TollPool.sol:TollPool",
+    FeeRewardPoolL1 = "src/staking/FeeRewardPoolL1.sol:FeeRewardPoolL1",
     FeeTokenPoolDispatcherL1 = "src/staking/FeeTokenPoolDispatcherL1.sol:FeeTokenPoolDispatcherL1",
     ChainlinkPriceFeed = "src/ChainlinkPriceFeed.sol:ChainlinkPriceFeed",
 
@@ -72,6 +74,7 @@ export enum ContractFullyQualifiedName {
 export enum ContractInstanceName {
     PerpRewardNoVesting = "PerpRewardNoVesting",
     PerpRewardTwentySixWeeksVesting = "PerpRewardTwentySixWeeksVesting",
+    PerpStakingRewardVesting = "PerpStakingRewardVesting",
 }
 
 export type ContractId = ContractName | AmmInstanceName | ContractInstanceName
