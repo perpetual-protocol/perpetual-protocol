@@ -30,7 +30,7 @@
           "name": "FeeRewardPoolL1",
           "address": "0xAA798BdeC1F19AcBe81A637C8A8089C912678Bf9"
         },
-        "PerpStakingReward5MinutesVesting": {
+        "PerpStakingRewardVesting": {
           "name": "PerpRewardVesting",
           "address": "0x8d22F1a9dCe724D8c1B4c688D75f17A2fE2D32df"
         }

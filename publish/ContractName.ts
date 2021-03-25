@@ -74,8 +74,7 @@ export enum ContractFullyQualifiedName {
 export enum ContractInstanceName {
     PerpRewardNoVesting = "PerpRewardNoVesting",
     PerpRewardTwentySixWeeksVesting = "PerpRewardTwentySixWeeksVesting",
-    PerpStakingReward182DaysVesting = "PerpStakingReward182DaysVesting",
-    PerpStakingReward5MinutesVesting = "PerpStakingReward5MinutesVesting",
+    PerpStakingRewardVesting = "PerpStakingRewardVesting",
 }
 
 export type ContractId = ContractName | AmmInstanceName | ContractInstanceName
