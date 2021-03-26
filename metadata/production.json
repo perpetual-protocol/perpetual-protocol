@@ -33,6 +33,10 @@
         "PerpStakingRewardVesting": {
           "name": "PerpRewardVesting",
           "address": "0x49a4B8431Fc24BE4b22Fb07D1683E2c52bC56088"
+        },
+        "PerpStakingRewardNoVesting": {
+          "name": "PerpRewardVesting",
+          "address": "0xc2a9e84D77f4B534F049b593C282c5c91F24808A"
         }
       },
       "accounts": [],
