@@ -5,6 +5,9 @@ export declare const ROPSTEN_MNEMONIC: string
 export declare const KOVAN_URL: string
 export declare const KOVAN_MNEMONIC: string
 export declare const RINKEBY_URL: string
+export declare const RINKEBY_ARCHIVE_NODE_URL: string
+export declare const HOMESTEAD_ARCHIVE_NODE_URL: string
+export declare const XDAI_ARCHIVE_NODE_URL: string
 export declare const RINKEBY_MNEMONIC: string
 export declare const HOMESTEAD_URL: string
 export declare const HOMESTEAD_MNEMONIC: string

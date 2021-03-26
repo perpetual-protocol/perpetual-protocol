@@ -1,6 +1,6 @@
 // all lower-case, no dash; otherwise AWS deployment might fail
 export type Stage = "production" | "staging" | "test"
-export type Network = "homestead" | "rinkeby" | "ropsten" | "kovan" | "xdai" | "sokol" | "localhost"
+export type Network = "homestead" | "rinkeby" | "ropsten" | "kovan" | "xdai" | "sokol" | "localhost" | "hardhat"
 export enum Layer {
     Layer1 = "layer1",
     Layer2 = "layer2",
@@ -14,6 +14,7 @@ export const ozNetworkFile: Record<Network, string> = {
     kovan: "kovan",
     ropsten: "ropsten",
     localhost: "unknown-31337",
+    hardhat: "unknown-31337",
     xdai: "unknown-100",
     sokol: "unknown-77",
 }
@@ -94,3 +95,4 @@ export interface SystemDeploySettings {
 
 export const TASK_CHECK_CHAINLINK = "check:chainlink"
 export const TASK_MIGRATE = "migrate"
+export const TASK_SIMULATE = "simulate"

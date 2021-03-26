@@ -30,7 +30,7 @@ import {
     XDAI_MNEMONIC,
     XDAI_URL,
 } from "./constants"
-import { TASK_CHECK_CHAINLINK, TASK_MIGRATE } from "./scripts/common"
+import { TASK_CHECK_CHAINLINK, TASK_MIGRATE, TASK_SIMULATE } from "./scripts/common"
 
 task(TASK_CHECK_CHAINLINK, "Check Chainlink")
     .addParam("address", "a Chainlink aggregator address")
@@ -39,6 +39,31 @@ task(TASK_CHECK_CHAINLINK, "Check Chainlink")
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const { checkChainlink } = require("./publish/check-chainlink")
         await checkChainlink(address, hre)
+    })
+
+task(TASK_SIMULATE, "Execute migration on mainnet fork node")
+    .addParam("fork", "The URL of the JSON-RPC server to fork from")
+    .addPositionalParam("migrationPath", "Target migration")
+    .setAction(async ({ fork: forkTarget, migrationPath }, hre) => {
+        // TODO: better way to ensure not running on real network?
+        if (hre.network.name !== "hardhat") {
+            throw new Error(`You should only run this on the "hardhat" network`)
+        }
+
+        // reset "hardhat" network to fork from specified target
+        await hre.network.provider.request({
+            method: "hardhat_reset",
+            params: [
+                {
+                    forking: {
+                        jsonRpcUrl: forkTarget,
+                        // blockNumber: 11095000,
+                    },
+                },
+            ],
+        })
+
+        await hre.run(TASK_MIGRATE, { stage: "test", migrationPath })
     })
 
 task(TASK_MIGRATE, "Migrate contract deployment")

@@ -106,7 +106,7 @@ export async function loadMigration(migrationPath: string): Promise<Migration> {
 }
 
 export async function migrate(stage: Stage, migrationPath: string, hre: HardhatRuntimeEnvironment): Promise<void> {
-    const network = hre.hardhatArguments.network! as Network
+    const network = hre.network.name as Network
 
     // only expose accounts when deploy on local node, otherwise assign a empty array
     const isLocalhost: boolean = network === "localhost"
