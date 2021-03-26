@@ -7,7 +7,7 @@ import { MigrationContext, MigrationDefinition } from "../Migration"
 const migration: MigrationDefinition = {
     getTasks: (context: MigrationContext) => [
         async (): Promise<void> => {
-            console.log("deploy PerpRewardVesting with 182 days (half year) vesting...")
+            console.log("deploy PerpRewardVesting with 0 vesting...")
             await context.factory
                 .create<PerpRewardVesting>(
                     ContractFullyQualifiedName.PerpRewardVesting,
