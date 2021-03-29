@@ -19,6 +19,7 @@ system-local.json
 /.env.staging
 /typechain
 
+/typechain
 
 cache
 types
