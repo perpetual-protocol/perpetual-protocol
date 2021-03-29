@@ -14,6 +14,7 @@ import { ContextUpgradeSafe } from "@openzeppelin/contracts-ethereum-package/con
 // solhint-disable-next-line
 import { ReentrancyGuardUpgradeSafe } from "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol";
 import { OwnerPausableUpgradeSafe } from "./OwnerPausable.sol";
+import { IMultiTokenRewardRecipient } from "./interface/IMultiTokenRewardRecipient.sol";
 import { IAmm } from "./interface/IAmm.sol";
 import { IInsuranceFund } from "./interface/IInsuranceFund.sol";
 
@@ -178,19 +179,20 @@ contract ClearingHouse is
 
     // contract dependencies
     IInsuranceFund public insuranceFund;
-    address public tollPool;
+    IMultiTokenRewardRecipient public feePool;
 
     // designed for arbitragers who can hold unlimited positions. will be removed after guarded period
     address internal whitelist;
+    uint256[50] private __gap;
 
     //**********************************************************//
     //    Can not change the order of above state variables     //
     //**********************************************************//
 
     //◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤ add state variables below ◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤//
+    address public tollPool;
 
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
-    uint256[50] private __gap;
 
     //
     // FUNCTIONS
