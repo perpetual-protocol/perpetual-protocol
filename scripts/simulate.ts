@@ -18,7 +18,7 @@ export async function simulate(stage: Stage, migrationFileName: string, options?
     }
 
     // convert relative path to absolute path
-    const fullMigrationPath = path.join(__dirname, "..", "publish", "migrations", migrationFileName)
+    const fullMigrationPath = path.join(__dirname, "..", "publish", "simulations", migrationFileName)
 
     // load migration file to get required parameters
     const { batchIndex, configPath, layer } = await loadMigration(fullMigrationPath)
