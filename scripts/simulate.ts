@@ -23,7 +23,7 @@ export async function simulate(stage: Stage, migrationFileName: string, options?
     // load migration file to get required parameters
     const { batchIndex, configPath, layer } = await loadMigration(fullMigrationPath)
 
-    // determine netwok by stage & layer
+    // determine network by stage & layer
     const settingsDao = new SettingsDao(stage)
     const sourceNetwork = settingsDao.getNetwork(layer)
 

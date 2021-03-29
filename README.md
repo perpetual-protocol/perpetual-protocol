@@ -53,6 +53,16 @@ it.only("admin open amm", async () => { ... }
 
 Test cases can be found in the `./tests` folder.
 
+### Mainnet fork testing
+This is for testing the deployment or upgradability of contracts.
+
+Two params are required: 
+- `stage` can be `staging` or `production`
+- `fileName` is the targeted testing file in the `publish/migrations` directory
+```
+npm run simulate <stage> <fileName>
+```
+
 ## Deploy contracts on rinkeby without versioning
 
 Deploy contracts on rinkeby without versioning requires two environment variables: WEB3_RINKEBY_ENDPOINT & RINKEBY_MNEMONIC.
