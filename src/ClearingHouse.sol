@@ -46,15 +46,6 @@ contract ClearingHouse is
     );
     event PositionSettled(address indexed amm, address indexed trader, uint256 valueTransferred);
     event RestrictionModeEntered(address amm, uint256 blockNumber);
-    event ReferredPositionOpened(
-        address amm,
-        uint256 side,
-        uint256 quoteAssetAmount,
-        uint256 leverage,
-        address trader,
-        bytes32 referralCode
-    );
-    event ReferredPositionClosed(address amm, address trader, bytes32 referralCode);
 
     /// @notice This event is emitted when position change
     /// @param trader the address which execute this transaction
@@ -103,6 +94,8 @@ contract ClearingHouse is
         address liquidator,
         uint256 badDebt
     );
+
+    event ReferredPositionChanged(bytes32 indexed referralCode);
 
     //
     // Struct and Enum
@@ -417,14 +410,9 @@ contract ClearingHouse is
         bytes32 _referralCode
     ) external {
         openPosition(_amm, _side, _quoteAssetAmount, _leverage, _baseAssetAmountLimit);
-        emit ReferredPositionOpened(
-            address(_amm),
-            uint256(_side),
-            _quoteAssetAmount.toUint(),
-            _leverage.toUint(),
-            _msgSender(),
-            _referralCode
-        );
+        if (_referralCode != 0) {
+            emit ReferredPositionChanged(_referralCode);
+        }
     }
 
     /**
@@ -523,7 +511,9 @@ contract ClearingHouse is
         bytes32 _referralCode
     ) external {
         closePosition(_amm, _quoteAssetAmountLimit);
-        emit ReferredPositionClosed(address(_amm), _msgSender(), _referralCode);
+        if (_referralCode != 0) {
+            emit ReferredPositionChanged(_referralCode);
+        }
     }
 
     /**
