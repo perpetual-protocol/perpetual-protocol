@@ -43,7 +43,7 @@ contract ClientBridge is BaseBridge, BaseRelayRecipient {
     /**
      * @notice set minimum withdrawal amount for different tokens
      */
-    function setMinWithdrawalAmount(IERC20 _token, Decimal.decimal memory _amount) external {
+    function setMinWithdrawalAmount(IERC20 _token, Decimal.decimal memory _amount) external onlyOwner {
         minWithdrawalAmountMap[_token] = _amount;
     }
 
@@ -56,7 +56,7 @@ contract ClientBridge is BaseBridge, BaseRelayRecipient {
         Decimal.decimal memory _amount
     ) internal override {
         require(_amount.cmp(minWithdrawalAmountMap[_token]) >= 0, "amount is too small");
-        return super.multiTokenTransfer(_token, _receiver, _amount);
+        super.multiTokenTransfer(_token, _receiver, _amount);
     }
 
     //

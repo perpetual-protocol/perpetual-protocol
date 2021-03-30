@@ -76,4 +76,11 @@ describe("ClientBridgeSpec Spec", () => {
         await clientBridge.setMinWithdrawalAmount(quoteToken.address, toDecimal(5))
         expect(await clientBridge.minWithdrawalAmountMap(quoteToken.address)).eq(toFullDigit(5))
     })
+
+    it("force error, only owner can setMinWithdrawalAmount", async () => {
+        await expectRevert(
+            clientBridge.setMinWithdrawalAmount(quoteToken.address, toDecimal(100), { from: alice }),
+            "PerpFiOwnableUpgrade: caller is not the owner",
+        )
+    })
 })
