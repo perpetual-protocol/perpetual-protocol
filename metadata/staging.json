@@ -125,6 +125,10 @@
         "AUDUSDC": {
           "name": "Amm",
           "address": "0xC86837ad9c153F1F9DA6abE697FA99f455C0AaF4"
+        },
+        "PERPUSDC": {
+          "name": "Amm",
+          "address": "0x5bE917a2e6974455078d25F3f25f06E6528d63D1"
         }
       },
       "accounts": [],
