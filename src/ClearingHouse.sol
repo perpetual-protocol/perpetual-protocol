@@ -442,9 +442,6 @@ contract ClearingHouse is
             // add scope for stack too deep error
             int256 oldPositionSize = adjustPositionForLiquidityChanged(_amm, trader).size.toInt();
             bool isNewPosition = oldPositionSize == 0 ? true : false;
-            if (!isNewPosition) {
-                requireMoreMarginRatio(getMarginRatio(_amm, trader), maintenanceMarginRatio, true);
-            }
 
             // increase or decrease position depends on old position's side and size
             if (isNewPosition || (oldPositionSize > 0 ? Side.BUY : Side.SELL) == _side) {
@@ -461,6 +458,10 @@ contract ClearingHouse is
 
             // update the position state
             setPosition(_amm, trader, positionResp.position);
+            // if opening the exact position size as the existing one == closePosition, can skip the margin ratio check
+            if (!isNewPosition && positionResp.position.size.toInt() != 0) {
+                requireMoreMarginRatio(getMarginRatio(_amm, trader), maintenanceMarginRatio, true);
+            }
 
             // to prevent attacker to leverage the bad debt to withdraw extra token from  insurance fund
             if (positionResp.badDebt.toUint() > 0) {
