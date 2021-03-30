@@ -95,6 +95,8 @@ contract ClearingHouse is
         uint256 badDebt
     );
 
+    event ReferredPositionChanged(bytes32 indexed referralCode);
+
     //
     // Struct and Enum
     //
@@ -391,6 +393,29 @@ contract ClearingHouse is
     //   move the remain margin to insuranceFund
 
     /**
+     * @notice open a position with referral code
+     * @param _amm amm address
+     * @param _side enum Side; BUY for long and SELL for short
+     * @param _quoteAssetAmount quote asset amount in 18 digits. Can Not be 0
+     * @param _leverage leverage  in 18 digits. Can Not be 0
+     * @param _baseAssetAmountLimit minimum base asset amount expected to get to prevent from slippage.
+     * @param _referralCode referral code
+     */
+    function openPositionWithReferral(
+        IAmm _amm,
+        Side _side,
+        Decimal.decimal calldata _quoteAssetAmount,
+        Decimal.decimal calldata _leverage,
+        Decimal.decimal calldata _baseAssetAmountLimit,
+        bytes32 _referralCode
+    ) external {
+        openPosition(_amm, _side, _quoteAssetAmount, _leverage, _baseAssetAmountLimit);
+        if (_referralCode != 0) {
+            emit ReferredPositionChanged(_referralCode);
+        }
+    }
+
+    /**
      * @notice open a position
      * @param _amm amm address
      * @param _side enum Side; BUY for long and SELL for short
@@ -401,10 +426,10 @@ contract ClearingHouse is
     function openPosition(
         IAmm _amm,
         Side _side,
-        Decimal.decimal calldata _quoteAssetAmount,
-        Decimal.decimal calldata _leverage,
-        Decimal.decimal calldata _baseAssetAmountLimit
-    ) external whenNotPaused() nonReentrant() {
+        Decimal.decimal memory _quoteAssetAmount,
+        Decimal.decimal memory _leverage,
+        Decimal.decimal memory _baseAssetAmountLimit
+    ) public whenNotPaused() nonReentrant() {
         requireAmm(_amm, true);
         requireNonZeroInput(_quoteAssetAmount);
         requireNonZeroInput(_leverage);
@@ -476,11 +501,27 @@ contract ClearingHouse is
     }
 
     /**
+     * @notice close position with referral code
+     * @param _amm IAmm address
+     * @param _referralCode referral code
+     */
+    function closePositionWithReferral(
+        IAmm _amm,
+        Decimal.decimal calldata _quoteAssetAmountLimit,
+        bytes32 _referralCode
+    ) external {
+        closePosition(_amm, _quoteAssetAmountLimit);
+        if (_referralCode != 0) {
+            emit ReferredPositionChanged(_referralCode);
+        }
+    }
+
+    /**
      * @notice close all the positions
      * @param _amm IAmm address
      */
-    function closePosition(IAmm _amm, Decimal.decimal calldata _quoteAssetAmountLimit)
-        external
+    function closePosition(IAmm _amm, Decimal.decimal memory _quoteAssetAmountLimit)
+        public
         whenNotPaused()
         nonReentrant()
     {

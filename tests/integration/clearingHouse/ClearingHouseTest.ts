@@ -28,6 +28,7 @@ import { signEIP712MetaTx } from "../../helper/web3"
 use(assertionHelper)
 
 const TraderWallet = artifacts.require("TraderWallet") as TraderWalletContract
+const EMPTY_STRING_IN_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 describe("ClearingHouse Test", () => {
     let addresses: string[]
@@ -114,6 +115,12 @@ describe("ClearingHouse Test", () => {
 
     async function transfer(from: string, to: string, amount: number): Promise<void> {
         await quoteToken.transfer(to, toFullDigit(amount, +(await quoteToken.decimals())), { from })
+    }
+
+    function toBytes32(str: string): string {
+        const paddingLen = 32 - str.length
+        const hex = web3.utils.asciiToHex(str)
+        return hex + "00".repeat(paddingLen)
     }
 
     describe("getPersonalPositionWithFundingPayment", () => {
@@ -1958,6 +1965,102 @@ describe("ClearingHouse Test", () => {
             await forwardBlockTimestamp(15)
             await clearingHouse.closePosition(amm.address, toDecimal(0))
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0))
+        })
+    })
+
+    describe("openPosition & closePosition with referral code", () => {
+        beforeEach(async () => {
+            await approve(alice, clearingHouse.address, 1000)
+            await approve(bob, clearingHouse.address, 1000)
+        })
+
+        it("openPosition with referral code", async () => {
+            const receipt = await clearingHouse.openPositionWithReferral(
+                amm.address,
+                Side.BUY,
+                toDecimal(50),
+                toDecimal(1),
+                toDecimal(0),
+                toBytes32("Hello world"),
+                {
+                    from: alice,
+                },
+            )
+
+            await expectEvent.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged", {
+                referralCode: toBytes32("Hello world"),
+            })
+            await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
+                trader: alice,
+                amm: amm.address,
+                margin: toFullDigit(50),
+            })
+            expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq(toFullDigit(50))
+        })
+
+        it("force error, openPosition without referral code", async () => {
+            const receipt = await clearingHouse.openPositionWithReferral(
+                amm.address,
+                Side.BUY,
+                toDecimal(25),
+                toDecimal(2),
+                toDecimal(0),
+                EMPTY_STRING_IN_BYTES32,
+                {
+                    from: alice,
+                },
+            )
+
+            await expectEvent.not.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged")
+            expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq(toFullDigit(25))
+        })
+
+        it("closePosition with referral code", async () => {
+            await clearingHouse.openPositionWithReferral(
+                amm.address,
+                Side.BUY,
+                toDecimal(50),
+                toDecimal(1),
+                toDecimal(0),
+                toBytes32("Hello world"),
+                {
+                    from: alice,
+                },
+            )
+
+            const receipt = await clearingHouse.closePositionWithReferral(
+                amm.address,
+                toDecimal(0),
+                toBytes32("Hello world"),
+                { from: alice },
+            )
+
+            await expectEvent.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged", {
+                referralCode: toBytes32("Hello world"),
+            })
+            expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq(toFullDigit(0))
+        })
+
+        it("force error, closePosition without referral code", async () => {
+            await clearingHouse.openPositionWithReferral(
+                amm.address,
+                Side.BUY,
+                toDecimal(50),
+                toDecimal(1),
+                toDecimal(0),
+                toBytes32("Hello world"),
+                {
+                    from: alice,
+                },
+            )
+
+            const receipt = await clearingHouse.closePositionWithReferral(
+                amm.address,
+                toDecimal(0),
+                EMPTY_STRING_IN_BYTES32,
+                { from: alice },
+            )
+            await expectEvent.not.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged")
         })
     })
 })
