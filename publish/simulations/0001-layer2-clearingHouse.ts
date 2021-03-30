@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import { expect } from "chai"
-import hre, { ethers } from "hardhat"
+import hre, { ethers, upgrades } from "hardhat"
 import { TASK_COMPILE } from "hardhat/builtin-tasks/task-names"
 import { SRC_DIR } from "../../constants"
 import { flatten } from "../../scripts/flatten"
 import { ClearingHouse, InsuranceFund, MetaTxGateway } from "../../types/ethers"
-import { getImplementation } from "../contract/DeployUtil"
+import { getImplementation, initImplementation } from "../contract/DeployUtil"
 import { AmmInstanceName, ContractFullyQualifiedName, ContractName } from "../ContractName"
 import { MigrationContext, MigrationDefinition } from "../Migration"
 
@@ -74,12 +74,40 @@ const migration: MigrationDefinition = {
                 )
             },
             async (): Promise<void> => {
+                console.info("do upgrade")
+                // create an impersonated signer
+                const govAddr = context.externalContract.foundationGovernance
+                await hre.network.provider.request({
+                    method: "hardhat_impersonateAccount",
+                    params: [govAddr],
+                })
+                const govSigner = ethers.provider.getSigner(govAddr)
+
+                // prepare information for upgrading
+                const contractName = ContractFullyQualifiedName.FlattenClearingHouse
+                const proxyAddr = await context.factory.create<ClearingHouse>(contractName).address!
+
+                // do upgrade (FIXME: merge in to ContractWrapper or OzContractDeployer ?)
+                const contract = await ethers.getContractFactory(contractName, govSigner)
+                const proxyInstance = await upgrades.upgradeProxy(proxyAddr, contract, {
+                    unsafeAllowCustomTypes: true,
+                })
+                const impAddr = await getImplementation(proxyInstance.address)
+                console.log(
+                    `upgrade: contractFullyQualifiedName=${contractName}, proxy=${proxyAddr}, implementation=${impAddr}`,
+                )
+
+                // Just a dummy initialization, modify the args if we want to verify impl initialization
+                await initImplementation(impAddr, contractName, 1, [])
+            },
+            async (): Promise<void> => {
                 const clearingHouseContract = await context.factory
                     .create<ClearingHouse>(ContractFullyQualifiedName.FlattenClearingHouse)
                     .instance()
 
                 // for comparing with the new implementation address
                 console.log("old implementation address: ", oldImpAddr)
+                console.log("new implementation address: ", await getImplementation(clearingHouseContract.address))
 
                 const newInsuranceFund = await clearingHouseContract.insuranceFund()
                 console.log("insuranceFund address (shouldn't be zero address): ", newInsuranceFund)
