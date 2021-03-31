@@ -22,6 +22,7 @@ const migration: MigrationDefinition = {
         let BTC: string
         let arbitrageurBTCPositionSize: string
         let openInterestNotional: string
+        let newImplContractAddr: string
         return [
             async (): Promise<void> => {
                 console.log("verifying state variables...")
@@ -52,7 +53,7 @@ const migration: MigrationDefinition = {
                 const clearingHouseContract = await context.factory.create<ClearingHouse>(
                     ContractFullyQualifiedName.FlattenClearingHouse,
                 )
-                const implContractAddr = await clearingHouseContract.prepareUpgradeContractLegacy()
+                newImplContractAddr = await clearingHouseContract.prepareUpgradeContractLegacy()
 
                 // in normal case we don't need to do anything to the implementation contract
                 const insuranceFundContract = context.factory.create<InsuranceFund>(
@@ -63,7 +64,7 @@ const migration: MigrationDefinition = {
                 )
                 const clearingHouseImplInstance = (await ethers.getContractAt(
                     ContractName.ClearingHouse,
-                    implContractAddr,
+                    newImplContractAddr,
                 )) as ClearingHouse
                 await clearingHouseImplInstance.initialize(
                     context.deployConfig.initMarginRequirement,
@@ -85,20 +86,17 @@ const migration: MigrationDefinition = {
 
                 // prepare information for upgrading
                 const contractName = ContractFullyQualifiedName.FlattenClearingHouse
-                const proxyAddr = await context.factory.create<ClearingHouse>(contractName).address!
+                const proxyAddr = context.factory.create<ClearingHouse>(contractName).address!
 
-                // do upgrade (FIXME: merge in to ContractWrapper or OzContractDeployer ?)
-                const contract = await ethers.getContractFactory(contractName, govSigner)
-                const proxyInstance = await upgrades.upgradeProxy(proxyAddr, contract, {
-                    unsafeAllowCustomTypes: true,
-                })
-                const impAddr = await getImplementation(proxyInstance.address)
+                const proxyAdmin = await upgrades.admin.getInstance()
+                await proxyAdmin.connect(govSigner).upgrade(proxyAddr, newImplContractAddr)
+
                 console.log(
-                    `upgrade: contractFullyQualifiedName=${contractName}, proxy=${proxyAddr}, implementation=${impAddr}`,
+                    `upgrade: contractFullyQualifiedName=${contractName}, proxy=${proxyAddr}, implementation=${newImplContractAddr}`,
                 )
 
                 // Just a dummy initialization, modify the args if we want to verify impl initialization
-                await initImplementation(impAddr, contractName, 1, [])
+                await initImplementation(newImplContractAddr, contractName, 1, [])
             },
             async (): Promise<void> => {
                 const clearingHouseContract = await context.factory
