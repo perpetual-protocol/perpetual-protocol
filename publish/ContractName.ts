@@ -66,6 +66,7 @@ export enum ContractFullyQualifiedName {
     FlattenInsuranceFund = "flattened/ClearingHouse/src/ClearingHouse.sol:InsuranceFund",
     FlattenMetaTxGateway = "flattened/ClearingHouse/src/ClearingHouse.sol:MetaTxGateway",
     FlattenAmm = "flattened/Amm/src/Amm.sol:Amm",
+    FlattenIERC20 = "flattened/ClearingHouse/src/ClearingHouse.sol:IERC20",
 
     // used in scripts and tests
     IERC20 = "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol:IERC20",
