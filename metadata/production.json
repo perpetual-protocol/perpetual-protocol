@@ -125,6 +125,10 @@
         "RENUSDC": {
           "name": "Amm",
           "address": "0x922F28072BaBe6EA0C0c25cCD367Fda0748a5EC7"
+        },
+        "PERPUSDC": {
+          "name": "Amm",
+          "address": "0xfcAE57DB10356FCf76B6476B21ac14C504a45128"
         }
       },
       "accounts": [],
