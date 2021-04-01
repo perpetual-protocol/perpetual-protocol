@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add `TmpRewardPoolL1.sol` for receiving and transferring toll to feeRewardPool #115
 - add `FeeRewardPoolL1.sol` for calculating users' rewards and for users to withdraw rewards; fork from `Unipool.sol` #120
 - add `KeeperRewardL1.sol` and `KeeperRewardL2.sol` #61
+- add `ClearingHouse.openPositionWithReferral` and `ClearingHouse.closePositionWithReferral`
 
 ### Changed
 - rename `ClearingHouse` interface from `feePool` to `tollPool`

@@ -94,6 +94,8 @@ contract ClearingHouse is
         uint256 badDebt
     );
 
+    event ReferredPositionChanged(bytes32 indexed referralCode);
+
     //
     // Struct and Enum
     //
@@ -389,6 +391,29 @@ contract ClearingHouse is
     //   move the remain margin to insuranceFund
 
     /**
+     * @notice open a position with referral code
+     * @param _amm amm address
+     * @param _side enum Side; BUY for long and SELL for short
+     * @param _quoteAssetAmount quote asset amount in 18 digits. Can Not be 0
+     * @param _leverage leverage  in 18 digits. Can Not be 0
+     * @param _baseAssetAmountLimit minimum base asset amount expected to get to prevent from slippage.
+     * @param _referralCode referral code
+     */
+    function openPositionWithReferral(
+        IAmm _amm,
+        Side _side,
+        Decimal.decimal calldata _quoteAssetAmount,
+        Decimal.decimal calldata _leverage,
+        Decimal.decimal calldata _baseAssetAmountLimit,
+        bytes32 _referralCode
+    ) external {
+        openPosition(_amm, _side, _quoteAssetAmount, _leverage, _baseAssetAmountLimit);
+        if (_referralCode != 0) {
+            emit ReferredPositionChanged(_referralCode);
+        }
+    }
+
+    /**
      * @notice open a position
      * @param _amm amm address
      * @param _side enum Side; BUY for long and SELL for short
@@ -399,10 +424,10 @@ contract ClearingHouse is
     function openPosition(
         IAmm _amm,
         Side _side,
-        Decimal.decimal calldata _quoteAssetAmount,
-        Decimal.decimal calldata _leverage,
-        Decimal.decimal calldata _baseAssetAmountLimit
-    ) external whenNotPaused() nonReentrant() {
+        Decimal.decimal memory _quoteAssetAmount,
+        Decimal.decimal memory _leverage,
+        Decimal.decimal memory _baseAssetAmountLimit
+    ) public whenNotPaused() nonReentrant() {
         requireAmm(_amm, true);
         requireNonZeroInput(_quoteAssetAmount);
         requireNonZeroInput(_leverage);
@@ -415,9 +440,6 @@ contract ClearingHouse is
             // add scope for stack too deep error
             int256 oldPositionSize = adjustPositionForLiquidityChanged(_amm, trader).size.toInt();
             bool isNewPosition = oldPositionSize == 0 ? true : false;
-            if (!isNewPosition) {
-                requireMoreMarginRatio(getMarginRatio(_amm, trader), maintenanceMarginRatio, true);
-            }
 
             // increase or decrease position depends on old position's side and size
             if (isNewPosition || (oldPositionSize > 0 ? Side.BUY : Side.SELL) == _side) {
@@ -434,6 +456,10 @@ contract ClearingHouse is
 
             // update the position state
             setPosition(_amm, trader, positionResp.position);
+            // if opening the exact position size as the existing one == closePosition, can skip the margin ratio check
+            if (!isNewPosition && positionResp.position.size.toInt() != 0) {
+                requireMoreMarginRatio(getMarginRatio(_amm, trader), maintenanceMarginRatio, true);
+            }
 
             // to prevent attacker to leverage the bad debt to withdraw extra token from  insurance fund
             if (positionResp.badDebt.toUint() > 0) {
@@ -474,11 +500,27 @@ contract ClearingHouse is
     }
 
     /**
+     * @notice close position with referral code
+     * @param _amm IAmm address
+     * @param _referralCode referral code
+     */
+    function closePositionWithReferral(
+        IAmm _amm,
+        Decimal.decimal calldata _quoteAssetAmountLimit,
+        bytes32 _referralCode
+    ) external {
+        closePosition(_amm, _quoteAssetAmountLimit);
+        if (_referralCode != 0) {
+            emit ReferredPositionChanged(_referralCode);
+        }
+    }
+
+    /**
      * @notice close all the positions
      * @param _amm IAmm address
      */
-    function closePosition(IAmm _amm, Decimal.decimal calldata _quoteAssetAmountLimit)
-        external
+    function closePosition(IAmm _amm, Decimal.decimal memory _quoteAssetAmountLimit)
+        public
         whenNotPaused()
         nonReentrant()
     {
@@ -643,7 +685,7 @@ contract ClearingHouse is
     //
 
     /**
-     * @notice get margin ratio, marginRatio = (margin + funding payments + unrealized Pnl) / openNotional
+     * @notice get margin ratio, marginRatio = (margin + funding payment + unrealized Pnl) / positionNotional
      * use spot and twap price to calculate unrealized Pnl, final unrealized Pnl depends on which one is higher
      * @param _amm IAmm address
      * @param _trader trader address
@@ -652,18 +694,19 @@ contract ClearingHouse is
     function getMarginRatio(IAmm _amm, address _trader) public view returns (SignedDecimal.signedDecimal memory) {
         Position memory position = getPosition(_amm, _trader);
         requirePositionSize(position.size);
-        requireNonZeroInput(position.openNotional);
 
-        (, SignedDecimal.signedDecimal memory spotPricePnl) =
+        (Decimal.decimal memory spotPositionNotional, SignedDecimal.signedDecimal memory spotPricePnl) =
             (getPositionNotionalAndUnrealizedPnl(_amm, _trader, PnlCalcOption.SPOT_PRICE));
-        (, SignedDecimal.signedDecimal memory twapPricePnl) =
+        (Decimal.decimal memory twapPositionNotional, SignedDecimal.signedDecimal memory twapPricePnl) =
             (getPositionNotionalAndUnrealizedPnl(_amm, _trader, PnlCalcOption.TWAP));
-        SignedDecimal.signedDecimal memory unrealizedPnl =
-            spotPricePnl.toInt() > twapPricePnl.toInt() ? spotPricePnl : twapPricePnl;
+        (SignedDecimal.signedDecimal memory unrealizedPnl, Decimal.decimal memory positionNotional) =
+            spotPricePnl.toInt() > twapPricePnl.toInt()
+                ? (spotPricePnl, spotPositionNotional)
+                : (twapPricePnl, twapPositionNotional);
 
         (Decimal.decimal memory remainMargin, Decimal.decimal memory badDebt, , ) =
             calcRemainMarginWithFundingPayment(_amm, position, unrealizedPnl);
-        return MixedDecimal.fromDecimal(remainMargin).subD(badDebt).divD(position.openNotional);
+        return MixedDecimal.fromDecimal(remainMargin).subD(badDebt).divD(positionNotional);
     }
 
     /**
