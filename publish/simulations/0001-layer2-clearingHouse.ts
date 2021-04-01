@@ -6,7 +6,7 @@ import { TASK_COMPILE } from "hardhat/builtin-tasks/task-names"
 import { SRC_DIR } from "../../constants"
 import { flatten } from "../../scripts/flatten"
 import { ClearingHouse, InsuranceFund, MetaTxGateway } from "../../types/ethers"
-import { getImplementation, initImplementation } from "../contract/DeployUtil"
+import { getImplementation } from "../contract/DeployUtil"
 import { AmmInstanceName, ContractFullyQualifiedName, ContractName } from "../ContractName"
 import { MigrationContext, MigrationDefinition } from "../Migration"
 
@@ -49,12 +49,11 @@ const migration: MigrationDefinition = {
                 ).size.toString()
             },
             async (): Promise<void> => {
+                console.log("prepare upgrading...")
                 // deploy clearing house implementation
                 const clearingHouseContract = await context.factory.create<ClearingHouse>(
                     ContractFullyQualifiedName.FlattenClearingHouse,
                 )
-                newImplContractAddr = await clearingHouseContract.prepareUpgradeContractLegacy()
-
                 // in normal case we don't need to do anything to the implementation contract
                 const insuranceFundContract = context.factory.create<InsuranceFund>(
                     ContractFullyQualifiedName.FlattenInsuranceFund,
@@ -62,11 +61,8 @@ const migration: MigrationDefinition = {
                 const metaTxGatewayContract = context.factory.create<MetaTxGateway>(
                     ContractFullyQualifiedName.FlattenMetaTxGateway,
                 )
-                const clearingHouseImplInstance = (await ethers.getContractAt(
-                    ContractName.ClearingHouse,
-                    newImplContractAddr,
-                )) as ClearingHouse
-                await clearingHouseImplInstance.initialize(
+
+                newImplContractAddr = await clearingHouseContract.prepareUpgradeContract(
                     context.deployConfig.initMarginRequirement,
                     context.deployConfig.maintenanceMarginRequirement,
                     context.deployConfig.liquidationFeeRatio,
@@ -94,9 +90,6 @@ const migration: MigrationDefinition = {
                 console.log(
                     `upgrade: contractFullyQualifiedName=${contractName}, proxy=${proxyAddr}, implementation=${newImplContractAddr}`,
                 )
-
-                // Just a dummy initialization, modify the args if we want to verify impl initialization
-                await initImplementation(newImplContractAddr, contractName, 1, [])
             },
             async (): Promise<void> => {
                 const clearingHouseContract = await context.factory
