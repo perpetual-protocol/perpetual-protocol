@@ -1,13 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import {
-    ChainlinkL1,
-    FeeRewardPoolL1,
-    FeeTokenPoolDispatcherL1,
-    PerpRewardVesting,
-    RootBridge,
-    StakedPerpToken,
-} from "../../types/ethers"
+import { ChainlinkL1, FeeRewardPoolL1, PerpRewardVesting, RootBridge, StakedPerpToken } from "../../types/ethers"
 import { ContractWrapper } from "../contract/ContractWrapper"
 import { ContractFullyQualifiedName, ContractInstanceName } from "../ContractName"
 import { MigrationContext, MigrationDefinition } from "../Migration"
@@ -56,15 +49,17 @@ const migration: MigrationDefinition = {
                 )
                 await proxyContract.prepareUpgradeContract(emptyAddr, 0)
             },
-            // FeeTokenPoolDispatcherL1
-            async (): Promise<void> => {
-                console.log("deploy implementation of FeeTokenPoolDispatcherL1...")
 
-                const proxyContract: ContractWrapper<FeeTokenPoolDispatcherL1> = context.factory.create<
-                    FeeTokenPoolDispatcherL1
-                >(ContractFullyQualifiedName.FeeTokenPoolDispatcherL1)
-                await proxyContract.prepareUpgradeContract()
-            },
+            // has unexpected exception, comment for now, ticket #398
+            // FeeTokenPoolDispatcherL1
+            // async (): Promise<void> => {
+            //     console.log("deploy implementation of FeeTokenPoolDispatcherL1...")
+
+            //     const proxyContract: ContractWrapper<FeeTokenPoolDispatcherL1> = context.factory.create<
+            //         FeeTokenPoolDispatcherL1
+            //     >(ContractFullyQualifiedName.FeeTokenPoolDispatcherL1)
+            //     await proxyContract.prepareUpgradeContract()
+            // },
 
             // StakedPerpToken
             async (): Promise<void> => {
