@@ -1,14 +1,30 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
+import { JsonRpcSigner } from "@ethersproject/providers"
+import { parseEther } from "@ethersproject/units"
 import { expect } from "chai"
-import hre, { ethers, upgrades } from "hardhat"
+import { parseUnits } from "ethers/lib/utils"
+import hre, { artifacts, ethers, upgrades } from "hardhat"
 import { TASK_COMPILE } from "hardhat/builtin-tasks/task-names"
 import { SRC_DIR } from "../../constants"
 import { flatten } from "../../scripts/flatten"
-import { ClearingHouse, InsuranceFund, MetaTxGateway } from "../../types/ethers"
+import { ClearingHouse, ERC20, InsuranceFund, MetaTxGateway } from "../../types/ethers"
 import { getImplementation } from "../contract/DeployUtil"
 import { AmmInstanceName, ContractFullyQualifiedName, ContractName } from "../ContractName"
 import { MigrationContext, MigrationDefinition } from "../Migration"
+
+enum Side {
+    BUY = 0,
+    SELL = 1,
+}
+
+async function impersonateAccount(address: string): Promise<JsonRpcSigner> {
+    await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [address],
+    })
+    return ethers.provider.getSigner(address)
+}
 
 const migration: MigrationDefinition = {
     configPath: "hardhat.flatten.clearinghouse.config.ts",
@@ -16,12 +32,9 @@ const migration: MigrationDefinition = {
     // deploy the flattened clearingHouse and init it just in case
     getTasks: (context: MigrationContext) => {
         let arbitrageur: string
-        let initMarginRatio: string
         let oldImpAddr: string
-        let insuranceFund: string
-        let BTC: string
-        let arbitrageurBTCPositionSize: string
-        let openInterestNotional: string
+        let ETH: string
+        let arbitrageurPosition: any
         let newImplContractAddr: string
         return [
             async (): Promise<void> => {
@@ -38,15 +51,10 @@ const migration: MigrationDefinition = {
                     .instance()
 
                 oldImpAddr = await getImplementation(clearingHouseContract.address)
-                initMarginRatio = (await clearingHouseContract.initMarginRatio()).toString()
-                insuranceFund = await clearingHouseContract.insuranceFund()
-                BTC = context.systemMetadataDao.getContractMetadata(context.layer, AmmInstanceName.BTCUSDC).address
-                openInterestNotional = (await clearingHouseContract.openInterestNotionalMap(BTC)).toString()
+                ETH = context.systemMetadataDao.getContractMetadata(context.layer, AmmInstanceName.ETHUSDC).address
 
                 arbitrageur = context.externalContract.arbitrageur!
-                arbitrageurBTCPositionSize = (
-                    await clearingHouseContract.getUnadjustedPosition(BTC, arbitrageur)
-                ).size.toString()
+                arbitrageurPosition = await clearingHouseContract.getPosition(ETH, arbitrageur)
             },
             async (): Promise<void> => {
                 console.log("prepare upgrading...")
@@ -71,7 +79,7 @@ const migration: MigrationDefinition = {
                 )
             },
             async (): Promise<void> => {
-                console.info("do upgrade")
+                console.info("upgrading...")
                 // create an impersonated signer
                 const govAddr = context.externalContract.foundationGovernance
                 await hre.network.provider.request({
@@ -91,6 +99,39 @@ const migration: MigrationDefinition = {
                     `upgrade: contractFullyQualifiedName=${contractName}, proxy=${proxyAddr}, implementation=${newImplContractAddr}`,
                 )
             },
+            // verify can openPosition
+            async (): Promise<void> => {
+                const clearingHouseContract = await context.factory
+                    .create<ClearingHouse>(ContractFullyQualifiedName.FlattenClearingHouse)
+                    .instance()
+
+                const owner = context.externalContract.foundationGovernance!
+                const ownerSigner = await impersonateAccount(owner)
+
+                const arbitrageurSigner = await impersonateAccount(arbitrageur)
+
+                const usdcAddr = context.externalContract.usdc!
+                const USDCArtifact = await artifacts.readArtifact(ContractFullyQualifiedName.FlattenIERC20)
+                const usdcInstance = (await ethers.getContractAt(USDCArtifact.abi, usdcAddr)) as ERC20
+
+                const tx = await usdcInstance.connect(arbitrageurSigner).transfer(owner, parseUnits("1000", 6))
+                await tx.wait()
+
+                const receipt = await clearingHouseContract
+                    .connect(ownerSigner)
+                    .openPosition(
+                        ETH,
+                        Side.BUY,
+                        { d: parseEther("600") },
+                        { d: parseEther("1") },
+                        { d: parseEther("0") },
+                    )
+
+                const ownerPosition = await clearingHouseContract.getPosition(ETH, owner)
+                expect(ownerPosition.margin.d).to.eq(parseEther("600"))
+                expect(ownerPosition.blockNumber).to.eq(receipt.blockNumber)
+            },
+            // verify arbitrageur's ETH position
             async (): Promise<void> => {
                 const clearingHouseContract = await context.factory
                     .create<ClearingHouse>(ContractFullyQualifiedName.FlattenClearingHouse)
@@ -100,21 +141,17 @@ const migration: MigrationDefinition = {
                 console.log("old implementation address: ", oldImpAddr)
                 console.log("new implementation address: ", await getImplementation(clearingHouseContract.address))
 
-                const newInsuranceFund = await clearingHouseContract.insuranceFund()
-                console.log("insuranceFund address (shouldn't be zero address): ", newInsuranceFund)
-                expect(newInsuranceFund).to.eq(insuranceFund)
-                console.log("insuranceFund verified!")
+                console.log("arbitrageur position: ")
+                const arbitrageurPositionNow = await clearingHouseContract.getPosition(ETH, arbitrageur)
 
-                expect((await clearingHouseContract.initMarginRatio()).toString()).to.eq(initMarginRatio)
-                console.log("initMarginRatio verified!")
-                expect((await clearingHouseContract.openInterestNotionalMap(BTC)).toString()).to.eq(
-                    openInterestNotional,
-                )
-                console.log("openInterestNotional verified!")
-                expect((await clearingHouseContract.getUnadjustedPosition(BTC, arbitrageur)).size.toString()).to.eq(
-                    arbitrageurBTCPositionSize,
-                )
-                console.log("arbitrageurBTCPositionSize verified!")
+                console.log("size: ", arbitrageurPositionNow.size.d.toString())
+                console.log("margin: ", arbitrageurPositionNow.margin.d.toString())
+                console.log("last updated blockNumber: ", arbitrageurPositionNow.blockNumber.toString())
+                expect(arbitrageurPosition.size.d).to.eq(arbitrageurPositionNow.size.d)
+                expect(arbitrageurPosition.margin.d).to.eq(arbitrageurPositionNow.margin.d)
+                expect(arbitrageurPosition.blockNumber).to.eq(arbitrageurPositionNow.blockNumber)
+
+                console.log("arbitrageurETHPositionSize verified!")
             },
         ]
     },

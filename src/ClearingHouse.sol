@@ -16,6 +16,7 @@ import { ReentrancyGuardUpgradeSafe } from "@openzeppelin/contracts-ethereum-pac
 import { OwnerPausableUpgradeSafe } from "./OwnerPausable.sol";
 import { IAmm } from "./interface/IAmm.sol";
 import { IInsuranceFund } from "./interface/IInsuranceFund.sol";
+import { IMultiTokenRewardRecipient } from "./interface/IMultiTokenRewardRecipient.sol";
 
 // note BaseRelayRecipient must come after OwnerPausableUpgradeSafe so its _msgSender() takes precedence
 // (yes, the ordering is reversed comparing to Python)
@@ -180,7 +181,7 @@ contract ClearingHouse is
 
     // contract dependencies
     IInsuranceFund public insuranceFund;
-    address public tollPool;
+    IMultiTokenRewardRecipient public feePool;
 
     // designed for arbitragers who can hold unlimited positions. will be removed after guarded period
     address internal whitelist;
@@ -243,8 +244,8 @@ contract ClearingHouse is
         emit MarginRatioChanged(maintenanceMarginRatio.toUint());
     }
 
-    function setTollPool(address _tollPool) external onlyOwner {
-        tollPool = _tollPool;
+    function setTollPool(address _feePool) external onlyOwner {
+        feePool = IMultiTokenRewardRecipient(_feePool);
     }
 
     /**
@@ -1043,10 +1044,10 @@ contract ClearingHouse is
                 _transferFrom(quoteAsset, _from, address(insuranceFund), spread);
             }
 
-            // transfer toll to TollPool
+            // transfer toll to feePool
             if (hasToll) {
-                require(tollPool != address(0), "Invalid tollPool");
-                _transferFrom(quoteAsset, _from, tollPool, toll);
+                require(address(feePool) != address(0), "Invalid feePool");
+                _transferFrom(quoteAsset, _from, address(feePool), toll);
             }
 
             // fee = spread + toll
