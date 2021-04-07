@@ -58,31 +58,31 @@
             "contract": "MetaTxGateway",
             "label": "domainSeperatorL1",
             "type": "t_bytes32",
-            "src": "src/MetaTxGateway.sol:55"
+            "src": "src/MetaTxGateway.sol:53"
           },
           {
             "contract": "MetaTxGateway",
             "label": "domainSeperatorL2",
             "type": "t_bytes32",
-            "src": "src/MetaTxGateway.sol:56"
+            "src": "src/MetaTxGateway.sol:54"
           },
           {
             "contract": "MetaTxGateway",
             "label": "nonces",
             "type": "t_mapping(t_address,t_uint256)",
-            "src": "src/MetaTxGateway.sol:57"
+            "src": "src/MetaTxGateway.sol:55"
           },
           {
             "contract": "MetaTxGateway",
             "label": "whitelistMap",
             "type": "t_mapping(t_address,t_bool)",
-            "src": "src/MetaTxGateway.sol:60"
+            "src": "src/MetaTxGateway.sol:58"
           },
           {
             "contract": "MetaTxGateway",
             "label": "__gap",
             "type": "t_array(t_uint256)50_storage",
-            "src": "src/MetaTxGateway.sol:76"
+            "src": "src/MetaTxGateway.sol:74"
           }
         ],
         "types": {
@@ -92,17 +92,20 @@
           "t_mapping(t_address,t_uint256)": {
             "label": "mapping(address => uint256)"
           },
-          "t_mapping(t_address,t_bool)": {
-            "label": "mapping(address => bool)"
-          },
-          "t_array(t_uint256)50_storage": {
-            "label": "uint256[50]"
-          },
           "t_address": {
             "label": "address"
           },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
           "t_bool": {
             "label": "bool"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
           }
         }
       }
@@ -169,13 +172,13 @@
           {
             "contract": "BaseBridge",
             "label": "ambBridge",
-            "type": "t_contract(IAMB)15782",
+            "type": "t_contract(IAMB)16268",
             "src": "src/bridge/BaseBridge.sol:27"
           },
           {
             "contract": "BaseBridge",
             "label": "multiTokenMediator",
-            "type": "t_contract(IMultiTokenMediator)15794",
+            "type": "t_contract(IMultiTokenMediator)16280",
             "src": "src/bridge/BaseBridge.sol:30"
           },
           {
@@ -210,13 +213,16 @@
           "t_array(t_uint256)50_storage": {
             "label": "uint256[50]"
           },
+          "t_uint256": {
+            "label": "uint256"
+          },
           "t_address": {
             "label": "address"
           },
-          "t_contract(IAMB)15782": {
+          "t_contract(IAMB)16268": {
             "label": "contract IAMB"
           },
-          "t_contract(IMultiTokenMediator)15794": {
+          "t_contract(IMultiTokenMediator)16280": {
             "label": "contract IMultiTokenMediator"
           },
           "t_mapping(t_address,t_uint256)": {
@@ -320,37 +326,37 @@
           {
             "contract": "InsuranceFund",
             "label": "amms",
-            "type": "t_array(t_contract(IAmm)17937)dyn_storage",
+            "type": "t_array(t_contract(IAmm)18421)dyn_storage",
             "src": "src/InsuranceFund.sol:37"
           },
           {
             "contract": "InsuranceFund",
             "label": "quoteTokens",
-            "type": "t_array(t_contract(IERC20)1878)dyn_storage",
+            "type": "t_array(t_contract(IERC20)2022)dyn_storage",
             "src": "src/InsuranceFund.sol:38"
           },
           {
             "contract": "InsuranceFund",
             "label": "exchange",
-            "type": "t_contract(IExchangeWrapper)18006",
+            "type": "t_contract(IExchangeWrapper)18585",
             "src": "src/InsuranceFund.sol:41"
           },
           {
             "contract": "InsuranceFund",
             "label": "perpToken",
-            "type": "t_contract(IERC20)1878",
+            "type": "t_contract(IERC20)2022",
             "src": "src/InsuranceFund.sol:42"
           },
           {
             "contract": "InsuranceFund",
             "label": "minter",
-            "type": "t_contract(IMinter)18073",
+            "type": "t_contract(IMinter)18652",
             "src": "src/InsuranceFund.sol:43"
           },
           {
             "contract": "InsuranceFund",
             "label": "inflationMonitor",
-            "type": "t_contract(IInflationMonitor)18022",
+            "type": "t_contract(IInflationMonitor)18601",
             "src": "src/InsuranceFund.sol:44"
           },
           {
@@ -370,35 +376,41 @@
           "t_mapping(t_address,t_bool)": {
             "label": "mapping(address => bool)"
           },
-          "t_array(t_contract(IAmm)17937)dyn_storage": {
-            "label": "contract IAmm[]"
-          },
-          "t_array(t_contract(IERC20)1878)dyn_storage": {
-            "label": "contract IERC20[]"
-          },
-          "t_contract(IExchangeWrapper)18006": {
-            "label": "contract IExchangeWrapper"
-          },
-          "t_contract(IERC20)1878": {
-            "label": "contract IERC20"
-          },
-          "t_contract(IMinter)18073": {
-            "label": "contract IMinter"
-          },
-          "t_contract(IInflationMonitor)18022": {
-            "label": "contract IInflationMonitor"
-          },
           "t_address": {
             "label": "address"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_array(t_contract(IAmm)18421)dyn_storage": {
+            "label": "contract IAmm[]"
+          },
+          "t_contract(IAmm)18421": {
+            "label": "contract IAmm"
+          },
+          "t_array(t_contract(IERC20)2022)dyn_storage": {
+            "label": "contract IERC20[]"
+          },
+          "t_contract(IERC20)2022": {
+            "label": "contract IERC20"
+          },
+          "t_contract(IExchangeWrapper)18585": {
+            "label": "contract IExchangeWrapper"
+          },
+          "t_contract(IMinter)18652": {
+            "label": "contract IMinter"
+          },
+          "t_contract(IInflationMonitor)18601": {
+            "label": "contract IInflationMonitor"
           },
           "t_array(t_uint256)50_storage": {
             "label": "uint256[50]"
           },
+          "t_uint256": {
+            "label": "uint256"
+          },
           "t_mapping(t_address,t_uint256)": {
             "label": "mapping(address => uint256)"
-          },
-          "t_bool": {
-            "label": "bool"
           },
           "t_array(t_uint256)49_storage": {
             "label": "uint256[49]"
@@ -474,7 +486,7 @@
           {
             "contract": "L2PriceFeed",
             "label": "priceFeedMap",
-            "type": "t_mapping(t_bytes32,t_struct(PriceFeed)11968_storage)",
+            "type": "t_mapping(t_bytes32,t_struct(PriceFeed)12051_storage)",
             "src": "src/L2PriceFeed.sol:39"
           },
           {
@@ -494,17 +506,56 @@
           "t_address": {
             "label": "address"
           },
-          "t_mapping(t_bytes32,t_struct(PriceFeed)11968_storage)": {
+          "t_mapping(t_bytes32,t_struct(PriceFeed)12051_storage)": {
             "label": "mapping(bytes32 => struct L2PriceFeed.PriceFeed)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(PriceFeed)12051_storage": {
+            "label": "struct L2PriceFeed.PriceFeed",
+            "members": [
+              {
+                "label": "registered",
+                "type": "t_bool"
+              },
+              {
+                "label": "priceData",
+                "type": "t_array(t_struct(PriceData)12045_storage)dyn_storage"
+              }
+            ]
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_array(t_struct(PriceData)12045_storage)dyn_storage": {
+            "label": "struct L2PriceFeed.PriceData[]"
+          },
+          "t_struct(PriceData)12045_storage": {
+            "label": "struct L2PriceFeed.PriceData",
+            "members": [
+              {
+                "label": "roundId",
+                "type": "t_uint256"
+              },
+              {
+                "label": "price",
+                "type": "t_uint256"
+              },
+              {
+                "label": "timestamp",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_uint256": {
+            "label": "uint256"
           },
           "t_array(t_bytes32)dyn_storage": {
             "label": "bytes32[]"
           },
           "t_array(t_uint256)50_storage": {
             "label": "uint256[50]"
-          },
-          "t_bool": {
-            "label": "bool"
           }
         }
       }
@@ -2384,22 +2435,79 @@
         ],
         "types": {
           "t_struct(signedDecimal)1061_storage": {
-            "label": "struct SignedDecimal.signedDecimal"
+            "label": "struct SignedDecimal.signedDecimal",
+            "members": [
+              {
+                "label": "d",
+                "type": "t_int256"
+              }
+            ]
+          },
+          "t_int256": {
+            "label": "int256"
           },
           "t_struct(decimal)489_storage": {
-            "label": "struct Decimal.decimal"
+            "label": "struct Decimal.decimal",
+            "members": [
+              {
+                "label": "d",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_uint256": {
+            "label": "uint256"
           },
           "t_array(t_struct(LiquidityChangedSnapshot)1880_storage)dyn_storage": {
             "label": "struct IAmm.LiquidityChangedSnapshot[]"
           },
-          "t_uint256": {
-            "label": "uint256"
+          "t_struct(LiquidityChangedSnapshot)1880_storage": {
+            "label": "struct IAmm.LiquidityChangedSnapshot",
+            "members": [
+              {
+                "label": "cumulativeNotional",
+                "type": "t_struct(signedDecimal)1061_storage"
+              },
+              {
+                "label": "quoteAssetReserve",
+                "type": "t_struct(decimal)489_storage"
+              },
+              {
+                "label": "baseAssetReserve",
+                "type": "t_struct(decimal)489_storage"
+              },
+              {
+                "label": "totalPositionSize",
+                "type": "t_struct(signedDecimal)1061_storage"
+              }
+            ]
           },
           "t_bytes32": {
             "label": "bytes32"
           },
           "t_array(t_struct(ReserveSnapshot)2158_storage)dyn_storage": {
             "label": "struct Amm.ReserveSnapshot[]"
+          },
+          "t_struct(ReserveSnapshot)2158_storage": {
+            "label": "struct Amm.ReserveSnapshot",
+            "members": [
+              {
+                "label": "quoteAssetReserve",
+                "type": "t_struct(decimal)489_storage"
+              },
+              {
+                "label": "baseAssetReserve",
+                "type": "t_struct(decimal)489_storage"
+              },
+              {
+                "label": "timestamp",
+                "type": "t_uint256"
+              },
+              {
+                "label": "blockNumber",
+                "type": "t_uint256"
+              }
+            ]
           },
           "t_address": {
             "label": "address"
@@ -2501,14 +2609,26 @@
           "t_mapping(t_bytes32,t_contract(AggregatorV3Interface)45)": {
             "label": "mapping(bytes32 => contract AggregatorV3Interface)"
           },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_contract(AggregatorV3Interface)45": {
+            "label": "contract AggregatorV3Interface"
+          },
           "t_array(t_bytes32)dyn_storage": {
             "label": "bytes32[]"
           },
           "t_mapping(t_bytes32,t_uint8)": {
             "label": "mapping(bytes32 => uint8)"
           },
+          "t_uint8": {
+            "label": "uint8"
+          },
           "t_array(t_uint256)50_storage": {
             "label": "uint256[50]"
+          },
+          "t_uint256": {
+            "label": "uint256"
           },
           "t_address": {
             "label": "address"
