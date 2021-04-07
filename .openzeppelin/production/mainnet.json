@@ -63,13 +63,13 @@
           {
             "contract": "BaseBridge",
             "label": "ambBridge",
-            "type": "t_contract(IAMB)15782",
+            "type": "t_contract(IAMB)16268",
             "src": "src/bridge/BaseBridge.sol:27"
           },
           {
             "contract": "BaseBridge",
             "label": "multiTokenMediator",
-            "type": "t_contract(IMultiTokenMediator)15794",
+            "type": "t_contract(IMultiTokenMediator)16280",
             "src": "src/bridge/BaseBridge.sol:30"
           },
           {
@@ -81,7 +81,7 @@
           {
             "contract": "RootBridge",
             "label": "priceFeed",
-            "type": "t_contract(IPriceFeed)18153",
+            "type": "t_contract(IPriceFeed)18732",
             "src": "src/bridge/ethereum/RootBridge.sol:17"
           },
           {
@@ -92,16 +92,19 @@
           }
         ],
         "types": {
-          "t_contract(IPriceFeed)18153": {
+          "t_contract(IPriceFeed)18732": {
             "label": "contract IPriceFeed"
           },
           "t_array(t_uint256)50_storage": {
             "label": "uint256[50]"
           },
-          "t_contract(IAMB)15782": {
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_contract(IAMB)16268": {
             "label": "contract IAMB"
           },
-          "t_contract(IMultiTokenMediator)15794": {
+          "t_contract(IMultiTokenMediator)16280": {
             "label": "contract IMultiTokenMediator"
           },
           "t_mapping(t_address,t_uint256)": {
@@ -184,7 +187,7 @@
           {
             "contract": "ChainlinkL1",
             "label": "rootBridge",
-            "type": "t_contract(RootBridge)15705",
+            "type": "t_contract(RootBridge)16191",
             "src": "src/ChainlinkL1.sol:29"
           },
           {
@@ -210,10 +213,16 @@
           "t_mapping(t_bytes32,t_contract(AggregatorV3Interface)45)": {
             "label": "mapping(bytes32 => contract AggregatorV3Interface)"
           },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_contract(AggregatorV3Interface)45": {
+            "label": "contract AggregatorV3Interface"
+          },
           "t_array(t_bytes32)dyn_storage": {
             "label": "bytes32[]"
           },
-          "t_contract(RootBridge)15705": {
+          "t_contract(RootBridge)16191": {
             "label": "contract RootBridge"
           },
           "t_address": {
@@ -221,6 +230,9 @@
           },
           "t_mapping(t_bytes32,t_uint256)": {
             "label": "mapping(bytes32 => uint256)"
+          },
+          "t_uint256": {
+            "label": "uint256"
           },
           "t_array(t_uint256)50_storage": {
             "label": "uint256[50]"
@@ -337,11 +349,11 @@
           "t_mapping(t_uint256,t_uint256)": {
             "label": "mapping(uint256 => uint256)"
           },
-          "t_array(t_uint256)dyn_storage": {
-            "label": "uint256[]"
-          },
           "t_uint256": {
             "label": "uint256"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]"
           },
           "t_array(t_uint256)50_storage": {
             "label": "uint256[50]"
@@ -349,17 +361,23 @@
           "t_mapping(t_uint256,t_bytes32)": {
             "label": "mapping(uint256 => bytes32)"
           },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
           "t_mapping(t_uint256,t_mapping(t_address,t_bool))": {
             "label": "mapping(uint256 => mapping(address => bool))"
           },
-          "t_contract(IERC20)2022": {
-            "label": "contract IERC20"
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
           },
           "t_address": {
             "label": "address"
           },
           "t_bool": {
             "label": "bool"
+          },
+          "t_contract(IERC20)2022": {
+            "label": "contract IERC20"
           }
         }
       }
@@ -559,13 +577,13 @@
           {
             "contract": "StakedPerpToken",
             "label": "totalSupplyHistory",
-            "type": "t_struct(History)30820_storage",
+            "type": "t_struct(History)30895_storage",
             "src": "src/staking/StakedPerpToken.sol:46"
           },
           {
             "contract": "StakedPerpToken",
             "label": "balancesHistory",
-            "type": "t_mapping(t_address,t_struct(History)30820_storage)",
+            "type": "t_mapping(t_address,t_struct(History)30895_storage)",
             "src": "src/staking/StakedPerpToken.sol:49"
           },
           {
@@ -577,7 +595,7 @@
           {
             "contract": "StakedPerpToken",
             "label": "stakerWithdrawPendingBalance",
-            "type": "t_mapping(t_address,t_struct(decimal)31387_storage)",
+            "type": "t_mapping(t_address,t_struct(decimal)31462_storage)",
             "src": "src/staking/StakedPerpToken.sol:55"
           },
           {
@@ -612,19 +630,19 @@
           "t_uint8": {
             "label": "uint8"
           },
-          "t_struct(History)30820_storage": {
+          "t_struct(History)30895_storage": {
             "label": "struct Checkpointing.History",
             "members": [
               {
                 "label": "history",
-                "type": "t_array(t_struct(Checkpoint)30816_storage)dyn_storage"
+                "type": "t_array(t_struct(Checkpoint)30891_storage)dyn_storage"
               }
             ]
           },
-          "t_array(t_struct(Checkpoint)30816_storage)dyn_storage": {
+          "t_array(t_struct(Checkpoint)30891_storage)dyn_storage": {
             "label": "struct Checkpointing.Checkpoint[]"
           },
-          "t_struct(Checkpoint)30816_storage": {
+          "t_struct(Checkpoint)30891_storage": {
             "label": "struct Checkpointing.Checkpoint",
             "members": [
               {
@@ -643,7 +661,7 @@
           "t_uint192": {
             "label": "uint192"
           },
-          "t_mapping(t_address,t_struct(History)30820_storage)": {
+          "t_mapping(t_address,t_struct(History)30895_storage)": {
             "label": "mapping(address => struct Checkpointing.History)"
           },
           "t_address": {
@@ -655,10 +673,10 @@
           "t_uint256": {
             "label": "uint256"
           },
-          "t_mapping(t_address,t_struct(decimal)31387_storage)": {
+          "t_mapping(t_address,t_struct(decimal)31462_storage)": {
             "label": "mapping(address => struct Decimal.decimal)"
           },
-          "t_struct(decimal)31387_storage": {
+          "t_struct(decimal)31462_storage": {
             "label": "struct Decimal.decimal",
             "members": [
               {
@@ -750,25 +768,25 @@
           {
             "contract": "FeeRewardPoolL1",
             "label": "userRewardPerTokenPaid",
-            "type": "t_mapping(t_address,t_struct(decimal)31387_storage)",
+            "type": "t_mapping(t_address,t_struct(decimal)31462_storage)",
             "src": "src/staking/FeeRewardPoolL1.sol:47"
           },
           {
             "contract": "FeeRewardPoolL1",
             "label": "rewards",
-            "type": "t_mapping(t_address,t_struct(decimal)31387_storage)",
+            "type": "t_mapping(t_address,t_struct(decimal)31462_storage)",
             "src": "src/staking/FeeRewardPoolL1.sol:49"
           },
           {
             "contract": "FeeRewardPoolL1",
             "label": "rewardPerTokenStored",
-            "type": "t_struct(decimal)31387_storage",
+            "type": "t_struct(decimal)31462_storage",
             "src": "src/staking/FeeRewardPoolL1.sol:52"
           },
           {
             "contract": "FeeRewardPoolL1",
             "label": "rewardRate",
-            "type": "t_struct(decimal)31387_storage",
+            "type": "t_struct(decimal)31462_storage",
             "src": "src/staking/FeeRewardPoolL1.sol:54"
           },
           {
@@ -792,7 +810,7 @@
           {
             "contract": "FeeRewardPoolL1",
             "label": "stakedPerpToken",
-            "type": "t_contract(StakedPerpToken)30805",
+            "type": "t_contract(StakedPerpToken)30880",
             "src": "src/staking/FeeRewardPoolL1.sol:61"
           },
           {
@@ -809,13 +827,13 @@
           }
         ],
         "types": {
-          "t_mapping(t_address,t_struct(decimal)31387_storage)": {
+          "t_mapping(t_address,t_struct(decimal)31462_storage)": {
             "label": "mapping(address => struct Decimal.decimal)"
           },
           "t_address": {
             "label": "address"
           },
-          "t_struct(decimal)31387_storage": {
+          "t_struct(decimal)31462_storage": {
             "label": "struct Decimal.decimal",
             "members": [
               {
@@ -827,7 +845,7 @@
           "t_uint256": {
             "label": "uint256"
           },
-          "t_contract(StakedPerpToken)30805": {
+          "t_contract(StakedPerpToken)30880": {
             "label": "contract StakedPerpToken"
           },
           "t_contract(IERC20)2022": {
