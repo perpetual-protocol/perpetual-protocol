@@ -117,6 +117,11 @@ const migration: MigrationDefinition = {
                 const tx = await usdcInstance.connect(arbitrageurSigner).transfer(owner, parseUnits("1000", 6))
                 await tx.wait()
 
+                const txApprove = await usdcInstance
+                    .connect(ownerSigner)
+                    .approve(clearingHouseContract.address, parseUnits("1000", 6))
+                await txApprove.wait()
+
                 const receipt = await clearingHouseContract
                     .connect(ownerSigner)
                     .openPosition(
