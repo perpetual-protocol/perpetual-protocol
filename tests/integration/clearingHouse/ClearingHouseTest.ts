@@ -921,12 +921,15 @@ describe("ClearingHouse Test", () => {
 
             const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
             // partially liquidate 25%
-            // positionNotional: getOutputPrice(20 (original position) * 0.25) = 68.455
+            // liquidated positionNotional: getOutputPrice(20 (original position) * 0.25) = 68.455
+            // remain positionNotional: 233.945 - 68.455 = 165.49
             // total pnl = openNotional - getOutputPrice(20) == 250 - 233.945 = 16.054(loss)
             // realizedPnl = 16.054 * 0.25 = 4.01, unrealizedPnl = 16.054 - 4.01 = 12.04
             // liquidationPenalty = liquidation fee + fee to InsuranceFund
             //                    = 68.455 * 0.0125 + 68.455 * 0.0125 = 1.711
             // remain margin = margin - realizedPnl - liquidationPenalty = 25 - 4.01 - 1.711 = 19.27
+            // margin ratio = (remain margin - unrealizedPnl) / remain positionNotional
+            //              = (19.27 - 12.04) / 165.49 = 0.0437
             expectEvent(receipt, "PositionLiquidated", {
                 amm: amm.address,
                 trader: alice,
@@ -948,7 +951,7 @@ describe("ClearingHouse Test", () => {
             })
 
             expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq("19274981656679729691")
-            expect(await clearingHouse.getMarginRatio(amm.address, alice)).to.eq("40748436081649708")
+            expect(await clearingHouse.getMarginRatio(amm.address, alice)).to.eq("43713253015241334")
             expect((await clearingHouse.getPosition(amm.address, alice)).size).to.eq(toFullDigit(15))
             expect(await quoteToken.balanceOf(carol)).to.eq("855695")
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("5000855695")
@@ -979,12 +982,15 @@ describe("ClearingHouse Test", () => {
 
             const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
             // partially liquidate 25%
-            // positionNotional: getOutputPrice(25 (original position) * 0.25) = 44.258
+            // liquidated positionNotional: getOutputPrice(25 (original position) * 0.25) = 44.258
+            // remain positionNotional: 211.255 - 44.258 = 166.997
             // total pnl = openNotional - getOutputPrice(25) == 200 - 211.255 = 11.255(loss)
             // realizedPnl = 11.255 * 0.25 = 2.81, unrealizedPnl = 11.255 - 2.81 = 8.44
             // liquidationPenalty = liquidation fee + fee to InsuranceFund
             //                    = 44.258 * 0.0125 + 44.258 * 0.0125 = 1.106
             // remain margin = margin - realizedPnl - liquidationPenalty = 20 - 2.81 - 1.106 = 16.079
+            // margin ratio = (remain margin - unrealizedPnl) / remain positionNotional
+            //              = (16.079 - 8.44) / 166.997 = 0.0457
             expectEvent(receipt, "PositionLiquidated", {
                 amm: amm.address,
                 trader: alice,
@@ -1006,7 +1012,7 @@ describe("ClearingHouse Test", () => {
             })
 
             expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq("16079605164093693758")
-            expect(await clearingHouse.getMarginRatio(amm.address, alice)).to.eq("48171416663415124")
+            expect(await clearingHouse.getMarginRatio(amm.address, alice)).to.eq("45736327859926164")
             expect((await clearingHouse.getPosition(amm.address, alice)).size).to.eq(toFullDigit(-18.75))
             expect(await quoteToken.balanceOf(carol)).to.eq("553234")
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("5000553234")
