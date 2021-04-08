@@ -2174,6 +2174,284 @@
           }
         }
       }
+    },
+    "6911438a4e40abd859544e1a900d6b11ddcaf2e6f924ab3bf6555617670f6c0d": {
+      "address": "0x0A2F7a06A237C42cc4627219254374ca832121f0",
+      "txHash": "0xefcb5692df9b5a798e5439b752ffdc172a144642e274cc77e0568f3f3b309ad2",
+      "layout": {
+        "storage": [
+          {
+            "contract": "DecimalERC20",
+            "label": "decimalMap",
+            "type": "t_mapping(t_address,t_uint256)",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:806"
+          },
+          {
+            "contract": "DecimalERC20",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:818"
+          },
+          {
+            "contract": "Initializable",
+            "label": "initialized",
+            "type": "t_bool",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:973"
+          },
+          {
+            "contract": "Initializable",
+            "label": "initializing",
+            "type": "t_bool",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:975"
+          },
+          {
+            "contract": "Initializable",
+            "label": "______gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1011"
+          },
+          {
+            "contract": "ContextUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1052"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1224"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_candidate",
+            "type": "t_address",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1224"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1301"
+          },
+          {
+            "contract": "PausableUpgradeSafe",
+            "label": "_paused",
+            "type": "t_bool",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1147"
+          },
+          {
+            "contract": "PausableUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1204"
+          },
+          {
+            "contract": "OwnerPausableUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1326"
+          },
+          {
+            "contract": "ReentrancyGuardUpgradeSafe",
+            "label": "_notEntered",
+            "type": "t_bool",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1076"
+          },
+          {
+            "contract": "ReentrancyGuardUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1119"
+          },
+          {
+            "contract": "BlockContext",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:15"
+          },
+          {
+            "contract": "BaseRelayRecipient",
+            "label": "trustedForwarder",
+            "type": "t_address",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:78"
+          },
+          {
+            "contract": "ClearingHouse",
+            "label": "versionRecipient",
+            "type": "t_string_storage",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1624"
+          },
+          {
+            "contract": "ClearingHouse",
+            "label": "initMarginRatio",
+            "type": "t_struct(decimal)532_storage",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1624"
+          },
+          {
+            "contract": "ClearingHouse",
+            "label": "maintenanceMarginRatio",
+            "type": "t_struct(decimal)532_storage",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1625"
+          },
+          {
+            "contract": "ClearingHouse",
+            "label": "liquidationFeeRatio",
+            "type": "t_struct(decimal)532_storage",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1626"
+          },
+          {
+            "contract": "ClearingHouse",
+            "label": "openInterestNotionalMap",
+            "type": "t_mapping(t_address,t_struct(decimal)532_storage)",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1632"
+          },
+          {
+            "contract": "ClearingHouse",
+            "label": "ammMap",
+            "type": "t_mapping(t_address,t_struct(AmmMap)3003_storage)",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1636"
+          },
+          {
+            "contract": "ClearingHouse",
+            "label": "prepaidBadDebt",
+            "type": "t_mapping(t_address,t_struct(decimal)532_storage)",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1638"
+          },
+          {
+            "contract": "ClearingHouse",
+            "label": "insuranceFund",
+            "type": "t_contract(IInsuranceFund)2836",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1641"
+          },
+          {
+            "contract": "ClearingHouse",
+            "label": "feePool",
+            "type": "t_contract(IMultiTokenRewardRecipient)2844",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1642"
+          },
+          {
+            "contract": "ClearingHouse",
+            "label": "whitelist",
+            "type": "t_address",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1645"
+          },
+          {
+            "contract": "ClearingHouse",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "flattened/ClearingHouse/src/ClearingHouse.sol:1660"
+          }
+        ],
+        "types": {
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_struct(decimal)532_storage": {
+            "label": "struct Decimal.decimal",
+            "members": [
+              {
+                "label": "d",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_address,t_struct(decimal)532_storage)": {
+            "label": "mapping(address => struct Decimal.decimal)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_mapping(t_address,t_struct(AmmMap)3003_storage)": {
+            "label": "mapping(address => struct ClearingHouse.AmmMap)"
+          },
+          "t_struct(AmmMap)3003_storage": {
+            "label": "struct ClearingHouse.AmmMap",
+            "members": [
+              {
+                "label": "lastRestrictionBlock",
+                "type": "t_uint256"
+              },
+              {
+                "label": "cumulativePremiumFractions",
+                "type": "t_array(t_struct(signedDecimal)1104_storage)dyn_storage"
+              },
+              {
+                "label": "positionMap",
+                "type": "t_mapping(t_address,t_struct(Position)2976_storage)"
+              }
+            ]
+          },
+          "t_array(t_struct(signedDecimal)1104_storage)dyn_storage": {
+            "label": "struct SignedDecimal.signedDecimal[]"
+          },
+          "t_struct(signedDecimal)1104_storage": {
+            "label": "struct SignedDecimal.signedDecimal",
+            "members": [
+              {
+                "label": "d",
+                "type": "t_int256"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_struct(Position)2976_storage)": {
+            "label": "mapping(address => struct ClearingHouse.Position)"
+          },
+          "t_struct(Position)2976_storage": {
+            "label": "struct ClearingHouse.Position",
+            "members": [
+              {
+                "label": "size",
+                "type": "t_struct(signedDecimal)1104_storage"
+              },
+              {
+                "label": "margin",
+                "type": "t_struct(decimal)532_storage"
+              },
+              {
+                "label": "openNotional",
+                "type": "t_struct(decimal)532_storage"
+              },
+              {
+                "label": "lastUpdatedCumulativePremiumFraction",
+                "type": "t_struct(signedDecimal)1104_storage"
+              },
+              {
+                "label": "liquidityHistoryIndex",
+                "type": "t_uint256"
+              },
+              {
+                "label": "blockNumber",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_int256": {
+            "label": "int256"
+          },
+          "t_contract(IInsuranceFund)2836": {
+            "label": "contract IInsuranceFund"
+          },
+          "t_contract(IMultiTokenRewardRecipient)2844": {
+            "label": "contract IMultiTokenRewardRecipient"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)"
+          }
+        }
+      }
     }
   },
   "admin": {
