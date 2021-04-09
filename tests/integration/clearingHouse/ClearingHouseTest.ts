@@ -1449,6 +1449,8 @@ describe("ClearingHouse Test", () => {
 
             it("force error, liquidate two positions while both exceeding the fluctuation limit", async () => {
                 await amm.setFluctuationLimitRatio(toDecimal(0.147))
+                // trigger full liquidation
+                await clearingHouse.setPartialLiquidationRatio(toDecimal(1))
                 traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
                 await transfer(admin, traderWallet1.address, 1000)
@@ -1484,7 +1486,7 @@ describe("ClearingHouse Test", () => {
                 // fluctuation: (12.1 - 10.31005917) / 12.1 = 0.1479
                 await expectRevert(
                     traderWallet1.twoLiquidations(amm.address, alice, carol),
-                    "price is over fluctuation limit twice",
+                    "price is over fluctuation limit",
                 )
             })
 
@@ -1611,7 +1613,7 @@ describe("ClearingHouse Test", () => {
                 // fluctuation: (13.225 - 10.4409438852) / 13.225 = 0.2105146401
                 await expectRevert(
                     traderWallet1.threeLiquidations(amm.address, alice, carol, relayer),
-                    "price is over fluctuation limit twice",
+                    "price is over fluctuation limit",
                 )
             })
         })

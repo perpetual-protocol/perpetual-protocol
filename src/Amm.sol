@@ -249,7 +249,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         Decimal.decimal calldata _baseAssetAmount,
         Decimal.decimal calldata _quoteAssetAmountLimit
     ) external override onlyOpen onlyCounterParty returns (Decimal.decimal memory) {
-        return implSwapOutput(_dir, _baseAssetAmount, _quoteAssetAmountLimit);
+        return implSwapOutput(_dirOfBase, _baseAssetAmount, _quoteAssetAmountLimit);
     }
 
     /**
@@ -719,11 +719,12 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         }
 
         Decimal.decimal memory quoteAssetAmount = getOutputPrice(_dirOfBase, _baseAssetAmount);
+        Dir dirOfQuote = _dirOfBase == Dir.ADD_TO_AMM ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM;
         // If SHORT, exchanged quote amount should be less than _quoteAssetAmountLimit,
         // otherwise(LONG), exchanged base amount should be more than _quoteAssetAmountLimit.
         // In the SHORT case, more quote assets means more payment so should not be more than _quoteAssetAmountLimit
         if (_quoteAssetAmountLimit.toUint() != 0) {
-            if (_dirOfBase == Dir.ADD_TO_AMM) {
+            if (dirOfQuote == Dir.REMOVE_FROM_AMM) {
                 // SHORT
                 require(quoteAssetAmount.toUint() >= _quoteAssetAmountLimit.toUint(), "Less than minimal quote token");
             } else {
@@ -735,20 +736,15 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         // Only the FIRST tx in a block whose price impact is larger than fluctuationLimitRatio can skip the fluctuation check
         // otherwise, some positions can never be closed or liquidated
         // As reserves are not yet updated here, calling isOverBlockFluctuationLimit for the first tx over fluctuationLimitRatio returns false
-        bool skipFluctuationCheck;
+        bool fluctuationCheck = true;
         if (
             !isOverBlockFluctuationLimit(fluctuationLimitRatio) &&
-            isSingleTxOverFluctuation(_dir, quoteAssetAmount, _baseAssetAmount)
+            isSingleTxOverFluctuation(dirOfQuote, quoteAssetAmount, _baseAssetAmount)
         ) {
-            skipFluctuationCheck = true;
+            fluctuationCheck = false;
         }
 
-        updateReserve(
-            _dir == Dir.ADD_TO_AMM ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM,
-            quoteAssetAmount,
-            _baseAssetAmount,
-            skipFluctuationCheck
-        );
+        updateReserve(dirOfQuote, quoteAssetAmount, _baseAssetAmount, fluctuationCheck);
 
         emit SwapOutput(_dirOfBase, quoteAssetAmount.toUint(), _baseAssetAmount.toUint());
         return quoteAssetAmount;
@@ -778,7 +774,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         }
 
         // check if it's over fluctuationLimitRatio
-        if (!_skipFluctuationCheck) {
+        if (_fluctuationCheck) {
             require(!isOverBlockFluctuationLimit(fluctuationLimitRatio), "price is over fluctuation limit");
         }
 

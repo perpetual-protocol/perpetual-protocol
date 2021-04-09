@@ -605,7 +605,7 @@ contract ClearingHouse is
                 setPosition(_amm, _trader, positionResp.position);
             } else {
                 liquidationPenalty = getPosition(_amm, _trader).margin;
-                positionResp = internalClosePosition(_amm, _trader, Decimal.zero(), true);
+                positionResp = internalClosePosition(_amm, _trader, Decimal.zero());
                 Decimal.decimal memory remainMargin = positionResp.marginToVault.abs();
                 feeToLiquidator = positionResp.exchangedQuoteAssetAmount.mulD(liquidationFeeRatio).divScalar(2);
 
@@ -1029,8 +1029,8 @@ contract ClearingHouse is
         positionResp.marginToVault = MixedDecimal.fromDecimal(remainMargin).mulScalar(-1);
         // for amm.swapOutput, the direction is in base asset, from the perspective of Amm
         positionResp.exchangedQuoteAssetAmount = _amm.swapOutput(
-            oldPositionSize.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
-            oldPositionSize.abs(),
+            oldPosition.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
+            oldPosition.size.abs(),
             _quoteAssetAmountLimit
         );
 
