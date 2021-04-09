@@ -598,7 +598,8 @@ contract ClearingHouse is
 
                 // half of the liquidationFee goes to liquidator & another half goes to insurance fund
                 liquidationPenalty = positionResp.exchangedQuoteAssetAmount.mulD(liquidationFeeRatio);
-                feeToLiquidator = feeToInsuranceFund = liquidationPenalty.divScalar(2);
+                feeToLiquidator = liquidationPenalty.divScalar(2);
+                feeToInsuranceFund = liquidationPenalty.subD(feeToLiquidator);
 
                 positionResp.position.margin = positionResp.position.margin.subD(liquidationPenalty);
                 setPosition(_amm, _trader, positionResp.position);
