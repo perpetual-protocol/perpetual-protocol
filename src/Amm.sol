@@ -193,14 +193,14 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
      * @param _dirOfQuote ADD_TO_AMM for long, REMOVE_FROM_AMM for short
      * @param _quoteAssetAmount quote asset amount
      * @param _baseAssetAmountLimit minimum base asset amount expected to get to prevent front running
-     * @param _singleTxFluctuationCheck check fluctuation of a single tx if true, otherwise check fluctuation of a block. only for partial liquidation
+     * @param _canFirstTxOverFluctuationLimit if the first tx can go over fluctuation limit; for partial liquidation
      * @return base asset amount
      */
     function swapInput(
         Dir _dirOfQuote,
         Decimal.decimal calldata _quoteAssetAmount,
         Decimal.decimal calldata _baseAssetAmountLimit,
-        bool _singleTxFluctuationCheck
+        bool _canFirstTxOverFluctuationLimit
     ) external override onlyOpen onlyCounterParty returns (Decimal.decimal memory) {
         if (_quoteAssetAmount.toUint() == 0) {
             return Decimal.zero();
@@ -226,12 +226,12 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
         // If the price impact of one single tx is larger than priceFluctuation, skip the check
         // only for partial liquidation
-        bool fluctuationCheckInBlock = !_singleTxFluctuationCheck;
-        if (_singleTxFluctuationCheck) {
-            fluctuationCheckInBlock = !isSingleTxOverFluctuation(_dirOfQuote, _quoteAssetAmount, baseAssetAmount);
-        }
+        bool fluctuationCheck =
+            _canFirstTxOverFluctuationLimit == false
+                ? true
+                : !isFirstTxOverFluctuationLimit(_dirOfQuote, _quoteAssetAmount, baseAssetAmount);
 
-        updateReserve(_dirOfQuote, _quoteAssetAmount, baseAssetAmount, fluctuationCheckInBlock);
+        updateReserve(_dirOfQuote, _quoteAssetAmount, baseAssetAmount, fluctuationCheck);
         emit SwapInput(_dirOfQuote, _quoteAssetAmount.toUint(), baseAssetAmount.toUint());
         return baseAssetAmount;
     }
@@ -733,19 +733,13 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             }
         }
 
-        // Only the FIRST tx in a block whose price impact is larger than fluctuationLimitRatio can skip the fluctuation check
-        // otherwise, some positions can never be closed or liquidated
-        // As reserves are not yet updated here, calling isOverBlockFluctuationLimit for the first tx over fluctuationLimitRatio returns false
-        bool fluctuationCheck = true;
-        if (
-            !isOverBlockFluctuationLimit(fluctuationLimitRatio) &&
-            isSingleTxOverFluctuation(dirOfQuote, quoteAssetAmount, _baseAssetAmount)
-        ) {
-            fluctuationCheck = false;
-        }
-
-        updateReserve(dirOfQuote, quoteAssetAmount, _baseAssetAmount, fluctuationCheck);
-
+        // the FIRST tx in a block with price impact > fluctuationLimitRatio can skip the fluctuation check
+        updateReserve(
+            dirOfQuote,
+            quoteAssetAmount,
+            _baseAssetAmount,
+            !isFirstTxOverFluctuationLimit(dirOfQuote, quoteAssetAmount, _baseAssetAmount)
+        );
         emit SwapOutput(_dirOfBase, quoteAssetAmount.toUint(), _baseAssetAmount.toUint());
         return quoteAssetAmount;
     }
@@ -775,7 +769,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
         // check if it's over fluctuationLimitRatio
         if (_fluctuationCheck) {
-            require(!isOverBlockFluctuationLimit(fluctuationLimitRatio), "price is over fluctuation limit");
+            require(!isOverBlockFluctuationLimit(), "price is over fluctuation limit");
         }
 
         // addReserveSnapshot must be after checking price fluctuation
@@ -890,8 +884,26 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         revert("not supported option");
     }
 
-    // the direction is in quote asset
-    function isSingleTxOverFluctuation(
+    // the comparison is between blocks
+    function isOverBlockFluctuationLimit() internal view returns (bool) {
+        // Skip the check if the limit is 0
+        if (fluctuationLimitRatio.toUint() > 0) {
+            uint256 len = reserveSnapshots.length;
+            ReserveSnapshot memory latestSnapshot = reserveSnapshots[len - 1];
+
+            // if the latest snapshot is the same as current block, get the previous one
+            if (latestSnapshot.blockNumber == _blockNumber() && len > 1) {
+                latestSnapshot = reserveSnapshots[len - 2];
+            }
+            return
+                isOverFluctuationLimit(quoteAssetReserve.divD(baseAssetReserve), fluctuationLimitRatio, latestSnapshot);
+        }
+        return false;
+    }
+
+    // only the FIRST tx in a block with price impact > fluctuationLimitRatio can skip the fluctuation check
+    // otherwise, some positions can never be closed or liquidated
+    function isFirstTxOverFluctuationLimit(
         Dir _dirOfQuote,
         Decimal.decimal memory _quoteAssetAmount,
         Decimal.decimal memory _baseAssetAmount
@@ -900,48 +912,16 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             (_dirOfQuote == Dir.ADD_TO_AMM)
                 ? quoteAssetReserve.addD(_quoteAssetAmount).divD(baseAssetReserve.subD(_baseAssetAmount))
                 : quoteAssetReserve.subD(_quoteAssetAmount).divD(baseAssetReserve.addD(_baseAssetAmount));
-        return
+        bool isOverFluctuationLimit =
             isOverFluctuationLimit(
                 priceAfterReserveUpdated,
                 fluctuationLimitRatio,
                 reserveSnapshots[reserveSnapshots.length.sub(1)]
             );
-    }
 
-    function isOverBlockFluctuationLimit(Decimal.decimal memory _fluctuationLimitRatio) internal view returns (bool) {
-        // Skip the check if the limit is 0
-        if (_fluctuationLimitRatio.toUint() > 0) {
-            uint256 len = reserveSnapshots.length;
-            ReserveSnapshot memory latestSnapshot = reserveSnapshots[len - 1];
-
-            // if the latest snapshot is the same as current block, get the previous one
-            if (latestSnapshot.blockNumber == _blockNumber() && len > 1) {
-                latestSnapshot = reserveSnapshots[len - 2];
-            }
-
-            return
-                isOverFluctuationLimit(
-                    quoteAssetReserve.divD(baseAssetReserve),
-                    _fluctuationLimitRatio,
-                    latestSnapshot
-                );
-        }
-        return false;
-    }
-
-    function checkLiquidityMultiplierLimit(
-        SignedDecimal.signedDecimal memory _positionSize,
-        Decimal.decimal memory _liquidityMultiplier
-    ) internal view {
-        // have lower bound when position size is long
-        if (_positionSize.toInt() > 0) {
-            Decimal.decimal memory liquidityMultiplierLowerBound =
-                _positionSize
-                    .addD(Decimal.decimal(MARGIN_FOR_LIQUIDITY_MIGRATION_ROUNDING))
-                    .divD(baseAssetReserve)
-                    .abs();
-            require(_liquidityMultiplier.cmp(liquidityMultiplierLowerBound) >= 0, "illegal liquidity multiplier");
-        }
+        // for the first tx with price impact > fluctuationLimitRatio,
+        // as reserves are not yet updated, isOverBlockFluctuationLimit() returns false
+        return isOverFluctuationLimit && !isOverBlockFluctuationLimit();
     }
 
     function isOverFluctuationLimit(
@@ -957,6 +937,21 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             return false;
         }
         return true;
+    }
+
+    function checkLiquidityMultiplierLimit(
+        SignedDecimal.signedDecimal memory _positionSize,
+        Decimal.decimal memory _liquidityMultiplier
+    ) internal view {
+        // have lower bound when position size is long
+        if (_positionSize.toInt() > 0) {
+            Decimal.decimal memory liquidityMultiplierLowerBound =
+                _positionSize
+                    .addD(Decimal.decimal(MARGIN_FOR_LIQUIDITY_MIGRATION_ROUNDING))
+                    .divD(baseAssetReserve)
+                    .abs();
+            require(_liquidityMultiplier.cmp(liquidityMultiplierLowerBound) >= 0, "illegal liquidity multiplier");
+        }
     }
 
     function implShutdown() internal {
