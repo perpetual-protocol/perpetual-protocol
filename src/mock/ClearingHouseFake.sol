@@ -18,11 +18,11 @@ contract ClearingHouseFake is ClearingHouse {
         uint256 _liquidationFeeRatio,
         IInsuranceFund _insuranceFund,
         address _trustedForwarder
-    ) public initializer {
-        require(address(_insuranceFund) != address(0), "Invalid IInsuranceFund");
+    ) external initializer {
+        require(address(_insuranceFund) != address(0));
 
         __OwnerPausable_init();
-        __ReentrancyGuard_init();
+        // __ReentrancyGuard_init();
 
         initMarginRatio = Decimal.decimal(_initMarginRatio);
         maintenanceMarginRatio = Decimal.decimal(_maintenanceMarginRatio);
@@ -31,11 +31,11 @@ contract ClearingHouseFake is ClearingHouse {
         trustedForwarder = _trustedForwarder;
     }
 
-    function mock_setBlockTimestamp(uint256 _timestamp) public {
+    function mock_setBlockTimestamp(uint256 _timestamp) external {
         timestamp = _timestamp;
     }
 
-    function mock_setBlockNumber(uint256 _number) public {
+    function mock_setBlockNumber(uint256 _number) external {
         number = _number;
     }
 
@@ -43,7 +43,7 @@ contract ClearingHouseFake is ClearingHouse {
     //     return _blockTimestamp();
     // }
 
-    function mock_getCurrentBlockNumber() public view returns (uint256) {
+    function mock_getCurrentBlockNumber() external view returns (uint256) {
         return _blockNumber();
     }
 
@@ -64,7 +64,7 @@ contract ClearingHouseFake is ClearingHouse {
         return ammMap[_amm].lastRestrictionBlock == _block;
     }
 
-    function getPrepaidBadDebt(address _token) public view returns (Decimal.decimal memory) {
+    function getPrepaidBadDebt(address _token) external view returns (Decimal.decimal memory) {
         return prepaidBadDebt[_token];
     }
 }
