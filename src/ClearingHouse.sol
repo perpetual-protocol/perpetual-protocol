@@ -186,6 +186,7 @@ contract ClearingHouse is
     // designed for arbitragers who can hold unlimited positions. will be removed after guarded period
     address internal whitelist;
 
+    uint256[50] private __gap;
     //**********************************************************//
     //    Can not change the order of above state variables     //
     //**********************************************************//
@@ -194,7 +195,6 @@ contract ClearingHouse is
     Decimal.decimal public partialLiquidationRatio;
 
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
-    uint256[50] private __gap;
 
     //
     // External
