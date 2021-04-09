@@ -19,6 +19,8 @@ async function healthCheck(): Promise<void> {
     const results = await fetch(`https://metadata.perp.exchange/production.json`)
     const json = await results.json()
     const layer2 = json["layers"]["layer2"]
+    const chainlinkPriceFeedAddr = layer2.contracts.ChainlinkPriceFeed.address
+    const layer2PriceFeedAddr = layer2.contracts.L2PriceFeed.address
 
     const AmmArtifact = await artifacts.readArtifact(ContractFullyQualifiedName.Amm)
     const ClearingHouseArtifact = await artifacts.readArtifact(ContractFullyQualifiedName.ClearingHouse)
@@ -66,6 +68,19 @@ async function healthCheck(): Promise<void> {
         const reserve = await amm.getReserve()
         const quoteAssetReserve = reserve[0]
         const baseAssetReserve = reserve[1]
+        const priceFeed = await amm.priceFeed()
+        let priceFeedName = ""
+
+        if (priceFeed === layer2PriceFeedAddr) {
+            priceFeedName = "L2PriceFeed"
+        } else if (priceFeed === chainlinkPriceFeedAddr) {
+            priceFeedName = "ChainlinkPriceFeed"
+        } else {
+            throw new Error(
+                "PriceFeed is not L2PriceFeed or ChainlinkPriceFeed, check it immediately!! address: " + priceFeed,
+            )
+        }
+
         console.log("--------")
         console.log(`## Market: ${priceFeedKey}`)
         console.log(`### Proxy Address: ${it}`)
@@ -74,6 +89,7 @@ async function healthCheck(): Promise<void> {
         console.log(`### MaxHoldingBaseAsset: ${utils.formatEther(maxHoldingBaseAsset.toString())} ${priceFeedKey}`)
         console.log(`### QuoteAssetReserve: ${utils.formatEther(quoteAssetReserve.toString())} USDC`)
         console.log(`### BaseAssetReserve: ${utils.formatEther(baseAssetReserve.toString())} ${priceFeedKey}USDC`)
+        console.log(`### PriceFeed: ${priceFeedName}`)
     }
 }
 
