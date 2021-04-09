@@ -491,7 +491,7 @@ describe("Amm Unit Test", () => {
         it("swapInput, price up and over fluctuation", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // BUY 25, reserve will be 1025 : 97.56, price is 1025 / 97.56 = 10.50625
-            // but _singleTxFluctuationCheck is true so it's ok to skip the check
+            // but _canFirstTxOverFluctuationLimit is true so it's ok to skip the check
             const receipt = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(25), toDecimal(0), true)
             expectEvent(receipt, "SwapInput")
         })
@@ -535,7 +535,31 @@ describe("Amm Unit Test", () => {
             )
         })
 
-        it("force error, swapOutput(close long) can exceed the fluctuation limit once, but the rest will fail during that block", async () => {
+        it("force error, swapInput long can exceed the fluctuation limit once, but the rest will fail during that block", async () => {
+            // fluctuation is 5%, price is between 9.5 ~ 10.5
+            // BUY 25, reserve will be 1025 : 97.56, price is 1025 / 97.56 = 10.50625
+            // _canFirstTxOverFluctuationLimit is true so it's ok to skip the check the first time, while the second time cannot
+            const receipt = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(25), toDecimal(0), true)
+            expectEvent(receipt, "SwapInput")
+            await expectRevert(
+                amm.swapInput(Dir.ADD_TO_AMM, toDecimal(1), toDecimal(0), true),
+                "price is over fluctuation limit",
+            )
+        })
+
+        it("force error, swapInput short can exceed the fluctuation limit once, but the rest will fail during that block", async () => {
+            // fluctuation is 5%, price is between 9.5 ~ 10.5
+            // SELL 30, reserve will be 970 : 103.09, price is 975 / 102.56 = 9.40
+            // _canFirstTxOverFluctuationLimit is true so it's ok to skip the check the first time, while the second time cannot
+            const receipt = await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(30), toDecimal(0), true)
+            expectEvent(receipt, "SwapInput")
+            await expectRevert(
+                amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(1), toDecimal(0), true),
+                "price is over fluctuation limit",
+            )
+        })
+
+        it("force error, swapOutput(close long) can exceed the fluctuation limit once, but the rest txs in that block will fail", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // BUY 2.5 base, reserve will be 1025.6 : 97.5, price is 1025.6 / 97.5 = 10.52
             expectEvent(await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(2.5), toDecimal(0)), "SwapOutput")
@@ -545,17 +569,7 @@ describe("Amm Unit Test", () => {
             )
         })
 
-        it("force error, swapOutput(close short) can exceed the fluctuation limit once, but the rest will fail during that block", async () => {
-            // fluctuation is 5%, price is between 9.5 ~ 10.5
-            // SELL 2.7 base, reserve will be 973.7 : 102.7, price is 973.7 / 102.7 = 9.48
-            expectEvent(await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(2.7), toDecimal(0)), "SwapOutput")
-            await expectRevert(
-                amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(0.1), toDecimal(0)),
-                "price is over fluctuation limit",
-            )
-        })
-
-        it("force error, swapOutput(close short) can only exceed fluctuation limit once, and the second time will fail; different error message from the above ones", async () => {
+        it("force error, swapOutput(close short) can only exceed fluctuation limit once, but the rest txs in that block will fail", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // SELL 3 base, reserve will be 970.873 : 103, price is 970.873 / 103 = 9.425
             expectEvent(await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(3), toDecimal(0)), "SwapOutput")
@@ -567,7 +581,7 @@ describe("Amm Unit Test", () => {
             )
         })
 
-        it("force error, swap many times to over the fluctuation in a single block", async () => {
+        it("force error, swap many times and the price is over the fluctuation limit in a single block", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // BUY 10+10+10, reserve will be 1030 : 97.09, price is 1030 / 97.09 = 10.61
             await moveToNextBlocks(1)
