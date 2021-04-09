@@ -80,6 +80,9 @@ task(TASK_MIGRATE, "Migrate contract deployment")
 
 const config: HardhatUserConfig = {
     networks: {
+        hardhat: {
+            allowUnlimitedContractSize: true,
+        },
         coverage: {
             url: COVERAGE_URL,
         },

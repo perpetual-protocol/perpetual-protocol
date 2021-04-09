@@ -919,10 +919,10 @@ describe("ClearingHouse - open/close position Test", () => {
             expect(new BN(bobMarginRatio.d).isNeg()).eq(true)
             await clearingHouse.liquidate(amm.address, bob, { from: carol })
 
-            // liquidator get 5% liquidation fee = 294.11 * 5% ~= 14.7
+            // liquidator get half of the 5% liquidation fee = 294.11 * 2.5% ~= 7.352941
             // clearingHouse is depleted
             expect(await quoteToken.balanceOf(clearingHouse.address)).eq(0)
-            expect(await quoteToken.balanceOf(carol)).eq("14705882")
+            expect(await quoteToken.balanceOf(carol)).eq("7352941")
         })
 
         // the test for pointing out the calculation of margin ratio should be based on positionNotional instead of openNotional
@@ -966,21 +966,22 @@ describe("ClearingHouse - open/close position Test", () => {
             // alice's margin ratio = (margin + unrealizedPnl) / openNotional = (150 + (-278.77)) / 600 = -21.46%
             const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
 
-            // liquidationFee = 321.23 * 5% = 16.06
+            // liquidationFee = 321.23 * 2.5% = 16.06
+            // the "liquidationFee" of PositionLiquidated event refers to liquidator's fee: 16.06 * 0.5 = 8.03
             // remainMargin = margin + unrealizedPnl = 150 + (-278.77) = -128.77
             // Since -128.77 - 16.06 < 0
             //   position changed badDebt = 128.77
-            //   liquidation badDebt = 16.06
-            // Trader total PnL = -278.77 + 128.77 = -150
+            //   liquidation badDebt = 8.03
+            // Trader total liquidation penalty = -278.77 + 128.77 = -150
 
             expectEvent(receipt, "PositionChanged", {
                 realizedPnl: "-278761061946902654868",
                 badDebt: "128761061946902654868",
-                liquidationPenalty: "0",
+                liquidationPenalty: "150000000000000000000",
             })
             expectEvent(receipt, "PositionLiquidated", {
-                liquidationFee: "16061946902654867256",
-                badDebt: "16061946902654867256",
+                liquidationFee: "8030973451327433628",
+                badDebt: "8030973451327433628",
             })
         })
 
