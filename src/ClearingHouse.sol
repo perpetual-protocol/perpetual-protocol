@@ -304,7 +304,7 @@ contract ClearingHouse is
         // check condition
         requireAmm(_amm, false);
         address trader = _msgSender();
-        Position memory pos = getUnadjustedPosition(_amm, trader);
+        Position memory pos = getPosition(_amm, trader);
         requirePositionSize(pos.size);
         // update position
         clearPosition(_amm, trader);
@@ -579,7 +579,7 @@ contract ClearingHouse is
                 partialLiquidationRatio.cmp(Decimal.one()) < 0 &&
                 partialLiquidationRatio.toUint() != 0
             ) {
-                Position memory position = getUnadjustedPosition(_amm, _trader);
+                Position memory position = getPosition(_amm, _trader);
                 Decimal.decimal memory partiallyLiquidatedPositionNotional =
                     _amm.getOutputPrice(
                         position.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
@@ -604,7 +604,7 @@ contract ClearingHouse is
                 positionResp.position.margin = positionResp.position.margin.subD(liquidationPenalty);
                 setPosition(_amm, _trader, positionResp.position);
             } else {
-                liquidationPenalty = getUnadjustedPosition(_amm, _trader).margin;
+                liquidationPenalty = getPosition(_amm, _trader).margin;
                 positionResp = internalClosePosition(_amm, _trader, Decimal.zero(), true);
                 Decimal.decimal memory remainMargin = positionResp.marginToVault.abs();
                 feeToLiquidator = positionResp.exchangedQuoteAssetAmount.mulD(liquidationFeeRatio).divScalar(2);
@@ -713,7 +713,7 @@ contract ClearingHouse is
      * @return margin ratio in 18 digits
      */
     function getMarginRatio(IAmm _amm, address _trader) public view returns (SignedDecimal.signedDecimal memory) {
-        Position memory position = getUnadjustedPosition(_amm, _trader);
+        Position memory position = getPosition(_amm, _trader);
         requirePositionSize(position.size);
 
         (Decimal.decimal memory spotPositionNotional, SignedDecimal.signedDecimal memory spotPricePnl) =
@@ -736,8 +736,14 @@ contract ClearingHouse is
      * @param _trader trader address
      * @return struct Position
      */
-    function getPosition(IAmm _amm, address _trader) external view returns (Position memory) {
-        return getUnadjustedPosition(_amm, _trader);
+    function getPosition(IAmm _amm, address _trader) public view returns (Position memory) {
+        Position memory pos = getUnadjustedPosition(_amm, _trader);
+        uint256 latestLiquidityIndex = _amm.getLiquidityHistoryLength().sub(1);
+        if (pos.liquidityHistoryIndex == latestLiquidityIndex) {
+            return pos;
+        }
+
+        return calcPositionAfterLiquidityMigration(_amm, pos, latestLiquidityIndex);
     }
 
     /**
@@ -753,7 +759,7 @@ contract ClearingHouse is
         address _trader,
         PnlCalcOption _pnlCalcOption
     ) public view returns (Decimal.decimal memory positionNotional, SignedDecimal.signedDecimal memory unrealizedPnl) {
-        Position memory position = getUnadjustedPosition(_amm, _trader);
+        Position memory position = getPosition(_amm, _trader);
         Decimal.decimal memory positionSizeAbs = position.size.abs();
         if (positionSizeAbs.toUint() != 0) {
             bool isShortPosition = position.size.toInt() < 0;
@@ -789,8 +795,9 @@ contract ClearingHouse is
     //
 
     function enterRestrictionMode(IAmm _amm) internal {
-        ammMap[address(_amm)].lastRestrictionBlock = _blockNumber();
-        emit RestrictionModeEntered(address(_amm), _blockNumber());
+        uint256 blockNumber = _blockNumber();
+        ammMap[address(_amm)].lastRestrictionBlock = blockNumber;
+        emit RestrictionModeEntered(address(_amm), blockNumber);
     }
 
     function setPosition(
@@ -1146,7 +1153,26 @@ contract ClearingHouse is
     //
 
     function adjustPositionForLiquidityChanged(IAmm _amm, address _trader) internal returns (Position memory) {
-        return getUnadjustedPosition(_amm, _trader);
+        Position memory unadjustedPosition = getUnadjustedPosition(_amm, _trader);
+        if (unadjustedPosition.size.toInt() == 0) {
+            return unadjustedPosition;
+        }
+        uint256 latestLiquidityIndex = _amm.getLiquidityHistoryLength().sub(1);
+        if (unadjustedPosition.liquidityHistoryIndex == latestLiquidityIndex) {
+            return unadjustedPosition;
+        }
+
+        Position memory adjustedPosition =
+            calcPositionAfterLiquidityMigration(_amm, unadjustedPosition, latestLiquidityIndex);
+        setPosition(_amm, _trader, adjustedPosition);
+        emit PositionAdjusted(
+            address(_amm),
+            _trader,
+            adjustedPosition.size.toInt(),
+            unadjustedPosition.liquidityHistoryIndex,
+            adjustedPosition.liquidityHistoryIndex
+        );
+        return adjustedPosition;
     }
 
     function calcPositionAfterLiquidityMigration(
