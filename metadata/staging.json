@@ -129,6 +129,10 @@
         "PERPUSDC": {
           "name": "Amm",
           "address": "0x2E8504e558c0F96036f78E08Fb652Ac7304f7455"
+        },
+        "UNIUSDC": {
+          "name": "Amm",
+          "address": "0xA087B08162870BE17Ffa1b8818368fe36ed574B5"
         }
       },
       "accounts": [],
