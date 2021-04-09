@@ -576,7 +576,7 @@ contract ClearingHouse is
 
             if (
                 marginRatio.toInt() > int256(liquidationFeeRatio.toUint()) &&
-                partialLiquidationRatio.cmp(Decimal.one()) != 0 &&
+                partialLiquidationRatio.cmp(Decimal.one()) < 0 &&
                 partialLiquidationRatio.toUint() != 0
             ) {
                 Position memory position = getPosition(_amm, _trader);
