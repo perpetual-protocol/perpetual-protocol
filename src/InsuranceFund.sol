@@ -27,6 +27,8 @@ contract InsuranceFund is IInsuranceFund, PerpFiOwnableUpgrade, BlockContext, Re
     event TokenAdded(address tokenAddress);
     event TokenRemoved(address tokenAddress);
     event ShutdownAllAmms(uint256 blockNumber);
+    event AmmAdded(address amm);
+    event AmmRemoved(address amm);
 
     //**********************************************************//
     //    The below state variables can not change the order    //
@@ -70,6 +72,7 @@ contract InsuranceFund is IInsuranceFund, PerpFiOwnableUpgrade, BlockContext, Re
         require(!isExistedAmm(_amm), "amm already added");
         ammMap[address(_amm)] = true;
         amms.push(_amm);
+        emit AmmAdded(address(_amm));
 
         // add token if it's new one
         IERC20 token = _amm.quoteAsset();
@@ -92,6 +95,7 @@ contract InsuranceFund is IInsuranceFund, PerpFiOwnableUpgrade, BlockContext, Re
             if (amms[i] == _amm) {
                 amms[i] = amms[ammLength - 1];
                 amms.pop();
+                emit AmmRemoved(address(_amm));
                 break;
             }
         }
