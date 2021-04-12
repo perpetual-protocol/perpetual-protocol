@@ -133,6 +133,10 @@
         "UNIUSDC": {
           "name": "Amm",
           "address": "0xA087B08162870BE17Ffa1b8818368fe36ed574B5"
+        },
+        "CRVUSDC": {
+          "name": "Amm",
+          "address": "0x093c250B04bb79b86968da87B524A533533a0fAE"
         }
       },
       "accounts": [],
