@@ -334,10 +334,7 @@ class AmmSpec {
     @test
     async feTradeOverAmountSwapOutput(): Promise<void> {
         // trade limit rate is 0.9, means can not trade over 1000 * 0.9 amount
-        await expectRevert(
-            this.amm.swapOutput(Side.REMOVE_FROM_AMM, toDecimal(91), toDecimal(0), false),
-            "over trading limit",
-        )
+        await expectRevert(this.amm.swapOutput(Side.REMOVE_FROM_AMM, toDecimal(91), toDecimal(0)), "over trading limit")
     }
 
     @test
