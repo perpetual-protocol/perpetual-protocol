@@ -888,7 +888,7 @@ contract ClearingHouse is
         Decimal.decimal memory _quoteAssetAmount,
         Decimal.decimal memory _leverage,
         Decimal.decimal memory _baseAssetAmountLimit,
-        bool _isLiquidation
+        bool _canOverFluctuationLimit
     ) internal returns (PositionResp memory) {
         Decimal.decimal memory openNotional = _quoteAssetAmount.mulD(_leverage);
         (Decimal.decimal memory oldPositionNotional, SignedDecimal.signedDecimal memory unrealizedPnl) =
@@ -904,7 +904,7 @@ contract ClearingHouse is
                 _side,
                 openNotional,
                 _baseAssetAmountLimit,
-                _isLiquidation
+                _canOverFluctuationLimit
             );
 
             // realizedPnl = unrealizedPnl * closedRatio
@@ -1044,12 +1044,12 @@ contract ClearingHouse is
         Side _side,
         Decimal.decimal memory _inputAmount,
         Decimal.decimal memory _minOutputAmount,
-        bool _isLiquidation
+        bool _canOverFluctuationLimit
     ) internal returns (SignedDecimal.signedDecimal memory) {
         // for amm.swapInput, the direction is in quote asset, from the perspective of Amm
         IAmm.Dir dir = (_side == Side.BUY) ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM;
         SignedDecimal.signedDecimal memory outputAmount =
-            MixedDecimal.fromDecimal(_amm.swapInput(dir, _inputAmount, _minOutputAmount, _isLiquidation));
+            MixedDecimal.fromDecimal(_amm.swapInput(dir, _inputAmount, _minOutputAmount, _canOverFluctuationLimit));
         if (IAmm.Dir.REMOVE_FROM_AMM == dir) {
             return outputAmount.mulScalar(-1);
         }

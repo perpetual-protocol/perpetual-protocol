@@ -28,7 +28,7 @@ interface IAmm {
         Dir _dir,
         Decimal.decimal calldata _quoteAssetAmount,
         Decimal.decimal calldata _baseAssetAmountLimit,
-        bool _singleTxFluctuationCheck
+        bool _canOverFluctuationLimit
     ) external returns (Decimal.decimal memory);
 
     function swapOutput(
