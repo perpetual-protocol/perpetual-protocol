@@ -423,6 +423,36 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     // VIEW FUNCTIONS
     //
 
+    function isOverFluctuationLimit(Dir _dirOfBase, Decimal.decimal memory _baseAssetAmount)
+        external
+        view
+        override
+        returns (bool)
+    {
+        uint256 len = reserveSnapshots.length;
+        ReserveSnapshot memory latestSnapshot = reserveSnapshots[len.sub(1)];
+        // if the latest snapshot is the same as current block, get the previous one
+        if (latestSnapshot.blockNumber == _blockNumber() && len > 1) {
+            latestSnapshot = reserveSnapshots[len.sub(2)];
+        }
+
+        // get price boundary first
+        Decimal.decimal memory lastPrice = latestSnapshot.quoteAssetReserve.divD(latestSnapshot.baseAssetReserve);
+        Decimal.decimal memory upperLimit = lastPrice.mulD(Decimal.one().addD(fluctuationLimitRatio));
+        Decimal.decimal memory lowerLimit = lastPrice.mulD(Decimal.one().subD(fluctuationLimitRatio));
+
+        Decimal.decimal memory quoteAssetBack = getOutputPrice(_dirOfBase, _baseAssetAmount);
+        Decimal.decimal memory price =
+            (_dirOfBase == Dir.REMOVE_FROM_AMM)
+                ? quoteAssetReserve.addD(quoteAssetBack).divD(baseAssetReserve.subD(_baseAssetAmount))
+                : quoteAssetReserve.subD(quoteAssetBack).divD(baseAssetReserve.addD(_baseAssetAmount));
+
+        if (price.cmp(upperLimit) <= 0 && price.cmp(lowerLimit) >= 0) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * @notice get input twap amount.
      * returns how many base asset you will get with the input quote amount based on twap price.

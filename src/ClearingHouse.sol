@@ -515,9 +515,39 @@ contract ClearingHouse is
         // update position
         address trader = _msgSender();
         adjustPositionForLiquidityChanged(_amm, trader);
-        PositionResp memory positionResp = internalClosePosition(_amm, trader, _quoteAssetAmountLimit);
 
+        PositionResp memory positionResp;
         {
+            Position memory position = getPosition(_amm, trader);
+
+            // check if this position exceed fluctuation limit
+            // if over fluctuation limit, then close partial position. Otherwise close all.
+            // if it is long position, close a position means short it(which means base dir is ADD_TO_AMM) and vice versa
+            if (
+                _amm.isOverFluctuationLimit(
+                    position.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
+                    position.size.abs()
+                )
+            ) {
+                Decimal.decimal memory partiallyClosedPositionNotional =
+                    _amm.getOutputPrice(
+                        position.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
+                        position.size.mulD(partialLiquidationRatio).abs()
+                    );
+
+                positionResp = openReversePosition(
+                    _amm,
+                    position.size.toInt() > 0 ? Side.SELL : Side.BUY,
+                    trader,
+                    partiallyClosedPositionNotional,
+                    Decimal.one(),
+                    Decimal.zero(),
+                    true
+                );
+            } else {
+                positionResp = internalClosePosition(_amm, trader, _quoteAssetAmountLimit);
+            }
+
             // add scope for stack too deep error
             // transfer the actual token from trader and vault
             IERC20 quoteToken = _amm.quoteAsset();
