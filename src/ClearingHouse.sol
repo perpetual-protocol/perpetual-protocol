@@ -544,6 +544,7 @@ contract ClearingHouse is
                     Decimal.zero(),
                     true
                 );
+                setPosition(_amm, trader, positionResp.position);
             } else {
                 positionResp = internalClosePosition(_amm, trader, _quoteAssetAmountLimit);
             }

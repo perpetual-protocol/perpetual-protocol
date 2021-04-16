@@ -448,9 +448,9 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
                 : quoteAssetReserve.subD(quoteAssetBack).divD(baseAssetReserve.addD(_baseAssetAmount));
 
         if (price.cmp(upperLimit) <= 0 && price.cmp(lowerLimit) >= 0) {
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
     /**
