@@ -576,8 +576,15 @@ contract ClearingHouse is
      */
     function liquidate(IAmm _amm, address _trader) external nonReentrant() {
         requireAmm(_amm, true);
-        SignedDecimal.signedDecimal memory marginRatio =
-            _amm.isOverSpreadLimit() ? _getMarginRatioBasedOnOracle(_amm, _trader) : getMarginRatio(_amm, _trader);
+        SignedDecimal.signedDecimal memory marginRatio = getMarginRatio(_amm, _trader);
+
+        // including oracle-based margin ratio as reference price when amm is over spread limit
+        if (_amm.isOverSpreadLimit()) {
+            SignedDecimal.signedDecimal memory marginRatioBasedOnOracle = _getMarginRatioBasedOnOracle(_amm, _trader);
+            if (marginRatioBasedOnOracle.subD(marginRatio).toInt() > 0) {
+                marginRatio = marginRatioBasedOnOracle;
+            }
+        }
         requireMoreMarginRatio(marginRatio, maintenanceMarginRatio, false);
 
         // update states
