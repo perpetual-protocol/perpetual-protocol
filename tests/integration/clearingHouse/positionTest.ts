@@ -8,6 +8,7 @@ import {
     ClearingHouseViewerInstance,
     ERC20FakeInstance,
     InsuranceFundFakeInstance,
+    L2PriceFeedMockInstance,
     TollPoolInstance,
 } from "../../../types/truffle"
 import { assertionHelper } from "../../helper/assertion-plugin"
@@ -31,6 +32,7 @@ describe("ClearingHouse - open/close position Test", () => {
     let quoteToken: ERC20FakeInstance
     let clearingHouseViewer: ClearingHouseViewerInstance
     let tollPool: TollPoolInstance
+    let mockPriceFeed: L2PriceFeedMockInstance
 
     async function approve(account: string, spender: string, amount: number | string): Promise<void> {
         await quoteToken.approve(spender, toFullDigit(amount, +(await quoteToken.decimals())), { from: account })
@@ -38,6 +40,11 @@ describe("ClearingHouse - open/close position Test", () => {
 
     async function transfer(from: string, to: string, amount: number | string): Promise<void> {
         await quoteToken.transfer(to, toFullDigit(amount, +(await quoteToken.decimals())), { from })
+    }
+
+    async function syncAmmPriceToOracle() {
+        const marketPrice = await amm.getSpotPrice()
+        await mockPriceFeed.setPrice(marketPrice.d)
     }
 
     beforeEach(async () => {
@@ -55,6 +62,7 @@ describe("ClearingHouse - open/close position Test", () => {
         clearingHouseViewer = contracts.clearingHouseViewer
         clearingHouse = contracts.clearingHouse
         tollPool = contracts.tollPool
+        mockPriceFeed = contracts.priceFeed
 
         // Each of Alice & Bob have 5000 DAI
         await transfer(admin, alice, 5000)
@@ -957,13 +965,16 @@ describe("ClearingHouse - open/close position Test", () => {
                 from: alice,
             })
 
+            await syncAmmPriceToOracle()
             // bob opens short position
             await approve(bob, clearingHouse.address, 500)
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(500), toDecimal(1), toDecimal(0), {
                 from: bob,
             })
 
+            await syncAmmPriceToOracle()
             // alice's margin ratio = (margin + unrealizedPnl) / openNotional = (150 + (-278.77)) / 600 = -21.46%
+
             const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
 
             // liquidationFee = 321.23 * 5% = 16.06
