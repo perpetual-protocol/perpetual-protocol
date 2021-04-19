@@ -520,20 +520,14 @@ contract ClearingHouse is
         {
             Position memory position = getPosition(_amm, trader);
 
+            IAmm.Dir dirOfBase = position.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM;
+
             // check if this position exceed fluctuation limit
             // if over fluctuation limit, then close partial position. Otherwise close all.
             // if it is long position, close a position means short it(which means base dir is ADD_TO_AMM) and vice versa
-            if (
-                _amm.isOverFluctuationLimit(
-                    position.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
-                    position.size.abs()
-                )
-            ) {
+            if (_amm.isOverFluctuationLimit(dirOfBase, position.size.abs())) {
                 Decimal.decimal memory partiallyClosedPositionNotional =
-                    _amm.getOutputPrice(
-                        position.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
-                        position.size.mulD(partialLiquidationRatio).abs()
-                    );
+                    _amm.getOutputPrice(dirOfBase, position.size.mulD(partialLiquidationRatio).abs());
 
                 positionResp = openReversePosition(
                     _amm,
