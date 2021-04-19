@@ -82,6 +82,12 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         TwapInputAsset asset;
     }
 
+    //
+    // Constant
+    //
+    // 10%
+    uint256 public constant MAX_ORACLE_SPREAD_RATIO = 1e17;
+
     //**********************************************************//
     //    The below state variables can not change the order    //
     //**********************************************************//
@@ -572,9 +578,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         Decimal.decimal memory oracleSpreadRatioAbs =
             MixedDecimal.fromDecimal(marketPrice).subD(oraclePrice).divD(oraclePrice).abs();
 
-        // 10%
-        bool isOverLimit = oracleSpreadRatioAbs.toUint() >= 100000000000000000 ? true : false;
-        return isOverLimit;
+        return oracleSpreadRatioAbs.toUint() >= MAX_ORACLE_SPREAD_RATIO ? true : false;
     }
 
     /**
