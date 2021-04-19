@@ -53,35 +53,6 @@ describe("ClearingHouse Test", () => {
     let traderWallet1: TraderWalletInstance
     let traderWallet2: TraderWalletInstance
 
-    beforeEach(async () => {
-        addresses = await web3.eth.getAccounts()
-        admin = addresses[0]
-        alice = addresses[1]
-        bob = addresses[2]
-        carol = addresses[3]
-        relayer = addresses[4]
-
-        const contracts = await fullDeploy({ sender: admin })
-        metaTxGateway = contracts.metaTxGateway
-        amm = contracts.amm
-        insuranceFund = contracts.insuranceFund
-        quoteToken = contracts.quoteToken
-        mockPriceFeed = contracts.priceFeed
-        rewardsDistribution = contracts.rewardsDistribution
-        stakingReserve = contracts.stakingReserve
-        clearingHouse = contracts.clearingHouse
-        clearingHouseViewer = contracts.clearingHouseViewer
-        supplySchedule = contracts.supplySchedule
-        clearingHouse = contracts.clearingHouse
-
-        // Each of Alice & Bob have 5000 DAI
-        await quoteToken.transfer(alice, toFullDigit(5000, +(await quoteToken.decimals())))
-        await quoteToken.transfer(bob, toFullDigit(5000, +(await quoteToken.decimals())))
-        await quoteToken.transfer(insuranceFund.address, toFullDigit(5000, +(await quoteToken.decimals())))
-
-        await amm.setCap(toDecimal(0), toDecimal(0))
-    })
-
     async function gotoNextFundingTime(): Promise<void> {
         const nextFundingTime = await amm.nextFundingTime()
         await amm.mock_setBlockTimestamp(nextFundingTime)
@@ -127,6 +98,37 @@ describe("ClearingHouse Test", () => {
         const marketPrice = await amm.getSpotPrice()
         await mockPriceFeed.setPrice(marketPrice.d)
     }
+
+    beforeEach(async () => {
+        addresses = await web3.eth.getAccounts()
+        admin = addresses[0]
+        alice = addresses[1]
+        bob = addresses[2]
+        carol = addresses[3]
+        relayer = addresses[4]
+
+        const contracts = await fullDeploy({ sender: admin })
+        metaTxGateway = contracts.metaTxGateway
+        amm = contracts.amm
+        insuranceFund = contracts.insuranceFund
+        quoteToken = contracts.quoteToken
+        mockPriceFeed = contracts.priceFeed
+        rewardsDistribution = contracts.rewardsDistribution
+        stakingReserve = contracts.stakingReserve
+        clearingHouse = contracts.clearingHouse
+        clearingHouseViewer = contracts.clearingHouseViewer
+        supplySchedule = contracts.supplySchedule
+        clearingHouse = contracts.clearingHouse
+
+        // Each of Alice & Bob have 5000 DAI
+        await quoteToken.transfer(alice, toFullDigit(5000, +(await quoteToken.decimals())))
+        await quoteToken.transfer(bob, toFullDigit(5000, +(await quoteToken.decimals())))
+        await quoteToken.transfer(insuranceFund.address, toFullDigit(5000, +(await quoteToken.decimals())))
+
+        await amm.setCap(toDecimal(0), toDecimal(0))
+
+        await syncAmmPriceToOracle()
+    })
 
     describe("getPersonalPositionWithFundingPayment", () => {
         it("return 0 margin when alice's position is underwater", async () => {

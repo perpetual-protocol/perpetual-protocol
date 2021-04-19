@@ -68,6 +68,8 @@ describe("ClearingHouse - open/close position Test", () => {
         await transfer(admin, alice, 5000)
         await transfer(admin, bob, 5000)
         await transfer(admin, insuranceFund.address, 5000)
+
+        await syncAmmPriceToOracle()
     })
 
     describe("position", () => {
@@ -965,14 +967,12 @@ describe("ClearingHouse - open/close position Test", () => {
                 from: alice,
             })
 
-            await syncAmmPriceToOracle()
             // bob opens short position
             await approve(bob, clearingHouse.address, 500)
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(500), toDecimal(1), toDecimal(0), {
                 from: bob,
             })
 
-            await syncAmmPriceToOracle()
             // alice's margin ratio = (margin + unrealizedPnl) / openNotional = (150 + (-278.77)) / 600 = -21.46%
 
             const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
@@ -993,6 +993,79 @@ describe("ClearingHouse - open/close position Test", () => {
                 liquidationFee: "16061946902654867256",
                 badDebt: "16061946902654867256",
             })
+        })
+
+        it("alice's long position margin ratio is underwater, but oracle price kicked in, thus won't get liquidated", async () => {
+            // alice opens long position
+            // AMM after 1600 : 62.5
+            // spot price = 25.6
+            // openNotional = 600
+            // position size = 37.5
+            // margin = 150
+            await approve(alice, clearingHouse.address, 150)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(150), toDecimal(4), toDecimal(0), {
+                from: alice,
+            })
+
+            await syncAmmPriceToOracle() // oracle price = 25.6
+
+            // bob opens short position
+            // AMM after 1100 : 90.90909
+            // spot price = 12.1
+            await approve(bob, clearingHouse.address, 500)
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(500), toDecimal(1), toDecimal(0), {
+                from: bob,
+            })
+
+            // alice's margin ratio = (margin + unrealizedPnl) / openNotional = (150 + (-278.77)) / 600 = -21.46%
+
+            // however, oracle price is more than 10% higher than spot ((25.6 - 12.1) / 12.1 = 111.570247%)
+            //   price = 25.6
+            //   position notional = 25.6 * 37.5 = 960
+            //   unrealizedPnl = 960 - 600 = 360
+            //   margin ratio = (150 + 360) / 960 = 53.125% (won't liquidate)
+            await expectRevert(
+                clearingHouse.liquidate(amm.address, alice, { from: carol }),
+                "Margin ratio not meet criteria",
+            )
+        })
+
+        it("alice's short position margin ratio is underwater, but oracle price kicked in, thus won't get liquidated", async () => {
+            // alice opens long position
+            // AMM after 800 : 125
+            // spot price = 6.4
+            // openNotional = 200
+            // position size = -25
+            // margin = 20
+            await approve(alice, clearingHouse.address, 20)
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+
+            await syncAmmPriceToOracle() // oracle price = 6.4
+
+            // bob opens short position
+            // AMM after 900 : 111.111111
+            // spot price = 8.1
+            await approve(bob, clearingHouse.address, 20)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: bob,
+            })
+
+            // alice:
+            //   positionNotional = 100000 / (111.111111 - 25) - 900 = 261.290324
+            //   unrealizedPnl = 200 - 261.290324 = -61.290324
+            // alice's margin ratio = (margin + unrealizedPnl) / openNotional = (20 + (-61.290324)) / 261.290324 = -15.802469%
+
+            // however, oracle price is more than 10% lower than spot ((6.4 - 8.1) / 8.1 = -20.987654%)
+            //   price = 6.4
+            //   position notional = 25 * 6.4 = 160
+            //   unrealizedPnl = 200 - 160 = 40
+            //   margin ratio = (20 + 40) / 160 = 37.5% (won't liquidate)
+            await expectRevert(
+                clearingHouse.liquidate(amm.address, alice, { from: carol }),
+                "Margin ratio not meet criteria",
+            )
         })
 
         it("can open position of the same side even though position(long) is underwater, as long as the margin ratio will be over maintenance ratio after the action", async () => {
