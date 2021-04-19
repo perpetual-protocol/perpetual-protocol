@@ -8,7 +8,7 @@ import {
     ClearingHouseViewerInstance,
     ERC20FakeInstance,
     InsuranceFundFakeInstance,
-    TollPoolInstance,
+    TollPoolInstance
 } from "../../../types/truffle"
 import { assertionHelper } from "../../helper/assertion-plugin"
 import { PnlCalcOption, Side } from "../../helper/contract"
@@ -56,7 +56,7 @@ describe("ClearingHouse - open/close position Test", () => {
         clearingHouse = contracts.clearingHouse
         tollPool = contracts.tollPool
 
-        // Each of Alice & Bob have 5000 DAI
+        // Each of Alice & Bob have 5000 USDC
         await transfer(admin, alice, 5000)
         await transfer(admin, bob, 5000)
         await transfer(admin, insuranceFund.address, 5000)
@@ -1176,19 +1176,33 @@ describe("ClearingHouse - open/close position Test", () => {
                 })
                 await forwardBlockTimestamp(15)
 
+                await amm.setSpreadRatio(toDecimal(0.001))
                 await amm.setFluctuationLimitRatio(toDecimal(0.359))
                 // the price will be dropped to 10 if we close whole position
                 // the price fluctuation will be (15.625 - 10) / 15.625 = 0.36
                 // only 25% position (20 * 0.25 = 5) will be closed,
+                // position notional is 73.53
                 // amm reserves after 1176.47 : 85
-                await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
-
+                const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
                 const pos = await clearingHouse.getPosition(amm.address, alice)
                 expect(pos.size).eq(toFullDigit(15))
                 expect(pos.margin).eq(toFullDigit(25))
+
+                await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
+                    trader: alice,
+                    amm: amm.address,
+                    positionNotional: "73529411764705882352",
+                    margin: toFullDigit(25),
+                    exchangedPositionSize: toFullDigit(-5),
+                    fee: "73529411764705882",
+                    positionSizeAfter: toFullDigit(15),
+                })
+
+                // 5000 - open pos margin (25) + fee (-73.53 * 0.1%)
+                expect(await quoteToken.balanceOf(alice)).eq("4974926471")
             })
 
-            it("partially close a short position when closing whole position will over fluctuation limit ", async () => {
+            it.only("partially close a short position when closing whole position will over fluctuation limit ", async () => {
                 await approve(alice, clearingHouse.address, 100)
                 await approve(bob, clearingHouse.address, 100)
 
@@ -1197,17 +1211,31 @@ describe("ClearingHouse - open/close position Test", () => {
                     from: alice,
                 })
                 await forwardBlockTimestamp(15)
+                const posAfterOpen = await clearingHouse.getPosition(amm.address, alice)
+                expect(posAfterOpen.size).eq(toFullDigit(-25))
 
+                await amm.setSpreadRatio(toDecimal(0.001))
                 await amm.setFluctuationLimitRatio(toDecimal(0.5624))
                 // the price will be dropped to 10 if we close whole position
                 // the price fluctuation will be (10 - 6.4) / 6.4 = 0.5625
                 // only 25% position (25 * 0.25 = 6.25) will be closed,
+                // position notional is 42.11
                 // amm reserves after 842.11 : 118.75
-                await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
+                const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
 
                 const pos = await clearingHouse.getPosition(amm.address, alice)
                 expect(pos.size).eq(toFullDigit(-18.75))
                 expect(pos.margin).eq(toFullDigit(20))
+
+                await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
+                    trader: alice,
+                    amm: amm.address,
+                    positionNotional: "42105263157894736843",
+                    margin: toFullDigit(20),
+                    exchangedPositionSize: toFullDigit(6.25), // 25 * 0.25
+                    fee: "42105263157894736",
+                    positionSizeAfter: toFullDigit(-18.75), // position size - partial closed position size
+                })
             })
         })
     })
