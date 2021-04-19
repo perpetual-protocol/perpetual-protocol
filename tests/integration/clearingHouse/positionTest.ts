@@ -1202,7 +1202,7 @@ describe("ClearingHouse - open/close position Test", () => {
                 expect(await quoteToken.balanceOf(alice)).eq("4974926471")
             })
 
-            it.only("partially close a short position when closing whole position will over fluctuation limit ", async () => {
+            it("partially close a short position when closing whole position will over fluctuation limit ", async () => {
                 await approve(alice, clearingHouse.address, 100)
                 await approve(bob, clearingHouse.address, 100)
 
