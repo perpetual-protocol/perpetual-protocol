@@ -568,13 +568,13 @@ contract ClearingHouse is
         emit PositionChanged(
             trader,
             address(_amm),
-            0, // margin
+            positionResp.position.margin.toUint(), // margin
             positionResp.exchangedQuoteAssetAmount.toUint(),
             positionResp.exchangedPositionSize.toInt(),
             transferredFee.toUint(),
             positionResp.position.size.toInt(),
             positionResp.realizedPnl.toInt(),
-            0, // unrealizedPnl
+            positionResp.unrealizedPnlAfter.toInt(), // unrealizedPnl
             positionResp.badDebt.toUint(),
             0,
             spotPrice,
