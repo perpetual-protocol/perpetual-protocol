@@ -423,6 +423,31 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     // VIEW FUNCTIONS
     //
 
+    function isOverFluctuationLimit(Dir _dirOfBase, Decimal.decimal memory _baseAssetAmount)
+        external
+        view
+        override
+        returns (bool)
+    {
+        // Skip the check if the limit is 0
+        if (fluctuationLimitRatio.toUint() == 0) {
+            return false;
+        }
+
+        (Decimal.decimal memory upperLimit, Decimal.decimal memory lowerLimit) = getPriceBoundariesOfLastBlock();
+
+        Decimal.decimal memory quoteAssetBack = getOutputPrice(_dirOfBase, _baseAssetAmount);
+        Decimal.decimal memory price =
+            (_dirOfBase == Dir.REMOVE_FROM_AMM)
+                ? quoteAssetReserve.addD(quoteAssetBack).divD(baseAssetReserve.subD(_baseAssetAmount))
+                : quoteAssetReserve.subD(quoteAssetBack).divD(baseAssetReserve.addD(_baseAssetAmount));
+
+        if (price.cmp(upperLimit) <= 0 && price.cmp(lowerLimit) >= 0) {
+            return false;
+        }
+        return true;
+    }
+
     /**
      * @notice get input twap amount.
      * returns how many base asset you will get with the input quote amount based on twap price.
@@ -873,6 +898,20 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         revert("not supported option");
     }
 
+    function getPriceBoundariesOfLastBlock() internal view returns (Decimal.decimal memory, Decimal.decimal memory) {
+        uint256 len = reserveSnapshots.length;
+        ReserveSnapshot memory latestSnapshot = reserveSnapshots[len.sub(1)];
+        // if the latest snapshot is the same as current block, get the previous one
+        if (latestSnapshot.blockNumber == _blockNumber() && len > 1) {
+            latestSnapshot = reserveSnapshots[len.sub(2)];
+        }
+
+        Decimal.decimal memory lastPrice = latestSnapshot.quoteAssetReserve.divD(latestSnapshot.baseAssetReserve);
+        Decimal.decimal memory upperLimit = lastPrice.mulD(Decimal.one().addD(fluctuationLimitRatio));
+        Decimal.decimal memory lowerLimit = lastPrice.mulD(Decimal.one().subD(fluctuationLimitRatio));
+        return (upperLimit, lowerLimit);
+    }
+
     /**
      * @notice there can only be one tx in a block can skip the fluctuation check
      *         otherwise, some positions can never be closed or liquidated
@@ -903,16 +942,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         // once it exceeds the boundary, all the rest txs in this block fail
         //
 
-        uint256 len = reserveSnapshots.length;
-        ReserveSnapshot memory latestSnapshot = reserveSnapshots[len.sub(1)];
-        // if the latest snapshot is the same as current block, get the previous one
-        if (latestSnapshot.blockNumber == _blockNumber() && len > 1) {
-            latestSnapshot = reserveSnapshots[len.sub(2)];
-        }
-
-        Decimal.decimal memory lastPrice = latestSnapshot.quoteAssetReserve.divD(latestSnapshot.baseAssetReserve);
-        Decimal.decimal memory upperLimit = lastPrice.mulD(Decimal.one().addD(fluctuationLimitRatio));
-        Decimal.decimal memory lowerLimit = lastPrice.mulD(Decimal.one().subD(fluctuationLimitRatio));
+        (Decimal.decimal memory upperLimit, Decimal.decimal memory lowerLimit) = getPriceBoundariesOfLastBlock();
 
         Decimal.decimal memory price = quoteAssetReserve.divD(baseAssetReserve);
         require(price.cmp(upperLimit) <= 0 && price.cmp(lowerLimit) >= 0, "price is already over fluctuation limit");

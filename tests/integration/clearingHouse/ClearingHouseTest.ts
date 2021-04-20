@@ -175,6 +175,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(400), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
+
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
 
             // expect the result will be almost 0 (with a few rounding error)
@@ -215,6 +216,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(250), toDecimal(1), toDecimal(0), {
                 from: bob,
             })
+
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
 
@@ -1892,6 +1894,7 @@ describe("ClearingHouse Test", () => {
         it("force error, exceeding fluctuation limit twice in the same block", async () => {
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
+            await clearingHouse.setPartialLiquidationRatio(toDecimal(1))
 
             // when bob create a 20 margin * 5x long position when 9.0909091 quoteAsset = 100 DAI
             // AMM after: 1100 : 90.9090909, price: 12.1000000012
@@ -1907,15 +1910,16 @@ describe("ClearingHouse Test", () => {
             })
 
             await forwardBlockTimestamp(15)
-            // set 0.15 here to avoid the above opening positions from failing
-            await amm.setFluctuationLimitRatio(toDecimal(0.15))
+            // set 0.5 here to avoid the above opening positions from failing
+            await amm.setFluctuationLimitRatio(toDecimal(0.043))
 
-            // after alice closes her position, price: 12.1000000012
-            // price fluctuation: (14.4000000058 - 12.1000000012) / 14.4000000058 = 0.1597222225
+            // after alice closes her position partially, price: 13.767109
+            // price fluctuation: (14.4000000058 - 13.767109) / 14.4000000058 = 0.0524
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
 
-            // after bob closes his position, price: 10
-            // price fluctuation: (12.1000000012 - 10) / 12.1000000012 = 0.1735537191
+            // after bob closes his position partially, price: 13.0612
+            // price fluctuation: (13.767109 - 13.0612) / 13.767109 = 0.04278
+            await amm.setFluctuationLimitRatio(toDecimal(0.042))
             await expectRevert(
                 clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob }),
                 "price is already over fluctuation limit",
@@ -2144,6 +2148,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
                 from: alice,
             })
+
             await forwardBlockTimestamp(15)
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
 
@@ -2265,11 +2270,12 @@ describe("ClearingHouse Test", () => {
 
         it("force error, close then liquidate then open", async () => {
             // avoid actions from exceeding the fluctuation limit
-            await amm.setFluctuationLimitRatio(toDecimal(0.5))
+            await amm.setFluctuationLimitRatio(toDecimal(1))
 
             await makeLiquidatableByShort(alice)
             await traderWallet1.openPosition(amm.address, Side.SELL, toDecimal(5), toDecimal(1), toDecimal(0))
             await forwardBlockTimestamp(15)
+
             await traderWallet1.closePosition(amm.address)
             await expectRevert(
                 traderWallet1.multiActions(
