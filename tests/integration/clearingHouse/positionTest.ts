@@ -8,7 +8,7 @@ import {
     ClearingHouseViewerInstance,
     ERC20FakeInstance,
     InsuranceFundFakeInstance,
-    TollPoolInstance
+    TollPoolInstance,
 } from "../../../types/truffle"
 import { assertionHelper } from "../../helper/assertion-plugin"
 import { PnlCalcOption, Side } from "../../helper/contract"

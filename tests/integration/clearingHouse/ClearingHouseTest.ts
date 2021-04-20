@@ -1758,15 +1758,16 @@ describe("ClearingHouse Test", () => {
             const metaTx = {
                 from: bob,
                 to: clearingHouse.address,
-                functionSignature: clearingHouseWeb3Contract.methods
-                    .openPosition(
-                        amm.address,
-                        Side.SELL,
-                        [toFullDigitStr(20)],
-                        [toFullDigitStr(5)],
-                        [toFullDigitStr(11.12)],
-                    )
-                    .encodeABI(),
+                functionSignature: "",
+                // clearingHouseWeb3Contract.methods
+                //     .openPosition(
+                //         amm.address,
+                //         Side.SELL,
+                //         [toFullDigitStr(20)],
+                //         [toFullDigitStr(5)],
+                //         [toFullDigitStr(11.12)],
+                //     )
+                //     .encodeABI(),
                 nonce: 0,
             }
 
@@ -1894,6 +1895,7 @@ describe("ClearingHouse Test", () => {
         it("force error, exceeding fluctuation limit twice in the same block", async () => {
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
+            await clearingHouse.setPartialLiquidationRatio(toDecimal(1))
 
             // when bob create a 20 margin * 5x long position when 9.0909091 quoteAsset = 100 DAI
             // AMM after: 1100 : 90.9090909, price: 12.1000000012
@@ -1909,15 +1911,16 @@ describe("ClearingHouse Test", () => {
             })
 
             await forwardBlockTimestamp(15)
-            // set 0.15 here to avoid the above opening positions from failing
-            await amm.setFluctuationLimitRatio(toDecimal(0.15))
+            // set 0.5 here to avoid the above opening positions from failing
+            await amm.setFluctuationLimitRatio(toDecimal(0.043))
 
-            // after alice closes her position, price: 12.1000000012
-            // price fluctuation: (14.4000000058 - 12.1000000012) / 14.4000000058 = 0.1597222225
+            // after alice closes her position partially, price: 13.767109
+            // price fluctuation: (14.4000000058 - 13.767109) / 14.4000000058 = 0.0524
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
 
-            // after bob closes his position, price: 10
-            // price fluctuation: (12.1000000012 - 10) / 12.1000000012 = 0.1735537191
+            // after bob closes his position partially, price: 13.0612
+            // price fluctuation: (13.767109 - 13.0612) / 13.767109 = 0.04278
+            await amm.setFluctuationLimitRatio(toDecimal(0.042))
             await expectRevert(
                 clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob }),
                 "price is already over fluctuation limit",
