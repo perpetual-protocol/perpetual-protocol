@@ -519,13 +519,16 @@ contract ClearingHouse is
         PositionResp memory positionResp;
         {
             Position memory position = getPosition(_amm, trader);
-
+            // if it is long position, close a position means short it(which means base dir is ADD_TO_AMM) and vice versa
             IAmm.Dir dirOfBase = position.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM;
 
             // check if this position exceed fluctuation limit
             // if over fluctuation limit, then close partial position. Otherwise close all.
-            // if it is long position, close a position means short it(which means base dir is ADD_TO_AMM) and vice versa
-            if (_amm.isOverFluctuationLimit(dirOfBase, position.size.abs())) {
+            // if partialLiquidationRatio is 1, then close whole position
+            if (
+                _amm.isOverFluctuationLimit(dirOfBase, position.size.abs()) &&
+                partialLiquidationRatio.cmp(Decimal.one()) < 0
+            ) {
                 Decimal.decimal memory partiallyClosedPositionNotional =
                     _amm.getOutputPrice(dirOfBase, position.size.mulD(partialLiquidationRatio).abs());
 
@@ -562,13 +565,13 @@ contract ClearingHouse is
         emit PositionChanged(
             trader,
             address(_amm),
-            positionResp.position.margin.toUint(), // margin
+            0, // margin
             positionResp.exchangedQuoteAssetAmount.toUint(),
             positionResp.exchangedPositionSize.toInt(),
             transferredFee.toUint(),
             positionResp.position.size.toInt(),
             positionResp.realizedPnl.toInt(),
-            positionResp.unrealizedPnlAfter.toInt(), // unrealizedPnl
+            0, // unrealizedPnl
             positionResp.badDebt.toUint(),
             0,
             spotPrice,

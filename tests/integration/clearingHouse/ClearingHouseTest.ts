@@ -175,6 +175,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(400), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
+
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
 
             // expect the result will be almost 0 (with a few rounding error)
@@ -215,6 +216,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(250), toDecimal(1), toDecimal(0), {
                 from: bob,
             })
+
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
 
@@ -1756,16 +1758,15 @@ describe("ClearingHouse Test", () => {
             const metaTx = {
                 from: bob,
                 to: clearingHouse.address,
-                functionSignature: "",
-                // clearingHouseWeb3Contract.methods
-                //     .openPosition(
-                //         amm.address,
-                //         Side.SELL,
-                //         [toFullDigitStr(20)],
-                //         [toFullDigitStr(5)],
-                //         [toFullDigitStr(11.12)],
-                //     )
-                //     .encodeABI(),
+                functionSignature: clearingHouseWeb3Contract.methods
+                    .openPosition(
+                        amm.address,
+                        Side.SELL,
+                        [toFullDigitStr(20)],
+                        [toFullDigitStr(5)],
+                        [toFullDigitStr(11.12)],
+                    )
+                    .encodeABI(),
                 nonce: 0,
             }
 
@@ -2145,6 +2146,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
                 from: alice,
             })
+
             await forwardBlockTimestamp(15)
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
 
@@ -2266,11 +2268,12 @@ describe("ClearingHouse Test", () => {
 
         it("force error, close then liquidate then open", async () => {
             // avoid actions from exceeding the fluctuation limit
-            await amm.setFluctuationLimitRatio(toDecimal(0.5))
+            await amm.setFluctuationLimitRatio(toDecimal(1))
 
             await makeLiquidatableByShort(alice)
             await traderWallet1.openPosition(amm.address, Side.SELL, toDecimal(5), toDecimal(1), toDecimal(0))
             await forwardBlockTimestamp(15)
+
             await traderWallet1.closePosition(amm.address)
             await expectRevert(
                 traderWallet1.multiActions(

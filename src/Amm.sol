@@ -429,6 +429,11 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         override
         returns (bool)
     {
+        // Skip the check if the limit is 0
+        if (fluctuationLimitRatio.toUint() == 0) {
+            return false;
+        }
+
         (Decimal.decimal memory upperLimit, Decimal.decimal memory lowerLimit) = getPriceBoundariesOfLastBlock();
 
         Decimal.decimal memory quoteAssetBack = getOutputPrice(_dirOfBase, _baseAssetAmount);
