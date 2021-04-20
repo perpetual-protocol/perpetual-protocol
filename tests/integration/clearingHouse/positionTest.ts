@@ -1164,12 +1164,10 @@ describe("ClearingHouse - open/close position Test", () => {
 
             beforeEach(async () => {
                 await clearingHouse.setPartialLiquidationRatio(toDecimal(0.25))
+                await approve(alice, clearingHouse.address, 100)
             })
 
             it("partially close a long position when closing whole position will over fluctuation limit ", async () => {
-                await approve(alice, clearingHouse.address, 100)
-                await approve(bob, clearingHouse.address, 100)
-
                 // AMM after: 1250 : 80, price: 15.625
                 await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(0), {
                     from: alice,
@@ -1203,9 +1201,6 @@ describe("ClearingHouse - open/close position Test", () => {
             })
 
             it("partially close a short position when closing whole position will over fluctuation limit ", async () => {
-                await approve(alice, clearingHouse.address, 100)
-                await approve(bob, clearingHouse.address, 100)
-
                 // AMM after: 800 : 125, price: 6.4
                 await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
                     from: alice,
@@ -1236,6 +1231,23 @@ describe("ClearingHouse - open/close position Test", () => {
                     fee: "42105263157894736",
                     positionSizeAfter: toFullDigit(-18.75), // position size - partial closed position size
                 })
+            })
+
+            it("should close whole position when partialLiquidationRatio is 1", async () => {
+                // AMM after: 1250 : 80, price: 15.625
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(0), {
+                    from: alice,
+                })
+                await forwardBlockTimestamp(15)
+
+                await amm.setFluctuationLimitRatio(toDecimal(0.359))
+                await clearingHouse.setPartialLiquidationRatio(toDecimal(1))
+
+                const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
+                const pos = await clearingHouse.getPosition(amm.address, alice)
+                expect(pos.size).eq(toFullDigit(0))
+                expect(pos.margin).eq(toFullDigit(0))
+                expect(await quoteToken.balanceOf(alice)).eq(toFullDigit(5000, +(await quoteToken.decimals())))
             })
         })
     })
