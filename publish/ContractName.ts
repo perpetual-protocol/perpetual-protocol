@@ -73,7 +73,6 @@ export enum ContractFullyQualifiedName {
 
     // used in scripts and tests
     IERC20 = "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.sol:IERC20",
-    FlattenAmmUnderClearingHouse = "flattened/ClearingHouse/src/Amm.sol:Amm",
 }
 
 export enum ContractInstanceName {
