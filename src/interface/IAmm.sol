@@ -113,4 +113,8 @@ interface IAmm {
     function getLiquidityChangedSnapshots(uint256 i) external view returns (LiquidityChangedSnapshot memory);
 
     function getBaseAssetDelta() external view returns (SignedDecimal.signedDecimal memory);
+
+    function getUnderlyingPrice() external view returns (Decimal.decimal memory);
+
+    function isOverSpreadLimit() external view returns (bool);
 }

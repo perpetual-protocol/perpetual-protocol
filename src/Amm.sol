@@ -82,6 +82,12 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         TwapInputAsset asset;
     }
 
+    //
+    // Constant
+    //
+    // 10%
+    uint256 public constant MAX_ORACLE_SPREAD_RATIO = 1e17;
+
     //**********************************************************//
     //    The below state variables can not change the order    //
     //**********************************************************//
@@ -488,7 +494,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
      * @notice get underlying price provided by oracle
      * @return underlying price
      */
-    function getUnderlyingPrice() public view returns (Decimal.decimal memory) {
+    function getUnderlyingPrice() public view override returns (Decimal.decimal memory) {
         return Decimal.decimal(priceFeed.getPrice(priceFeedKey));
     }
 
@@ -563,6 +569,16 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
     function getBaseAssetDelta() external view override returns (SignedDecimal.signedDecimal memory) {
         return totalPositionSize;
+    }
+
+    function isOverSpreadLimit() external view override returns (bool) {
+        Decimal.decimal memory oraclePrice = getUnderlyingPrice();
+        require(oraclePrice.toUint() > 0, "underlying price is 0");
+        Decimal.decimal memory marketPrice = getSpotPrice();
+        Decimal.decimal memory oracleSpreadRatioAbs =
+            MixedDecimal.fromDecimal(marketPrice).subD(oraclePrice).divD(oraclePrice).abs();
+
+        return oracleSpreadRatioAbs.toUint() >= MAX_ORACLE_SPREAD_RATIO ? true : false;
     }
 
     /**
