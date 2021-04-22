@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers"
+import { BigNumber, ethers } from "ethers"
 import { Stage } from "../../scripts/common"
 import { AmmInstanceName } from "../ContractName"
 
@@ -215,6 +215,9 @@ export const SDEFI_USD_AMM: AmmConfig = {
         openInterestNotionalCap: BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
     },
 }
+
+const emptyAddr = "0x0000000000000000000000000000000000000001"
+export const dummyAmmArgs: any[] = [1, 1, 1, 1, emptyAddr, ethers.utils.formatBytes32String("BTC"), emptyAddr, 1, 1, 1]
 
 export function makeAmmConfig(
     name: AmmInstanceName,
