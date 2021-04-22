@@ -281,6 +281,9 @@ describe("ClearingHouse - open/close position Test", () => {
         })
 
         it("open position - short, long and short", async () => {
+            // avoid actions from exceeding the fluctuation limit
+            await amm.setFluctuationLimitRatio(toDecimal(0.8))
+
             // deposit to 2000
             await approve(alice, clearingHouse.address, 2000)
 
@@ -326,6 +329,9 @@ describe("ClearingHouse - open/close position Test", () => {
         })
 
         it("open position - long, short and long", async () => {
+            // avoid actions from exceeding the fluctuation limit
+            await amm.setFluctuationLimitRatio(toDecimal(0.8))
+
             // deposit to 2000
             await approve(alice, clearingHouse.address, 2000)
 
@@ -856,7 +862,10 @@ describe("ClearingHouse - open/close position Test", () => {
             )
         })
 
-        it("alice takes profit from bob's position, putting his position underwater, then bob closes", async () => {
+        it("alice take profit from bob's unrealized under-collateral position, then bob close", async () => {
+            // avoid actions from exceeding the fluctuation limit
+            await amm.setFluctuationLimitRatio(toDecimal(0.8))
+
             // alice opens short position
             await approve(alice, clearingHouse.address, 20)
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
@@ -895,7 +904,10 @@ describe("ClearingHouse - open/close position Test", () => {
             expect(await quoteToken.balanceOf(clearingHouse.address)).eq(0)
         })
 
-        it("alice takes profit from bob's position, putting his position underwater, then bob gets liquidated", async () => {
+        it("alice take profit from bob's unrealized under-collateral position, then bob got liquidate", async () => {
+            // avoid actions from exceeding the fluctuation limit
+            await amm.setFluctuationLimitRatio(toDecimal(0.8))
+
             // alice opens short position
             await approve(alice, clearingHouse.address, 20)
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
@@ -929,10 +941,10 @@ describe("ClearingHouse - open/close position Test", () => {
             expect(new BN(bobMarginRatio.d).isNeg()).eq(true)
             await clearingHouse.liquidate(amm.address, bob, { from: carol })
 
-            // liquidator get 5% liquidation fee = 294.11 * 5% ~= 14.7
+            // liquidator get half of the 5% liquidation fee = 294.11 * 2.5% ~= 7.352941
             // clearingHouse is depleted
             expect(await quoteToken.balanceOf(clearingHouse.address)).eq(0)
-            expect(await quoteToken.balanceOf(carol)).eq("14705882")
+            expect(await quoteToken.balanceOf(carol)).eq("7352941")
         })
 
         // the test for pointing out the calculation of margin ratio should be based on positionNotional instead of openNotional
@@ -977,21 +989,22 @@ describe("ClearingHouse - open/close position Test", () => {
 
             const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
 
-            // liquidationFee = 321.23 * 5% = 16.06
+            // liquidationFee = 321.23 * 2.5% = 16.06
+            // the "liquidationFee" of PositionLiquidated event refers to liquidator's fee: 16.06 * 0.5 = 8.03
             // remainMargin = margin + unrealizedPnl = 150 + (-278.77) = -128.77
             // Since -128.77 - 16.06 < 0
             //   position changed badDebt = 128.77
-            //   liquidation badDebt = 16.06
-            // Trader total PnL = -278.77 + 128.77 = -150
+            //   liquidation badDebt = 8.03
+            // Trader total liquidation penalty = -278.77 + 128.77 = -150
 
             expectEvent(receipt, "PositionChanged", {
                 realizedPnl: "-278761061946902654868",
                 badDebt: "128761061946902654868",
-                liquidationPenalty: "0",
+                liquidationPenalty: "150000000000000000000",
             })
             expectEvent(receipt, "PositionLiquidated", {
-                liquidationFee: "16061946902654867256",
-                badDebt: "16061946902654867256",
+                liquidationFee: "8030973451327433628",
+                badDebt: "8030973451327433628",
             })
         })
 

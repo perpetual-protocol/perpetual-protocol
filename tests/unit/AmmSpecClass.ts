@@ -76,7 +76,7 @@ class AmmSpec {
         // }
 
         await this.forward(15)
-        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0))
+        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0), false)
         // ReserveSnapshot1 {
         //     quoteAssetReserve = 1100
         //     baseAssetReserve = 90.9090...
@@ -84,7 +84,7 @@ class AmmSpec {
         // }
 
         await this.forward(15)
-        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0))
+        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0), false)
         // ReserveSnapshot2 {
         //     quoteAssetReserve = 1200
         //     baseAssetReserve = 83.333
@@ -115,7 +115,7 @@ class AmmSpec {
 
         // made a tx in the 1st block
         await this.forward(15)
-        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0))
+        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0), false)
         // ReserveSnapshot1 {
         //     quoteAssetReserve = 1100
         //     baseAssetReserve = 90.9090...
@@ -124,7 +124,7 @@ class AmmSpec {
 
         // several blocks later
         await this.forward(30)
-        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0))
+        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0), false)
         // ReserveSnapshot2 {
         //     quoteAssetReserve = 1200
         //     baseAssetReserve = 83.333
@@ -160,11 +160,11 @@ class AmmSpec {
 
         // made a tx in the 1st block
         await this.forward(915)
-        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0))
+        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0), false)
 
         // several blocks later
         await this.forward(15)
-        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0))
+        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0), false)
 
         await this.forward(15)
         const twap = await amm.getInputTwap(Side.ADD_TO_AMM, toDecimal(10))
@@ -180,11 +180,11 @@ class AmmSpec {
         // await changeBlockTime(15)
 
         await this.forward(15)
-        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0))
+        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0), false)
 
         // several blocks later
         await this.forward(15)
-        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0))
+        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0), false)
 
         await this.forward(15)
         const twap = await amm.getInputTwap(Side.REMOVE_FROM_AMM, toDecimal(10))
@@ -198,11 +198,11 @@ class AmmSpec {
 
         // made a tx in the 1st block
         await this.forward(15)
-        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0))
+        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0), false)
 
         // several blocks later
         await this.forward(30)
-        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0))
+        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0), false)
 
         await this.forward(60)
         const twap = await amm.getInputTwap(Side.REMOVE_FROM_AMM, toDecimal(10))
@@ -228,12 +228,12 @@ class AmmSpec {
         // made a tx in the 1st block
 
         await this.forward(915)
-        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0))
+        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0), false)
 
         // several blocks later
 
         await this.forward(15)
-        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0))
+        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0), false)
 
         await this.forward(15)
         const twap = await amm.getInputTwap(Side.REMOVE_FROM_AMM, toDecimal(10))
@@ -246,10 +246,10 @@ class AmmSpec {
         const { amm } = this
 
         await this.forward(15)
-        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0))
+        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0), false)
 
         await this.forward(15)
-        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0))
+        await amm.swapInput(Side.ADD_TO_AMM, toDecimal(100), toDecimal(0), false)
 
         await this.forward(15)
         const twap = await amm.getOutputTwap(Side.ADD_TO_AMM, toDecimal(10))
@@ -262,10 +262,10 @@ class AmmSpec {
         const { amm } = this
 
         await this.forward(15)
-        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0))
+        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0), false)
 
         await this.forward(15)
-        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0))
+        await amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0), false)
 
         await this.forward(15)
         const twap = await amm.getOutputTwap(Side.REMOVE_FROM_AMM, toDecimal(10))
@@ -315,7 +315,7 @@ class AmmSpec {
     @test
     async fePlaceOrderByNonOwner(): Promise<void> {
         await expectRevert(
-            this.amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(200), toDecimal(0), {
+            this.amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(200), toDecimal(0), false, {
                 from: this.otherA,
             }),
             "caller is not counterParty",
@@ -325,16 +325,16 @@ class AmmSpec {
     @test
     async feTradeOverAmountSwapInput(): Promise<void> {
         // trade limit rate is 0.9, means can not trade over 1000 * 0.9 amount
-        await expectRevert(this.amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(901), toDecimal(0)), "over trading limit")
+        await expectRevert(
+            this.amm.swapInput(Side.REMOVE_FROM_AMM, toDecimal(901), toDecimal(0), false),
+            "over trading limit",
+        )
     }
 
     @test
     async feTradeOverAmountSwapOutput(): Promise<void> {
         // trade limit rate is 0.9, means can not trade over 1000 * 0.9 amount
-        await expectRevert(
-            this.amm.swapOutput(Side.REMOVE_FROM_AMM, toDecimal(91), toDecimal(0), false),
-            "over trading limit",
-        )
+        await expectRevert(this.amm.swapOutput(Side.REMOVE_FROM_AMM, toDecimal(91), toDecimal(0)), "over trading limit")
     }
 
     @test
