@@ -515,7 +515,7 @@ contract ClearingHouse is
         // update position
         address trader = _msgSender();
         adjustPositionForLiquidityChanged(_amm, trader);
-        PositionResp memory positionResp = internalClosePosition(_amm, trader, _quoteAssetAmountLimit);
+        PositionResp memory positionResp = internalClosePosition(_amm, trader, _quoteAssetAmountLimit, false);
 
         {
             // add scope for stack too deep error
@@ -612,7 +612,7 @@ contract ClearingHouse is
                 setPosition(_amm, _trader, positionResp.position);
             } else {
                 liquidationPenalty = getPosition(_amm, _trader).margin;
-                positionResp = internalClosePosition(_amm, _trader, Decimal.zero());
+                positionResp = internalClosePosition(_amm, _trader, Decimal.zero(), true);
                 Decimal.decimal memory remainMargin = positionResp.marginToVault.abs();
                 feeToLiquidator = positionResp.exchangedQuoteAssetAmount.mulD(liquidationFeeRatio).divScalar(2);
 
@@ -918,7 +918,7 @@ contract ClearingHouse is
         Decimal.decimal memory _quoteAssetAmount,
         Decimal.decimal memory _leverage,
         Decimal.decimal memory _baseAssetAmountLimit,
-        bool _canOverFluctuationLimit
+        bool _isLiquidation
     ) internal returns (PositionResp memory) {
         Decimal.decimal memory openNotional = _quoteAssetAmount.mulD(_leverage);
         (Decimal.decimal memory oldPositionNotional, SignedDecimal.signedDecimal memory unrealizedPnl) =
@@ -934,7 +934,7 @@ contract ClearingHouse is
                 _side,
                 openNotional,
                 _baseAssetAmountLimit,
-                _canOverFluctuationLimit
+                _isLiquidation
             );
 
             // realizedPnl = unrealizedPnl * closedRatio
@@ -995,7 +995,7 @@ contract ClearingHouse is
     ) internal returns (PositionResp memory positionResp) {
         // new position size is larger than or equal to the old position size
         // so either close or close then open a larger position
-        PositionResp memory closePositionResp = internalClosePosition(_amm, _msgSender(), Decimal.zero());
+        PositionResp memory closePositionResp = internalClosePosition(_amm, _trader, Decimal.zero(), false);
 
         // the old position is underwater. trader should close a position first
         require(closePositionResp.badDebt.toUint() == 0, "reduce an underwater position");
@@ -1037,7 +1037,8 @@ contract ClearingHouse is
     function internalClosePosition(
         IAmm _amm,
         address _trader,
-        Decimal.decimal memory _quoteAssetAmountLimit
+        Decimal.decimal memory _quoteAssetAmountLimit,
+        bool _fluctuationCheck
     ) private returns (PositionResp memory positionResp) {
         // check conditions
         Position memory oldPosition = getUnadjustedPosition(_amm, _trader);
@@ -1061,7 +1062,8 @@ contract ClearingHouse is
         positionResp.exchangedQuoteAssetAmount = _amm.swapOutput(
             oldPosition.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
             oldPosition.size.abs(),
-            _quoteAssetAmountLimit
+            _quoteAssetAmountLimit,
+            _fluctuationCheck
         );
 
         // bankrupt position's bad debt will be also consider as a part of the open interest
@@ -1074,12 +1076,12 @@ contract ClearingHouse is
         Side _side,
         Decimal.decimal memory _inputAmount,
         Decimal.decimal memory _minOutputAmount,
-        bool _canOverFluctuationLimit
+        bool _isLiquidation
     ) internal returns (SignedDecimal.signedDecimal memory) {
         // for amm.swapInput, the direction is in quote asset, from the perspective of Amm
         IAmm.Dir dir = (_side == Side.BUY) ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM;
         SignedDecimal.signedDecimal memory outputAmount =
-            MixedDecimal.fromDecimal(_amm.swapInput(dir, _inputAmount, _minOutputAmount, _canOverFluctuationLimit));
+            MixedDecimal.fromDecimal(_amm.swapInput(dir, _inputAmount, _minOutputAmount, _isLiquidation));
         if (IAmm.Dir.REMOVE_FROM_AMM == dir) {
             return outputAmount.mulScalar(-1);
         }

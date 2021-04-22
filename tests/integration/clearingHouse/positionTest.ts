@@ -281,9 +281,6 @@ describe("ClearingHouse - open/close position Test", () => {
         })
 
         it("open position - short, long and short", async () => {
-            // avoid actions from exceeding the fluctuation limit
-            await amm.setFluctuationLimitRatio(toDecimal(0.8))
-
             // deposit to 2000
             await approve(alice, clearingHouse.address, 2000)
 
@@ -329,9 +326,6 @@ describe("ClearingHouse - open/close position Test", () => {
         })
 
         it("open position - long, short and long", async () => {
-            // avoid actions from exceeding the fluctuation limit
-            await amm.setFluctuationLimitRatio(toDecimal(0.8))
-
             // deposit to 2000
             await approve(alice, clearingHouse.address, 2000)
 
@@ -862,10 +856,7 @@ describe("ClearingHouse - open/close position Test", () => {
             )
         })
 
-        it("alice take profit from bob's unrealized under-collateral position, then bob close", async () => {
-            // avoid actions from exceeding the fluctuation limit
-            await amm.setFluctuationLimitRatio(toDecimal(0.8))
-
+        it("alice takes profit from bob's position, putting his position underwater, then bob closes", async () => {
             // alice opens short position
             await approve(alice, clearingHouse.address, 20)
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
@@ -904,10 +895,7 @@ describe("ClearingHouse - open/close position Test", () => {
             expect(await quoteToken.balanceOf(clearingHouse.address)).eq(0)
         })
 
-        it("alice take profit from bob's unrealized under-collateral position, then bob got liquidate", async () => {
-            // avoid actions from exceeding the fluctuation limit
-            await amm.setFluctuationLimitRatio(toDecimal(0.8))
-
+        it("alice takes profit from bob's position, putting his position underwater, then bob gets liquidated", async () => {
             // alice opens short position
             await approve(alice, clearingHouse.address, 20)
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
