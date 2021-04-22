@@ -1,4 +1,4 @@
-import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
+import { expectRevert } from "@openzeppelin/test-helpers"
 import { expect, use } from "chai"
 import {
     AmmMockInstance,
@@ -49,15 +49,11 @@ describe("InsuranceFund Spec", () => {
 
     describe("amm management", () => {
         it("addAmm", async () => {
-            const receipt = await insuranceFund.addAmm(amm1.address)
+            await insuranceFund.addAmm(amm1.address)
 
             const amms = await insuranceFund.getAllAmms()
             expect(amms.length).eq(1)
             expect(amm1.address).to.eq(amms[0])
-
-            expectEvent(receipt, "AmmAdded", {
-                amm: amm1.address,
-            })
         })
 
         it("force error, amm already added", async () => {
@@ -68,15 +64,11 @@ describe("InsuranceFund Spec", () => {
         it("removeAmm", async () => {
             await insuranceFund.addAmm(amm1.address)
             await insuranceFund.addAmm(amm2.address)
-            const receipt = await insuranceFund.removeAmm(amm1.address)
+            await insuranceFund.removeAmm(amm1.address)
 
             const amms = await insuranceFund.getAllAmms()
             expect(amm2.address).to.eq(amms[0])
             expect(amms.length).eq(1)
-
-            expectEvent(receipt, "AmmRemoved", {
-                amm: amm1.address,
-            })
         })
 
         it("amms, supportedQuoteToken and ammMetadata has being removed if there's no other amm", async () => {
