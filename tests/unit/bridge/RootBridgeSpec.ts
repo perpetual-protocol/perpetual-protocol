@@ -1,4 +1,4 @@
-import { web3 } from "@nomiclabs/buidler"
+import { web3 } from "hardhat"
 import { expectEvent } from "@openzeppelin/test-helpers"
 import { utils } from "ethers"
 import { AMBBridgeMockInstance, MultiTokenMediatorMockInstance, RootBridgeInstance } from "../../../types/truffle"

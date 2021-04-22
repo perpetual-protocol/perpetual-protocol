@@ -7,13 +7,19 @@ doc
 .DS_Store
 .env
 .serverless
+.openzeppelin/mainnet.json
+.openzeppelin/unknown-100.json
 .openzeppelin/.session
+.openzeppelin/test/*
 publish/settings/test.json
+metadata/test.json
 system-local.json
 
 /.serverless
 /.env.staging
+/typechain
 
+/typechain
 
 cache
 types
@@ -25,3 +31,4 @@ coverage.json
 .env.*
 
 flattened
+addAggregator_*.txt

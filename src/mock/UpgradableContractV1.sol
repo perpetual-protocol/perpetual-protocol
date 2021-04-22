@@ -4,8 +4,10 @@ import { Initializable } from "@openzeppelin/contracts-ethereum-package/contract
 
 contract UpgradableContractV1 is Initializable {
     uint256 public version;
+    address public owner;
 
     function initialize() public initializer {
         version = 1;
+        owner = msg.sender;
     }
 }

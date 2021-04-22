@@ -4,6 +4,7 @@ import {
     AmmReaderInstance,
     ClearingHouseFakeInstance,
     ClearingHouseViewerInstance,
+    ClientBridgeInstance,
     ERC20FakeInstance,
     ExchangeWrapperMockInstance,
     InflationMonitorFakeInstance,
@@ -15,23 +16,28 @@ import {
     RewardsDistributionFakeInstance,
     StakingReserveFakeInstance,
     SupplyScheduleFakeInstance,
+    TollPoolInstance,
 } from "../../types/truffle"
 import {
     deployAmm,
     deployAmmReader,
     deployClearingHouse,
     deployClearingHouseViewer,
+    deployClientBridge,
     deployErc20Fake,
     deployInflationMonitor,
     deployInsuranceFund,
     deployL2MockPriceFeed,
     deployMetaTxGateway,
     deployMinter,
+    deployMockAMBBridge,
     deployMockExchangeWrapper,
+    deployMockMultiToken,
     deployPerpToken,
     deployRewardsDistribution,
     deployStakingReserve,
     deploySupplySchedule,
+    deployTollPool,
 } from "./contract"
 import { toDecimal, toFullDigit } from "./number"
 
@@ -51,6 +57,8 @@ export interface PerpContracts {
     clearingHouseViewer: ClearingHouseViewerInstance
     inflationMonitor: InflationMonitorFakeInstance
     minter: MinterInstance
+    tollPool: TollPoolInstance
+    clientBridge: ClientBridgeInstance
 }
 
 export interface ContractDeployArgs {
@@ -100,7 +108,7 @@ export async function fullDeploy(args: ContractDeployArgs): Promise<PerpContract
         baseAssetReserve = DEFAULT_CONTRACT_DEPLOY_ARGS.baseAssetReserve,
         startSchedule = DEFAULT_CONTRACT_DEPLOY_ARGS.startSchedule,
     } = args
-    const metaTxGateway = await deployMetaTxGateway("Perp", "1", 1234) // default buidler evm chain ID
+    const metaTxGateway = await deployMetaTxGateway("Perp", "1", 1234) // default hardhat evm chain ID
     const quoteToken = await deployErc20Fake(quoteTokenAmount, "Tether", "USDT", new BN(quoteTokenDecimals))
     const priceFeed = await deployL2MockPriceFeed(toFullDigit(100))
 
@@ -138,7 +146,14 @@ export async function fullDeploy(args: ContractDeployArgs): Promise<PerpContract
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         perpRewardVestingPeriod!,
     )
-    await clearingHouse.setFeePool(stakingReserve.address)
+
+    const ambBridge = await deployMockAMBBridge()
+    const tokenMediator = await deployMockMultiToken()
+    const clientBridge = await deployClientBridge(ambBridge.address, tokenMediator.address, metaTxGateway.address)
+
+    const tollPool = await deployTollPool(clearingHouse.address, clientBridge.address)
+
+    await clearingHouse.setTollPool(tollPool.address)
 
     const rewardsDistribution = await deployRewardsDistribution(minter.address, stakingReserve.address)
 
@@ -170,6 +185,7 @@ export async function fullDeploy(args: ContractDeployArgs): Promise<PerpContract
     await minter.setRewardsDistribution(rewardsDistribution.address)
     await minter.setInflationMonitor(inflationMonitor.address)
     await minter.setInsuranceFund(insuranceFund.address)
+    await tollPool.addFeeToken(quoteToken.address)
 
     if (startSchedule) {
         await supplySchedule.startSchedule()
@@ -192,5 +208,7 @@ export async function fullDeploy(args: ContractDeployArgs): Promise<PerpContract
         clearingHouseViewer,
         inflationMonitor,
         minter,
+        tollPool,
+        clientBridge,
     }
 }

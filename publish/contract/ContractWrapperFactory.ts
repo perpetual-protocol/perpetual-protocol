@@ -2,9 +2,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Contract } from "ethers"
+import { parseFullyQualifiedName } from "hardhat/utils/contract-names"
 import { Layer } from "../../scripts/common"
-import { Amm } from "../../types/ethers"
-import { AmmInstanceName, ContractName } from "../ContractName"
+import { AmmInstanceName, ContractFullyQualifiedName, ContractId, isContractId } from "../ContractName"
 import { SystemMetadataDao } from "../SystemMetadataDao"
 import { AmmContractWrapper } from "./AmmContractWrapper"
 import { ContractWrapper } from "./ContractWrapper"
@@ -16,21 +16,42 @@ export class ContractWrapperFactory {
         protected readonly confirmations: number,
     ) {}
 
-    create<T extends Contract>(contractFileName: ContractName): ContractWrapper<T> {
+    create<T extends Contract>(
+        fullyQualifiedContractName: ContractFullyQualifiedName,
+        contractId?: ContractId,
+    ): ContractWrapper<T> {
+        let contractName: ContractId
+        if (!contractId) {
+            const parsed = parseFullyQualifiedName(fullyQualifiedContractName)
+            const { contractName: parsedContractName } = parsed
+            if (!isContractId(parsedContractName)) {
+                throw new Error(`No ContractId correspond to "${fullyQualifiedContractName}"`)
+            }
+            contractName = parsedContractName
+        } else {
+            contractName = contractId
+        }
+
         return new ContractWrapper<T>(
             this.layerType,
             this.systemMetadataDao,
-            contractFileName,
-            contractFileName,
+            fullyQualifiedContractName,
+            contractName,
             this.confirmations,
         )
     }
 
-    createAmm(ammInstanceName: AmmInstanceName): ContractWrapper<Amm> {
+    createAmm(
+        ammInstanceName: AmmInstanceName,
+        ammFullyQualifiedContractName:
+            | ContractFullyQualifiedName.Amm
+            | ContractFullyQualifiedName.AmmV1
+            | ContractFullyQualifiedName.FlattenAmm,
+    ): AmmContractWrapper {
         return new AmmContractWrapper(
             this.layerType,
             this.systemMetadataDao,
-            ContractName.Amm,
+            ammFullyQualifiedContractName,
             ammInstanceName,
             this.confirmations,
         )

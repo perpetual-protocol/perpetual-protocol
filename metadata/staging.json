@@ -1,0 +1,155 @@
+{
+  "layers": {
+    "layer1": {
+      "contracts": {
+        "RootBridge": {
+          "name": "RootBridge",
+          "address": "0x1e5433845880780B10e6570f2EEdB0826709C4Ae"
+        },
+        "ChainlinkL1": {
+          "name": "ChainlinkL1",
+          "address": "0xD16a6772163463C731e37Ef42c98EEe95f15A496"
+        },
+        "PerpRewardNoVesting": {
+          "name": "PerpRewardVesting",
+          "address": "0xd225Da8898F88E7B613Ea57eaE6b0fe510b2C4Cd"
+        },
+        "PerpRewardTwentySixWeeksVesting": {
+          "name": "PerpRewardVesting",
+          "address": "0x0607C2540c62aea495996Bb2C39b658FEb8d8978"
+        },
+        "FeeTokenPoolDispatcherL1": {
+          "name": "FeeTokenPoolDispatcherL1",
+          "address": "0x29853EcF31eaedcD9074a11A85A8C8b689165F0b"
+        },
+        "StakedPerpToken": {
+          "name": "StakedPerpToken",
+          "address": "0x05b1d5B3ad20769B3b71b658A1Df2290CD5A2376"
+        },
+        "FeeRewardPoolL1": {
+          "name": "FeeRewardPoolL1",
+          "address": "0xAA798BdeC1F19AcBe81A637C8A8089C912678Bf9"
+        },
+        "PerpStakingRewardVesting": {
+          "name": "PerpRewardVesting",
+          "address": "0x8d22F1a9dCe724D8c1B4c688D75f17A2fE2D32df"
+        },
+        "PerpStakingRewardNoVesting": {
+          "name": "PerpRewardVesting",
+          "address": "0x08fa612A94bBEeC0cE0aFD870132ca729848EFe8"
+        }
+      },
+      "accounts": [],
+      "network": "rinkeby",
+      "externalContracts": {
+        "foundationGovernance": "0xa230A4f6F38D904C2eA1eE95d8b2b8b7350e3d79",
+        "rewardGovernance": "0x7cd11681690d25DAA202550E1B3F314C74A0Acd6",
+        "perp": "0xaFfB148304D38947193785D194972a7d0d9b7F68",
+        "tether": "0x40D3B2F06f198D2B789B823CdBEcD1DB78090D74",
+        "usdc": "0x40D3B2F06f198D2B789B823CdBEcD1DB78090D74",
+        "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
+        "ambBridgeOnEth": "0xD4075FB57fCf038bFc702c915Ef9592534bED5c1",
+        "multiTokenMediatorOnEth": "0x30F693708fc604A57F1958E3CFa059F902e6d4CB"
+      }
+    },
+    "layer2": {
+      "contracts": {
+        "MetaTxGateway": {
+          "name": "MetaTxGateway",
+          "address": "0x53ED8613b25f76ab67D41d5639cfA17444F3B6Cd"
+        },
+        "ClientBridge": {
+          "name": "ClientBridge",
+          "address": "0x2E31232498Ff056Fc23a47CE95EE5599e1F3ec26"
+        },
+        "InsuranceFund": {
+          "name": "InsuranceFund",
+          "address": "0x9503B498A194DA2866c6e6f614e6F0E168AD13e9"
+        },
+        "L2PriceFeed": {
+          "name": "L2PriceFeed",
+          "address": "0x1ADFB9dd0E32649d4B8a73c90C36DB92cCea5d41"
+        },
+        "ClearingHouse": {
+          "name": "ClearingHouse",
+          "address": "0xd1ab46526D555285E9b61f066B7673bb9b9B51b6"
+        },
+        "ETHUSDC": {
+          "name": "Amm",
+          "address": "0xF75C8c9EADBCA5D26dA43466aD5Be511Cb281668"
+        },
+        "BTCUSDC": {
+          "name": "Amm",
+          "address": "0x858fC2fB2132b76584eBa1F0d1e2F43d5e999bff"
+        },
+        "ClearingHouseViewer": {
+          "name": "ClearingHouseViewer",
+          "address": "0x2b53BA3d842F76e4D96FecEA77d345d237680E2e"
+        },
+        "AmmReader": {
+          "name": "AmmReader",
+          "address": "0x2b37006dbCA6ad1F464B6BeB317cEE8c733415E7"
+        },
+        "SNXUSDC": {
+          "name": "Amm",
+          "address": "0x176C0C3d7f83e6119B83E8c50E784a113aA8Da4F"
+        },
+        "LINKUSDC": {
+          "name": "Amm",
+          "address": "0xB72c27Ff766c9FFB6715D7bc5f9cE82b6862618d"
+        },
+        "SDEFIUSDC": {
+          "name": "Amm",
+          "address": "0xF6886540399Ac4055f1Cf2b9110909277F2498A1"
+        },
+        "TRXUSDC": {
+          "name": "Amm",
+          "address": "0x3a2E1e21BcA6d00FbD9BD6eDeD7D7635AD17fb3c"
+        },
+        "SCEXUSDC": {
+          "name": "Amm",
+          "address": "0xEFB91c661a77aa40A4a9FF581C0c074Ac1c18aaD"
+        },
+        "ChainlinkPriceFeed": {
+          "name": "ChainlinkPriceFeed",
+          "address": "0xAE77D1342CDBC93842007C5190e5C096d65C1b9E"
+        },
+        "SUSHIUSDC": {
+          "name": "Amm",
+          "address": "0xC38108217bd3ceF28CCfa2bb74C670601c77995D"
+        },
+        "XAGUSDC": {
+          "name": "Amm",
+          "address": "0x8308091357Ac72570969957cfE85C82b37Ea750F"
+        },
+        "AUDUSDC": {
+          "name": "Amm",
+          "address": "0xC86837ad9c153F1F9DA6abE697FA99f455C0AaF4"
+        },
+        "PERPUSDC": {
+          "name": "Amm",
+          "address": "0x2E8504e558c0F96036f78E08Fb652Ac7304f7455"
+        },
+        "UNIUSDC": {
+          "name": "Amm",
+          "address": "0xA087B08162870BE17Ffa1b8818368fe36ed574B5"
+        },
+        "CRVUSDC": {
+          "name": "Amm",
+          "address": "0x093c250B04bb79b86968da87B524A533533a0fAE"
+        }
+      },
+      "accounts": [],
+      "network": "xdai",
+      "externalContracts": {
+        "foundationGovernance": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
+        "arbitrageur": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
+        "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
+        "ambBridgeOnXDai": "0xc38D4991c951fE8BCE1a12bEef2046eF36b0FA4A",
+        "multiTokenMediatorOnXDai": "0xA34c65d76b997a824a5E384471bBa73b0013F5DA",
+        "tether": "0xe0B887D54e71329318a036CF50f30Dbe4444563c",
+        "usdc": "0xe0B887D54e71329318a036CF50f30Dbe4444563c"
+      }
+    }
+  }
+}

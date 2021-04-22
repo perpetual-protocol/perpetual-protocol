@@ -1,10 +1,11 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { ethers } from "@nomiclabs/buidler"
 import { Contract } from "ethers"
+import { ethers } from "hardhat"
+import { parseFullyQualifiedName } from "hardhat/utils/contract-names"
 import { Layer } from "../../scripts/common"
-import { ContractInstanceName, ContractName } from "../ContractName"
+import { ContractFullyQualifiedName, ContractId } from "../ContractName"
 import { OzContractDeployer } from "../OzContractDeployer"
 import { SystemMetadataDao } from "../SystemMetadataDao"
 
@@ -14,16 +15,16 @@ export class ContractWrapper<T extends Contract> {
     constructor(
         protected readonly layerType: Layer,
         protected readonly systemMetadataDao: SystemMetadataDao,
-        protected readonly contractFileName: ContractName,
-        protected contractInstanceName: ContractInstanceName,
+        protected readonly fullyQualifiedContractName: ContractFullyQualifiedName,
+        protected contractId: ContractId,
         readonly confirmations: number = 1,
     ) {
         this.ozContractDeployer = new OzContractDeployer(confirmations)
     }
 
     async deployImmutableContract(...args: any[]): Promise<T> {
-        console.log(`deployImmutableContract: ${this.contractFileName}:[${args}]`)
-        const factory = await ethers.getContractFactory(this.contractFileName)
+        console.log(`deployImmutableContract: ${this.fullyQualifiedContractName}:[${args}]`)
+        const factory = await ethers.getContractFactory(this.fullyQualifiedContractName)
         const instance = (await factory.deploy(...args)) as T
         this.updateMetadata(instance.address)
         await ethers.provider.waitForTransaction(instance.deployTransaction.hash, this.confirmations)
@@ -31,43 +32,49 @@ export class ContractWrapper<T extends Contract> {
     }
 
     async deployUpgradableContract(...args: any[]): Promise<T> {
-        console.log(`deployUpgradableContract ${this.contractFileName}:[${args}]`)
-        const address = await this.ozContractDeployer.deploy(this.contractFileName, args)
+        console.log(`deployUpgradableContract ${this.fullyQualifiedContractName}:[${args}]`)
+        const address = await this.ozContractDeployer.deploy(this.fullyQualifiedContractName, args) // FQCN
         this.updateMetadata(address)
         return await this.instance()
     }
 
-    async prepareUpgradeContract(): Promise<string> {
-        return await this.ozContractDeployer.prepareUpgrade(this.address!, this.contractFileName)
+    async prepareUpgradeContract(...args: any[]): Promise<string> {
+        return await this.ozContractDeployer.prepareUpgrade(this.address!, this.fullyQualifiedContractName, args)
     }
 
-    async upgradeContract(): Promise<void> {
-        await this.ozContractDeployer.upgrade(this.address!, this.contractFileName)
+    async upgradeContract(...args: any[]): Promise<void> {
+        await this.ozContractDeployer.upgrade(this.address!, this.fullyQualifiedContractName, args)
     }
 
     async instance(): Promise<T> {
-        return (await ethers.getContractAt(this.contractFileName, this.address!)) as T
+        return (await ethers.getContractAt(this.fullyQualifiedContractName, this.address!)) as T
     }
 
     get address(): string | undefined {
-        const metadata = this.systemMetadataDao.getContractMetadata(this.layerType, this.contractInstanceName)
+        const metadata = this.systemMetadataDao.getContractMetadata(this.layerType, this.contractId)
         if (!metadata || !metadata.address) {
-            console.error(`metadata not found, contractInstanceName=${this.contractInstanceName}`)
+            console.error(`metadata not found, contractId=${this.contractId}`)
             return
         }
 
-        if (metadata.name !== this.contractFileName) {
+        const { contractName } = parseFullyQualifiedName(this.fullyQualifiedContractName)
+        if (metadata.name !== contractName) {
             throw new Error(
-                `contract file name mismatched, metadata=${metadata.name}, contractFileName=${this.contractFileName}`,
+                `contract file name mismatched, metadata=${metadata.name}, fullyQualifiedContractName=${this.fullyQualifiedContractName}`,
             )
         }
         return metadata.address
     }
 
     private updateMetadata(address: string): void {
-        this.systemMetadataDao.setContract(this.layerType, this.contractInstanceName, {
-            name: this.contractFileName,
+        const { contractName } = parseFullyQualifiedName(this.fullyQualifiedContractName)
+        this.systemMetadataDao.setContract(this.layerType, this.contractId, {
+            name: contractName,
             address: address,
         })
+    }
+
+    async prepareUpgradeContractLegacy(): Promise<string> {
+        return await this.ozContractDeployer.prepareUpgradeLegacy(this.address!, this.fullyQualifiedContractName)
     }
 }

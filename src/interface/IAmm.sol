@@ -37,9 +37,6 @@ interface IAmm {
         bool _skipFluctuationCheck
     ) external returns (Decimal.decimal memory);
 
-    function migrateLiquidity(Decimal.decimal calldata _liquidityMultiplier, Decimal.decimal calldata _priceLimitRatio)
-        external;
-
     function shutdown() external;
 
     function settleFunding() external returns (SignedDecimal.signedDecimal memory);
@@ -114,4 +111,10 @@ interface IAmm {
     function getOpenInterestNotionalCap() external view returns (Decimal.decimal memory);
 
     function getLiquidityChangedSnapshots(uint256 i) external view returns (LiquidityChangedSnapshot memory);
+
+    function getBaseAssetDelta() external view returns (SignedDecimal.signedDecimal memory);
+
+    function getUnderlyingPrice() external view returns (Decimal.decimal memory);
+
+    function isOverSpreadLimit() external view returns (bool);
 }

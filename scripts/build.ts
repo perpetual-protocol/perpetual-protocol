@@ -1,12 +1,11 @@
-import { buidlerArguments } from "@nomiclabs/buidler"
 import fs from "fs"
 import { resolve } from "path"
 import { ls } from "shelljs"
 import { ARTIFACTS_DIR } from "../constants"
 import { SettingsDao } from "../publish/SettingsDao"
 import { SystemMetadataDao } from "../publish/SystemMetadataDao"
-import { asyncExec } from "../scripts/helper"
-import { ContractMetadata, Network } from "./common"
+import { ContractMetadata, Layer } from "./common"
+import { asyncExec } from "./helper"
 
 function printByteCodeSize(contractName: string, artifactPath: string): number {
     const jsonStr = fs.readFileSync(artifactPath, "utf8")
@@ -52,24 +51,26 @@ function generateContractMetadata(): void {
     const map: Record<string, any> = {}
     const codeSizeMap = new Map()
     const artifactsDir = resolve(ARTIFACTS_DIR)
-    ls(`${artifactsDir}/*.json`).map(fullPath => {
-        const contractName = getContractName(fullPath)
-        const metadata: ContractMetadata = {
-            name: contractName,
-            address: "",
-        }
-        map[contractName] = metadata
-        codeSizeMap.set(contractName, printByteCodeSize(contractName, fullPath))
-    })
+    ls(`${artifactsDir}/**/*.json`)
+        .filter(fullPath => !(fullPath.endsWith(".dbg.json") || fullPath.includes("/build-info/")))
+        .map(fullPath => {
+            const contractName = getContractName(fullPath)
+            const metadata: ContractMetadata = {
+                name: contractName,
+                address: "",
+            }
+            map[contractName] = metadata
+            codeSizeMap.set(contractName, printByteCodeSize(contractName, fullPath))
+        })
     printTopNContractSize(codeSizeMap)
 
     const settingsDao = new SettingsDao("test")
     const systemMetadataDao = new SystemMetadataDao(settingsDao)
     systemMetadataDao.setLayerMetadata(
-        "layer2", // for now, test stage builds put everything in layer2
+        Layer.Layer2, // for now, test stage builds put everything in layer2
         {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            network: buidlerArguments.network! as Network,
+            network: "localhost",
             contracts: map,
             accounts: [],
             externalContracts: {},
@@ -78,11 +79,10 @@ function generateContractMetadata(): void {
 }
 
 async function build(): Promise<void> {
-    const artifactDir = resolve(ARTIFACTS_DIR)
-    await asyncExec("buidler compile")
-    await asyncExec(`typechain --target truffle-v5 ${artifactDir}/**/*.json --outDir ./types/truffle`)
-    await asyncExec(`typechain --target web3-v1 ${artifactDir}/**/*.json --outDir ./types/web3`)
-    await asyncExec(`typechain --target ethers-v5 ${artifactDir}/**/*.json --outDir ./types/ethers`)
+    await asyncExec("hardhat compile --no-typechain")
+    await asyncExec(`hardhat typechain --config hardhat-configs/hardhat.typechain.truffle.config.ts`)
+    await asyncExec(`hardhat typechain --config hardhat-configs/hardhat.typechain.ethers.config.ts`)
+    await asyncExec(`hardhat typechain --config hardhat-configs/hardhat.typechain.web3.config.ts`)
     generateContractMetadata()
 }
 

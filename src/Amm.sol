@@ -38,6 +38,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     event LiquidityChanged(uint256 quoteReserve, uint256 baseReserve, int256 cumulativeNotional);
     event CapChanged(uint256 maxHoldingBaseAsset, uint256 openInterestNotionalCap);
     event Shutdown(uint256 settlementPrice);
+    event PriceFeedUpdated(address priceFeed);
 
     //
     // MODIFIERS
@@ -81,14 +82,21 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         TwapInputAsset asset;
     }
 
+    //
+    // Constant
+    //
+    // 10%
+    uint256 public constant MAX_ORACLE_SPREAD_RATIO = 1e17;
+
     //**********************************************************//
     //    The below state variables can not change the order    //
     //**********************************************************//
 
+    // DEPRECATED
     // update during every swap and calculate total amm pnl per funding period
     SignedDecimal.signedDecimal private baseAssetDeltaThisFundingPeriod;
 
-    // update during every swap and used when shutting amm down
+    // update during every swap and used when shutting amm down. it's trader's total base asset size
     SignedDecimal.signedDecimal public totalPositionSize;
 
     // latest funding rate = ((twap market price - twap oracle price) / twap oracle price) / 24
@@ -257,9 +265,8 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         // timeFraction = fundingPeriod(1 hour) / 1 day
         // premiumFraction = premium * timeFraction
         Decimal.decimal memory underlyingPrice = getUnderlyingTwapPrice(spotPriceTwapInterval);
-        SignedDecimal.signedDecimal memory premium = MixedDecimal.fromDecimal(getTwapPrice(spotPriceTwapInterval)).subD(
-            underlyingPrice
-        );
+        SignedDecimal.signedDecimal memory premium =
+            MixedDecimal.fromDecimal(getTwapPrice(spotPriceTwapInterval)).subD(underlyingPrice);
         SignedDecimal.signedDecimal memory premiumFraction = premium.mulScalar(fundingPeriod).divScalar(int256(1 days));
 
         // update funding rate = premiumFraction / twapIndexPrice
@@ -276,61 +283,11 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             ? nextFundingTimeOnHourStart
             : minNextValidFundingTime;
 
+        // DEPRECATED only for backward compatibility before we upgrade ClearingHouse
         // reset funding related states
         baseAssetDeltaThisFundingPeriod = SignedDecimal.zero();
 
         return premiumFraction;
-    }
-
-    function migrateLiquidity(
-        Decimal.decimal calldata _liquidityMultiplier,
-        Decimal.decimal calldata _fluctuationLimitRatio
-    ) external override onlyOwner {
-        require(_liquidityMultiplier.toUint() != Decimal.one().toUint(), "multiplier can't be 1");
-
-        // check liquidity multiplier limit, have lower bound if position size is positive for now.
-        checkLiquidityMultiplierLimit(totalPositionSize, _liquidityMultiplier);
-        checkLiquidityMultiplierLimit(baseAssetDeltaThisFundingPeriod, _liquidityMultiplier);
-
-        // #53 fix sandwich attack during liquidity migration
-        checkFluctuationLimit(_fluctuationLimitRatio);
-
-        // get current reserve values
-        Decimal.decimal memory quoteAssetBeforeAddingLiquidity = quoteAssetReserve;
-        Decimal.decimal memory baseAssetBeforeAddingLiquidity = baseAssetReserve;
-        SignedDecimal.signedDecimal memory totalPositionSizeBefore = totalPositionSize;
-
-        // migrate liquidity
-        quoteAssetReserve = quoteAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
-        baseAssetReserve = baseAssetBeforeAddingLiquidity.mulD(_liquidityMultiplier);
-
-        // MUST be called after liquidity migrated
-        // baseAssetDeltaThisFundingPeriod is total position size(of a funding period) owned by Amm
-        // That's why need to mulScalar(-1) when calculating the migrated size.
-        baseAssetDeltaThisFundingPeriod = calcBaseAssetAfterLiquidityMigration(
-            baseAssetDeltaThisFundingPeriod.mulScalar(-1),
-            quoteAssetBeforeAddingLiquidity,
-            baseAssetBeforeAddingLiquidity
-        )
-            .mulScalar(-1);
-
-        totalPositionSize = calcBaseAssetAfterLiquidityMigration(
-            totalPositionSizeBefore,
-            quoteAssetBeforeAddingLiquidity,
-            baseAssetBeforeAddingLiquidity
-        );
-
-        // update snapshot
-        liquidityChangedSnapshots.push(
-            LiquidityChangedSnapshot({
-                cumulativeNotional: cumulativeNotional,
-                quoteAssetReserve: quoteAssetReserve,
-                baseAssetReserve: baseAssetReserve,
-                totalPositionSize: totalPositionSize
-            })
-        );
-
-        emit LiquidityChanged(quoteAssetReserve.toUint(), baseAssetReserve.toUint(), cumulativeNotional.toInt());
     }
 
     function calcBaseAssetAfterLiquidityMigration(
@@ -346,17 +303,19 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
         // measure the trader position's notional value on the old curve
         // (by simulating closing the position)
-        Decimal.decimal memory posNotional = getOutputPriceWithReserves(
-            isPositiveValue ? Dir.ADD_TO_AMM : Dir.REMOVE_FROM_AMM,
-            _baseAssetAmount.abs(),
-            _fromQuoteReserve,
-            _fromBaseReserve
-        );
+        Decimal.decimal memory posNotional =
+            getOutputPriceWithReserves(
+                isPositiveValue ? Dir.ADD_TO_AMM : Dir.REMOVE_FROM_AMM,
+                _baseAssetAmount.abs(),
+                _fromQuoteReserve,
+                _fromBaseReserve
+            );
 
         // calculate and apply the required size on the new curve
-        SignedDecimal.signedDecimal memory newBaseAsset = MixedDecimal.fromDecimal(
-            getInputPrice(isPositiveValue ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM, posNotional)
-        );
+        SignedDecimal.signedDecimal memory newBaseAsset =
+            MixedDecimal.fromDecimal(
+                getInputPrice(isPositiveValue ? Dir.REMOVE_FROM_AMM : Dir.ADD_TO_AMM, posNotional)
+            );
         return newBaseAsset.mulScalar(isPositiveValue ? 1 : int256(-1));
     }
 
@@ -454,6 +413,17 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         emit CapChanged(maxHoldingBaseAsset.toUint(), openInterestNotionalCap.toUint());
     }
 
+    /**
+     * @notice set priceFee address
+     * @dev only owner can call
+     * @param _priceFeed new price feed for this AMM
+     */
+    function setPriceFeed(IPriceFeed _priceFeed) public onlyOwner {
+        require(address(_priceFeed) != address(0), "invalid PriceFeed address");
+        priceFeed = _priceFeed;
+        emit PriceFeedUpdated(address(priceFeed));
+    }
+
     //
     // VIEW FUNCTIONS
     //
@@ -524,7 +494,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
      * @notice get underlying price provided by oracle
      * @return underlying price
      */
-    function getUnderlyingPrice() public view returns (Decimal.decimal memory) {
+    function getUnderlyingPrice() public view override returns (Decimal.decimal memory) {
         return Decimal.decimal(priceFeed.getPrice(priceFeedKey));
     }
 
@@ -559,9 +529,6 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         return (quoteAssetReserve, baseAssetReserve);
     }
 
-    //@audit - no one use this anymore, can be remove (@wraecca).
-    // If we remove this, we should make reserveSnapshots private.
-    // If we need reserveSnapshots, should keep this. (@Kimi)
     function getSnapshotLen() external view returns (uint256) {
         return reserveSnapshots.length;
     }
@@ -587,6 +554,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         return settlementPrice;
     }
 
+    // DEPRECATED only for backward compatibility before we upgrade ClearingHouse
     function getBaseAssetDeltaThisFundingPeriod() external view override returns (SignedDecimal.signedDecimal memory) {
         return baseAssetDeltaThisFundingPeriod;
     }
@@ -597,6 +565,20 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
     function getOpenInterestNotionalCap() external view override returns (Decimal.decimal memory) {
         return openInterestNotionalCap;
+    }
+
+    function getBaseAssetDelta() external view override returns (SignedDecimal.signedDecimal memory) {
+        return totalPositionSize;
+    }
+
+    function isOverSpreadLimit() external view override returns (bool) {
+        Decimal.decimal memory oraclePrice = getUnderlyingPrice();
+        require(oraclePrice.toUint() > 0, "underlying price is 0");
+        Decimal.decimal memory marketPrice = getSpotPrice();
+        Decimal.decimal memory oracleSpreadRatioAbs =
+            MixedDecimal.fromDecimal(marketPrice).subD(oraclePrice).divD(oraclePrice).abs();
+
+        return oracleSpreadRatioAbs.toUint() >= MAX_ORACLE_SPREAD_RATIO ? true : false;
     }
 
     /**
@@ -642,9 +624,8 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         }
 
         bool isAddToAmm = _dir == Dir.ADD_TO_AMM;
-        SignedDecimal.signedDecimal memory invariant = MixedDecimal.fromDecimal(
-            _quoteAssetPoolAmount.mulD(_baseAssetPoolAmount)
-        );
+        SignedDecimal.signedDecimal memory invariant =
+            MixedDecimal.fromDecimal(_quoteAssetPoolAmount.mulD(_baseAssetPoolAmount));
         SignedDecimal.signedDecimal memory baseAssetAfter;
         Decimal.decimal memory quoteAssetAfter;
         Decimal.decimal memory baseAssetBought;
@@ -681,9 +662,8 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         }
 
         bool isAddToAmm = _dir == Dir.ADD_TO_AMM;
-        SignedDecimal.signedDecimal memory invariant = MixedDecimal.fromDecimal(
-            _quoteAssetPoolAmount.mulD(_baseAssetPoolAmount)
-        );
+        SignedDecimal.signedDecimal memory invariant =
+            MixedDecimal.fromDecimal(_quoteAssetPoolAmount.mulD(_baseAssetPoolAmount));
         SignedDecimal.signedDecimal memory quoteAssetAfter;
         Decimal.decimal memory baseAssetAfter;
         Decimal.decimal memory quoteAssetSold;
@@ -790,12 +770,14 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         if (_dir == Dir.ADD_TO_AMM) {
             quoteAssetReserve = quoteAssetReserve.addD(_quoteAssetAmount);
             baseAssetReserve = baseAssetReserve.subD(_baseAssetAmount);
+            // DEPRECATED only for backward compatibility before we upgrade ClearingHouse
             baseAssetDeltaThisFundingPeriod = baseAssetDeltaThisFundingPeriod.subD(_baseAssetAmount);
             totalPositionSize = totalPositionSize.addD(_baseAssetAmount);
             cumulativeNotional = cumulativeNotional.addD(_quoteAssetAmount);
         } else {
             quoteAssetReserve = quoteAssetReserve.subD(_quoteAssetAmount);
             baseAssetReserve = baseAssetReserve.addD(_baseAssetAmount);
+            // DEPRECATED only for backward compatibility before we upgrade ClearingHouse
             baseAssetDeltaThisFundingPeriod = baseAssetDeltaThisFundingPeriod.addD(_baseAssetAmount);
             totalPositionSize = totalPositionSize.subD(_baseAssetAmount);
             cumulativeNotional = cumulativeNotional.subD(_quoteAssetAmount);
@@ -923,9 +905,10 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         Decimal.decimal memory _quoteAssetAmount,
         Decimal.decimal memory _baseAssetAmount
     ) internal view returns (bool) {
-        Decimal.decimal memory priceAfterReserveUpdated = (_dir == Dir.ADD_TO_AMM)
-            ? quoteAssetReserve.subD(_quoteAssetAmount).divD(baseAssetReserve.addD(_baseAssetAmount))
-            : quoteAssetReserve.addD(_quoteAssetAmount).divD(baseAssetReserve.subD(_baseAssetAmount));
+        Decimal.decimal memory priceAfterReserveUpdated =
+            (_dir == Dir.ADD_TO_AMM)
+                ? quoteAssetReserve.subD(_quoteAssetAmount).divD(baseAssetReserve.addD(_baseAssetAmount))
+                : quoteAssetReserve.addD(_quoteAssetAmount).divD(baseAssetReserve.subD(_baseAssetAmount));
         return
             isOverFluctuationLimit(
                 priceAfterReserveUpdated,
@@ -962,10 +945,11 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     ) internal view {
         // have lower bound when position size is long
         if (_positionSize.toInt() > 0) {
-            Decimal.decimal memory liquidityMultiplierLowerBound = _positionSize
-                .addD(Decimal.decimal(MARGIN_FOR_LIQUIDITY_MIGRATION_ROUNDING))
-                .divD(baseAssetReserve)
-                .abs();
+            Decimal.decimal memory liquidityMultiplierLowerBound =
+                _positionSize
+                    .addD(Decimal.decimal(MARGIN_FOR_LIQUIDITY_MIGRATION_ROUNDING))
+                    .divD(baseAssetReserve)
+                    .abs();
             require(_liquidityMultiplier.cmp(liquidityMultiplierLowerBound) >= 0, "illegal liquidity multiplier");
         }
     }
@@ -989,22 +973,18 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         LiquidityChangedSnapshot memory latestLiquiditySnapshot = getLatestLiquidityChangedSnapshots();
 
         // get last liquidity changed history to calc new quote/base reserve
-        Decimal.decimal memory previousK = latestLiquiditySnapshot.baseAssetReserve.mulD(
-            latestLiquiditySnapshot.quoteAssetReserve
-        );
-        SignedDecimal.signedDecimal memory lastInitBaseReserveInNewCurve = latestLiquiditySnapshot
-            .totalPositionSize
-            .addD(latestLiquiditySnapshot.baseAssetReserve);
-        SignedDecimal.signedDecimal memory lastInitQuoteReserveInNewCurve = MixedDecimal.fromDecimal(previousK).divD(
-            lastInitBaseReserveInNewCurve
-        );
+        Decimal.decimal memory previousK =
+            latestLiquiditySnapshot.baseAssetReserve.mulD(latestLiquiditySnapshot.quoteAssetReserve);
+        SignedDecimal.signedDecimal memory lastInitBaseReserveInNewCurve =
+            latestLiquiditySnapshot.totalPositionSize.addD(latestLiquiditySnapshot.baseAssetReserve);
+        SignedDecimal.signedDecimal memory lastInitQuoteReserveInNewCurve =
+            MixedDecimal.fromDecimal(previousK).divD(lastInitBaseReserveInNewCurve);
 
         // settlementPrice = SUM(Open Position Notional Value) / SUM(Position Size)
         // `Open Position Notional Value` = init quote reserve - current quote reserve
         // `Position Size` = init base reserve - current base reserve
-        SignedDecimal.signedDecimal memory positionNotionalValue = lastInitQuoteReserveInNewCurve.subD(
-            quoteAssetReserve
-        );
+        SignedDecimal.signedDecimal memory positionNotionalValue =
+            lastInitQuoteReserveInNewCurve.subD(quoteAssetReserve);
 
         // if total position size less than IGNORABLE_DIGIT_FOR_SHUTDOWN, treat it as 0 positions due to rounding error
         if (totalPositionSize.toUint() > IGNORABLE_DIGIT_FOR_SHUTDOWN) {

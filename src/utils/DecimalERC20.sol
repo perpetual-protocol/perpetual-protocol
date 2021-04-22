@@ -31,9 +31,8 @@ abstract contract DecimalERC20 {
         uint256 roundedDownValue = _toUint(_token, _value);
 
         // solhint-disable avoid-low-level-calls
-        (bool success, bytes memory data) = address(_token).call(
-            abi.encodeWithSelector(_token.transfer.selector, _to, roundedDownValue)
-        );
+        (bool success, bytes memory data) =
+            address(_token).call(abi.encodeWithSelector(_token.transfer.selector, _to, roundedDownValue));
 
         require(success && (data.length == 0 || abi.decode(data, (bool))), "DecimalERC20: transfer failed");
         _validateBalance(_token, _to, roundedDownValue, balanceBefore);
@@ -50,9 +49,8 @@ abstract contract DecimalERC20 {
         uint256 roundedDownValue = _toUint(_token, _value);
 
         // solhint-disable avoid-low-level-calls
-        (bool success, bytes memory data) = address(_token).call(
-            abi.encodeWithSelector(_token.transferFrom.selector, _from, _to, roundedDownValue)
-        );
+        (bool success, bytes memory data) =
+            address(_token).call(abi.encodeWithSelector(_token.transferFrom.selector, _from, _to, roundedDownValue));
 
         require(success && (data.length == 0 || abi.decode(data, (bool))), "DecimalERC20: transferFrom failed");
         _validateBalance(_token, _to, roundedDownValue, balanceBefore);
@@ -131,9 +129,8 @@ abstract contract DecimalERC20 {
         Decimal.decimal memory _value
     ) private {
         // solhint-disable avoid-low-level-calls
-        (bool success, bytes memory data) = address(_token).call(
-            abi.encodeWithSelector(_token.approve.selector, _spender, _toUint(_token, _value))
-        );
+        (bool success, bytes memory data) =
+            address(_token).call(abi.encodeWithSelector(_token.approve.selector, _spender, _toUint(_token, _value)));
         require(success && (data.length == 0 || abi.decode(data, (bool))), "DecimalERC20: approve failed");
     }
 

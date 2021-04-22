@@ -12,7 +12,8 @@ import {
     SystemMetadata,
 } from "../scripts/common"
 import { asyncExec } from "../scripts/helper"
-import { ContractInstanceName } from "./ContractName"
+import { getContractMetadataFile } from "../scripts/path"
+import { ContractId } from "./ContractName"
 import { SettingsDao } from "./SettingsDao"
 
 export interface AccountMetadata {
@@ -29,7 +30,7 @@ export class SystemMetadataDao {
         // must handle edge cases when local metadata file hasn't been created yet
         let localSystemMetadata
         try {
-            localSystemMetadata = require(`../${this.metadataFileName}`)
+            localSystemMetadata = require(this.metadataFile)
         } catch (e) {
             localSystemMetadata = {}
         }
@@ -66,35 +67,43 @@ export class SystemMetadataDao {
 
     async pushRemote(): Promise<void> {
         await asyncExec(
-            `aws s3 cp ./${
-                this.metadataFileName
+            `aws s3 cp ${
+                this.metadataFile
             } s3://metadata.perp.fi/${this.settingsDao.getStage()}.json --acl public-read --cache-control 'no-store' --profile perp`,
         )
     }
 
-    getContractMetadata(layerType: Layer, contractInstanceName: ContractInstanceName): ContractMetadata {
-        return this.systemMetadataCache.layers[layerType]!.contracts[contractInstanceName]
+    getContractMetadata(layerType: Layer, contractId: ContractId): ContractMetadata {
+        return this.systemMetadataCache.layers[layerType]!.contracts[contractId]
     }
 
     setMetadata(metadata: SystemMetadata): void {
         this.systemMetadataCache = { ...metadata }
         mkdir("-p", this.buildDir)
-        ShellString(JSON.stringify(this.systemMetadataCache, null, 2)).to(`./${this.metadataFileName}`)
-        ShellString(JSON.stringify(this.systemMetadataCache, null, 2)).to(`${this.buildDir}/${this.metadataFileName}`)
+        ShellString(JSON.stringify(this.systemMetadataCache, null, 2)).to(this.metadataFile)
     }
 
-    clearMetadata(layerType: Layer): void {
-        this.systemMetadataCache.layers[layerType] = {
-            network: this.settingsDao.getNetwork(layerType),
-            accounts: [],
-            contracts: {},
-            externalContracts: {},
+    clearMetadata(): void {
+        this.systemMetadataCache.layers = {
+            [Layer.Layer1]: {
+                network: this.settingsDao.getNetwork(Layer.Layer1),
+                accounts: [],
+                contracts: {},
+                externalContracts: {},
+            },
+            [Layer.Layer2]: {
+                network: this.settingsDao.getNetwork(Layer.Layer2),
+                accounts: [],
+                contracts: {},
+                externalContracts: {},
+            },
         }
         this.setMetadata(this.systemMetadataCache)
     }
 
-    private get metadataFileName(): string {
-        return this.settingsDao.isLocal() ? "system-local.json" : "system.json"
+    private get metadataFile(): string {
+        const stage = this.settingsDao.getStage()
+        return getContractMetadataFile(stage)
     }
 
     private get buildDir(): string {

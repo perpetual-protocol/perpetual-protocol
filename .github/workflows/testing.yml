@@ -34,14 +34,24 @@ jobs:
 
             - name: Run contract tests
               run: npm test
+              env:
+                # to solve problem of memory leak https://stackoverflow.com/a/59572966
+                NODE_OPTIONS: "--max-old-space-size=4096"
 
-            - name: Run contract coverage
-              run: npm run coverage
+            - name: Run contract mainnet fork upgrade tests
+              run: npm run simulate staging 0001-layer2-clearingHouse.ts
 
-            - name: Upload coverage to Codecov
-              uses: codecov/codecov-action@v1
-              with:
-                  token: ${{ secrets.CODECOV_TOKEN }}
+            # - name: Run contract coverage
+            #   run: npm run coverage
+            #   env:
+            #     # to solve problem of memory leak https://stackoverflow.com/a/59572966
+            #     NODE_OPTIONS: "--max-old-space-size=4096"
+
+            # - name: Upload coverage to Codecov
+            #   uses: codecov/codecov-action@v1
+            #   with:
+            #       token: ${{ secrets.CODECOV_TOKEN }}
+    
 
     lint:
         runs-on: ubuntu-latest

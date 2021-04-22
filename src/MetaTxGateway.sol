@@ -40,13 +40,11 @@ contract MetaTxGateway is PerpFiOwnableUpgrade, LowLevelErrorMessage {
     //
     // Constant
     //
-    bytes32 internal constant EIP712_DOMAIN_TYPEHASH = keccak256(
-        bytes("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
-    );
+    bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
+        keccak256(bytes("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"));
 
-    bytes32 private constant META_TRANSACTION_TYPEHASH = keccak256(
-        bytes("MetaTransaction(uint256 nonce,address from,address to,bytes functionSignature)")
-    );
+    bytes32 private constant META_TRANSACTION_TYPEHASH =
+        keccak256(bytes("MetaTransaction(uint256 nonce,address from,address to,bytes functionSignature)"));
 
     //**********************************************************//
     //    Can not change the order of below state variables     //
@@ -123,12 +121,8 @@ contract MetaTxGateway is PerpFiOwnableUpgrade, LowLevelErrorMessage {
     ) external returns (bytes memory) {
         require(isInWhitelists(to), "!whitelisted");
 
-        MetaTransaction memory metaTx = MetaTransaction({
-            nonce: nonces[from],
-            from: from,
-            to: to,
-            functionSignature: functionSignature
-        });
+        MetaTransaction memory metaTx =
+            MetaTransaction({ nonce: nonces[from], from: from, to: to, functionSignature: functionSignature });
 
         require(
             verify(from, domainSeperatorL1, metaTx, sigR, sigS, sigV) ||

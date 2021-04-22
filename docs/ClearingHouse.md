@@ -6,7 +6,7 @@
 
 
 
-### `initialize(contract AmmMgr _ammMgr, contract ClearingHouseVault _clearingHouseVault, uint256 _initMarginRatio, uint256 _maintenanceMarginRatio, uint256 _liquidationFeeRatio)` (public)
+### `initialize(uint256 _initMarginRatio, uint256 _maintenanceMarginRatio, uint256 _liquidationFeeRatio, contract IInsuranceFund _insuranceFund, address _trustedForwarder)` (public)
 
 
 
@@ -39,7 +39,16 @@ Parameters:
  - _maintenanceMarginRatio → new maintenance margin ratio in 18 digits
 
 Returns:
-### `addToWhitelists(address _addr)` (external)
+### `setFeePool(contract IMultiTokenRewardRecipient _feePool)` (external)
+
+
+
+
+
+Parameters:
+
+Returns:
+### `setWhitelist(address _whitelist)` (external)
 
 add an address in the whitelist. People in the whitelist can hold unlimited positions.
 
@@ -48,19 +57,10 @@ only owner can call
 
 
 Parameters:
- - _addr → an address
+ - _whitelist → an address
 
 Returns:
-### `removeFromWhitelists(address _addr)` (external)
-
-
-
-
-
-Parameters:
-
-Returns:
-### `addMargin(contract Amm _amm, struct Decimal.decimal _addedMargin)` (external)
+### `addMargin(contract IAmm _amm, struct Decimal.decimal _addedMargin)` (external)
 
 add margin to increase margin ratio
 
@@ -68,12 +68,12 @@ add margin to increase margin ratio
 
 
 Parameters:
- - _amm → Amm address
+ - _amm → IAmm address
 
  - _addedMargin → added margin in 18 digits
 
 Returns:
-### `removeMargin(contract Amm _amm, struct Decimal.decimal _removedMargin)` (external)
+### `removeMargin(contract IAmm _amm, struct Decimal.decimal _removedMargin)` (external)
 
 remove margin to decrease margin ratio
 
@@ -81,23 +81,23 @@ remove margin to decrease margin ratio
 
 
 Parameters:
- - _amm → Amm address
+ - _amm → IAmm address
 
  - _removedMargin → removed margin in 18 digits
 
 Returns:
-### `settlePosition(contract Amm _amm)` (external)
+### `settlePosition(contract IAmm _amm)` (external)
 
-settle all the positions when amm is shutdown. The settlement price is according to Amm.settlementPrice
+settle all the positions when amm is shutdown. The settlement price is according to IAmm.settlementPrice
 
 
 
 
 Parameters:
- - _amm → Amm address
+ - _amm → IAmm address
 
 Returns:
-### `openPosition(contract Amm _amm, enum ClearingHouse.Side _side, struct Decimal.decimal _quoteAssetAmount, struct Decimal.decimal _leverage, struct Decimal.decimal _minBaseAssetAmount)` (external)
+### `openPosition(contract IAmm _amm, enum ClearingHouse.Side _side, struct Decimal.decimal _quoteAssetAmount, struct Decimal.decimal _leverage, struct Decimal.decimal _baseAssetAmountLimit)` (external)
 
 open a position
 
@@ -113,10 +113,10 @@ Parameters:
 
  - _leverage → leverage  in 18 digits. Can Not be 0
 
- - _minBaseAssetAmount → minimum base asset amount expected to get to prevent from slippage.
+ - _baseAssetAmountLimit → minimum base asset amount expected to get to prevent from slippage.
 
 Returns:
-### `closePosition(contract Amm _amm)` (external)
+### `closePosition(contract IAmm _amm, struct Decimal.decimal _quoteAssetAmountLimit)` (external)
 
 close all the positions
 
@@ -124,10 +124,10 @@ close all the positions
 
 
 Parameters:
- - _amm → Amm address
+ - _amm → IAmm address
 
 Returns:
-### `liquidate(contract Amm _amm, address _trader)` (external)
+### `liquidate(contract IAmm _amm, address _trader)` (external)
 
 liquidate trader's underwater position. Require trader's margin ratio less than maintenance margin ratio
 
@@ -136,12 +136,12 @@ liquidator can NOT open any positions in the same block to prevent from price ma
 
 
 Parameters:
- - _amm → Amm address
+ - _amm → IAmm address
 
  - _trader → trader address
 
 Returns:
-### `payFunding(contract Amm _amm)` (external)
+### `payFunding(contract IAmm _amm)` (external)
 
 if funding rate is positive, traders with long position pay traders with short position and vice versa.
 
@@ -149,41 +149,52 @@ if funding rate is positive, traders with long position pay traders with short p
 
 
 Parameters:
+ - _amm → IAmm address
+
+Returns:
+### `adjustPosition(contract IAmm _amm)` (external)
+
+adjust msg.sender's position when liquidity migration happened
+
+
+
+
+Parameters:
  - _amm → Amm address
 
 Returns:
-### `getMarginRatio(contract Amm _amm, address _trader) → struct SignedDecimal.signedDecimal` (public)
+### `getMarginRatio(contract IAmm _amm, address _trader) → struct SignedDecimal.signedDecimal` (public)
 
-get margin ratio, marginRatio = (unrealized Pnl + margin) / openNotional
+get margin ratio, marginRatio = (margin + funding payments + unrealized Pnl) / openNotional
 use spot and twap price to calculate unrealized Pnl, final unrealized Pnl depends on which one is higher
 
 
 
 
 Parameters:
- - _amm → Amm address
+ - _amm → IAmm address
 
  - _trader → trader address
 
 
 Returns:
  - margin ratio in 18 digits
-### `getPosition(contract Amm _amm, address _trader) → struct ClearingHouse.Position` (public)
+### `getPosition(contract IAmm _amm, address _trader) → struct ClearingHouse.Position` (public)
 
-get personal position information
+get personal position information, and adjust size if migration is necessary
 
 
 
 
 Parameters:
- - _amm → Amm address
+ - _amm → IAmm address
 
  - _trader → trader address
 
 
 Returns:
  - struct Position
-### `getPositionNotionalAndUnrealizedPnl(contract Amm _amm, address _trader, enum ClearingHouse.PnlCalcOption _pnlCalcOption) → struct Decimal.decimal positionNotional, struct SignedDecimal.signedDecimal unrealizedPnl` (public)
+### `getPositionNotionalAndUnrealizedPnl(contract IAmm _amm, address _trader, enum ClearingHouse.PnlCalcOption _pnlCalcOption) → struct Decimal.decimal positionNotional, struct SignedDecimal.signedDecimal unrealizedPnl` (public)
 
 get position notional and unrealized Pnl without fee expense and funding payment
 
@@ -191,7 +202,7 @@ get position notional and unrealized Pnl without fee expense and funding payment
 
 
 Parameters:
- - _amm → Amm address
+ - _amm → IAmm address
 
  - _trader → trader address
 
@@ -202,7 +213,7 @@ Returns:
  - positionNotional position notional
 
  - unrealizedPnl unrealized Pnl
-### `getLatestCumulativePremiumFraction(contract Amm _amm) → struct SignedDecimal.signedDecimal` (public)
+### `getLatestCumulativePremiumFraction(contract IAmm _amm) → struct SignedDecimal.signedDecimal` (public)
 
 get latest cumulative premium fraction.
 
@@ -210,12 +221,12 @@ get latest cumulative premium fraction.
 
 
 Parameters:
- - _amm → Amm address
+ - _amm → IAmm address
 
 
 Returns:
  - latest cumulative premium fraction in 18 digits
-### `adjustPositionForLiquidityChanged(contract Amm _amm, address _trader) → struct ClearingHouse.Position` (internal)
+### `enterRestrictionMode(contract IAmm _amm)` (internal)
 
 
 
@@ -224,7 +235,7 @@ Returns:
 Parameters:
 
 Returns:
-### `setPosition(contract Amm _amm, address _trader, struct ClearingHouse.Position _position)` (internal)
+### `setPosition(contract IAmm _amm, address _trader, struct ClearingHouse.Position _position)` (internal)
 
 
 
@@ -233,7 +244,7 @@ Returns:
 Parameters:
 
 Returns:
-### `deletePosition(contract Amm _amm, address _trader)` (internal)
+### `clearPosition(contract IAmm _amm, address _trader)` (internal)
 
 
 
@@ -242,7 +253,7 @@ Returns:
 Parameters:
 
 Returns:
-### `internalIncreasePosition(struct ClearingHouse.PositionArgs _positionArgs) → struct ClearingHouse.PositionResp positionResp` (internal)
+### `internalIncreasePosition(contract IAmm _amm, enum ClearingHouse.Side _side, struct Decimal.decimal _openNotional, struct Decimal.decimal _minPositionSize, struct Decimal.decimal _leverage) → struct ClearingHouse.PositionResp positionResp` (internal)
 
 
 
@@ -251,7 +262,7 @@ Returns:
 Parameters:
 
 Returns:
-### `internalReducePosition(struct ClearingHouse.PositionArgs _positionArgs) → struct ClearingHouse.PositionResp positionResp` (internal)
+### `openReversePosition(contract IAmm _amm, enum ClearingHouse.Side _side, struct Decimal.decimal _quoteAssetAmount, struct Decimal.decimal _leverage, struct Decimal.decimal _baseAssetAmountLimit) → struct ClearingHouse.PositionResp` (internal)
 
 
 
@@ -260,7 +271,7 @@ Returns:
 Parameters:
 
 Returns:
-### `closeAndOpenReversePosition(struct ClearingHouse.PositionArgs _positionArgs) → struct ClearingHouse.PositionResp` (internal)
+### `closeAndOpenReversePosition(contract IAmm _amm, enum ClearingHouse.Side _side, struct Decimal.decimal _quoteAssetAmount, struct Decimal.decimal _leverage, struct Decimal.decimal _baseAssetAmountLimit) → struct ClearingHouse.PositionResp positionResp` (internal)
 
 
 
@@ -269,7 +280,7 @@ Returns:
 Parameters:
 
 Returns:
-### `swapInput(contract Amm _amm, enum ClearingHouse.Side _side, struct Decimal.decimal _inputAmount, struct Decimal.decimal _minOutputAmount) → struct SignedDecimal.signedDecimal` (internal)
+### `swapInput(contract IAmm _amm, enum ClearingHouse.Side _side, struct Decimal.decimal _inputAmount, struct Decimal.decimal _minOutputAmount) → struct SignedDecimal.signedDecimal` (internal)
 
 
 
@@ -278,7 +289,7 @@ Returns:
 Parameters:
 
 Returns:
-### `transferFee(address _from, contract Amm _amm, struct Decimal.decimal _positionNotional) → struct Decimal.decimal` (internal)
+### `transferFee(address _from, contract IAmm _amm, struct Decimal.decimal _positionNotional) → struct Decimal.decimal` (internal)
 
 
 
@@ -287,7 +298,7 @@ Returns:
 Parameters:
 
 Returns:
-### `isInWhitelists(address _addr) → bool` (internal)
+### `withdraw(contract IERC20 _token, address _receiver, struct Decimal.decimal _amount)` (internal)
 
 
 
@@ -296,7 +307,7 @@ Returns:
 Parameters:
 
 Returns:
-### `getUnadjustedPosition(contract Amm _amm, address _trader) → struct ClearingHouse.Position position` (internal)
+### `realizeBadDebt(contract IERC20 _token, struct Decimal.decimal _badDebt)` (internal)
 
 
 
@@ -305,7 +316,61 @@ Returns:
 Parameters:
 
 Returns:
-### `getClosedRatio(struct Decimal.decimal closedSize, struct Decimal.decimal originalSize) → struct Decimal.decimal` (internal)
+### `transferToInsuranceFund(contract IERC20 _token, struct Decimal.decimal _amount)` (internal)
+
+
+
+
+
+Parameters:
+
+Returns:
+### `updateOpenInterestNotional(contract IAmm _amm, struct SignedDecimal.signedDecimal _amount)` (internal)
+
+
+
+assume this will be removes soon once the guarded period has ended. caller need to ensure amm exist
+
+Parameters:
+
+Returns:
+### `adjustPositionForLiquidityChanged(contract IAmm _amm, address _trader) → struct ClearingHouse.Position` (internal)
+
+
+
+
+
+Parameters:
+
+Returns:
+### `calcPositionAfterLiquidityMigration(contract IAmm _amm, struct ClearingHouse.Position _position, uint256 _latestLiquidityIndex) → struct ClearingHouse.Position` (internal)
+
+
+
+
+
+Parameters:
+
+Returns:
+### `getUnadjustedPosition(contract IAmm _amm, address _trader) → struct ClearingHouse.Position position` (public)
+
+
+
+
+
+Parameters:
+
+Returns:
+### `_msgSender() → address payable` (internal)
+
+
+
+
+
+Parameters:
+
+Returns:
+### `_msgData() → bytes ret` (internal)
 
 
 

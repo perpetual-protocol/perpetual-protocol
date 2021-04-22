@@ -1,16 +1,17 @@
-import { web3 } from "@nomiclabs/buidler"
 import { expectRevert } from "@openzeppelin/test-helpers"
 import { use } from "chai"
 import chaiAsPromised from "chai-as-promised"
+import { web3 } from "hardhat"
+import { ContractFullyQualifiedName } from "../../publish/ContractName"
 import {
     BalancerMockInstance,
     CErc20Contract,
     CUsdtMockInstance,
-    ERC20Contract,
     ERC20FakeInstance,
-    ERC20Instance,
     ExchangeWrapperContract,
     ExchangeWrapperInstance,
+    IERC20Contract,
+    IERC20Instance,
     PerpTokenContract,
     PerpTokenInstance,
     TetherTokenContract,
@@ -23,7 +24,8 @@ use(chaiAsPromised)
 const ExchangeWrapper = artifacts.require("ExchangeWrapper") as ExchangeWrapperContract
 const PerpToken = artifacts.require("PerpToken") as PerpTokenContract
 const CErc20 = artifacts.require("CErc20") as CErc20Contract
-const ERC20 = artifacts.require("ERC20") as ERC20Contract
+// WORKAROUND: artifacts.require() does not support fully qualified name
+const ERC20 = (artifacts.require(ContractFullyQualifiedName.IERC20 as any) as unknown) as IERC20Contract
 const TetherToken = artifacts.require("TetherToken") as TetherTokenContract
 
 // skip, won't be in v1
@@ -144,11 +146,11 @@ describe.skip("ExchangeWrapper testing code on Kovan", () => {
     let admin: string
     let exchangeWrapper: ExchangeWrapperInstance
     let perpToken: PerpTokenInstance
-    let cToken: ERC20Instance
+    let cToken: IERC20Instance
     let cUSDT: string
     let balancerPool: string
     let usdt: string
-    let erc20: ERC20Instance
+    let erc20: IERC20Instance
 
     before(async () => {
         addresses = await web3.eth.getAccounts()

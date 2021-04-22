@@ -1,4 +1,4 @@
 module.exports = {
     istanbulFolder: "./coverage",
-    skipFiles: ["src/mock"],
+    skipFiles: ["src/mock", "src/legacy"],
 }

@@ -1,6 +1,7 @@
 /* eslint-disable no-console, @typescript-eslint/no-non-null-assertion */
 import { ShellString } from "shelljs"
-import { ExternalContracts, Layer, Network, Stage, SystemDeploySettings } from "../scripts/common"
+import { ExternalContracts, Layer, MigrationIndex, Network, Stage, SystemDeploySettings } from "../scripts/common"
+import { getSettingsFile } from "../scripts/path"
 import production from "./settings/production.json"
 import staging from "./settings/staging.json"
 
@@ -16,33 +17,39 @@ export class SettingsDao {
                 break
             case "test":
                 try {
-                    this.settingsCached = require("./settings/test.json")
+                    this.settingsCached = require(this.settingsFilePath)
                 } catch (e) {
+                    console.log(`can not find ${this.settingsFilePath}, generating file...`)
                     this.settingsCached = {
                         layers: {
                             layer1: {
                                 chainId: 31337,
                                 network: "localhost",
-                                version: "0",
                                 externalContracts: {
                                     foundationGovernance: "0xa230A4f6F38D904C2eA1eE95d8b2b8b7350e3d79",
+                                    rewardGovernance: "0x9FE5f5bbbD3f2172Fa370068D26185f3d82ed9aC",
                                     ambBridgeOnEth: "0xD4075FB57fCf038bFc702c915Ef9592534bED5c1",
                                     multiTokenMediatorOnEth: "0x30F693708fc604A57F1958E3CFa059F902e6d4CB",
                                     usdc: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                                    perp: "0x0078371BDeDE8aAc7DeBfFf451B74c5EDB385Af7",
                                 },
                             },
                             layer2: {
                                 chainId: 31337,
                                 network: "localhost",
-                                version: "0",
                                 externalContracts: {
-                                    foundationGovernance: "0x44883405Eb9826448d3E8eCC25889C5941E79d9b",
+                                    foundationGovernance: "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
                                     ambBridgeOnXDai: "0xc38D4991c951fE8BCE1a12bEef2046eF36b0FA4A",
                                     multiTokenMediatorOnXDai: "0xA34c65d76b997a824a5E384471bBa73b0013F5DA",
                                     usdc: "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83",
                                     arbitrageur: "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
+                                    perp: "0x0C6c3C47A1f650809B0D1048FDf9603e09473D7E",
                                 },
                             },
+                        },
+                        nextMigration: {
+                            batchIndex: 0,
+                            taskIndex: 0,
                         },
                     }
                 }
@@ -54,12 +61,7 @@ export class SettingsDao {
 
     // TODO easy to break when rename file or directory
     private get settingsFilePath(): string {
-        return `./publish/settings/${this.stage}.json`
-    }
-
-    setVersion(layerType: Layer, n: number): void {
-        this.settingsCached.layers[layerType]!.version = n.toString()
-        ShellString(JSON.stringify(this.settingsCached, null, 2)).to(this.settingsFilePath)
+        return getSettingsFile(this.stage)
     }
 
     getStage(): Stage {
@@ -70,16 +72,32 @@ export class SettingsDao {
         return this.settingsCached
     }
 
-    getVersion(layerType: Layer): number {
-        return Number(this.settingsCached.layers[layerType]!.version)
+    getNextMigration(): MigrationIndex {
+        return this.getSystemDeploySettings().nextMigration
     }
 
-    increaseVersion(layerType: Layer): void {
-        const layer = this.settingsCached.layers[layerType]!
-        const increased = Number(layer.version) + 1
-        layer.version = increased.toString()
+    resetNextMigration(): void {
+        this.settingsCached.nextMigration.batchIndex = 0
+        this.settingsCached.nextMigration.taskIndex = 0
         ShellString(JSON.stringify(this.settingsCached, null, 2)).to(this.settingsFilePath)
-        console.log(`increase ${this.stage}:${layerType} version to ${layer.version}`)
+        console.log(`reset next migration to [0, 0]`)
+    }
+
+    increaseTaskIndex(): void {
+        this.settingsCached.nextMigration.taskIndex++
+        ShellString(JSON.stringify(this.settingsCached, null, 2)).to(this.settingsFilePath)
+        console.log(`increase task index to ${this.settingsCached.nextMigration.taskIndex}`)
+    }
+
+    increaseBatchIndex(): void {
+        this.settingsCached.nextMigration.taskIndex = 0
+        this.settingsCached.nextMigration.batchIndex++
+        ShellString(JSON.stringify(this.settingsCached, null, 2)).to(this.settingsFilePath)
+        console.log(`increase batch index to ${this.settingsCached.nextMigration.batchIndex}`)
+    }
+
+    inSameLayer(): boolean {
+        return this.getChainId(Layer.Layer1) === this.getChainId(Layer.Layer2)
     }
 
     getExternalContracts(layerType: Layer): ExternalContracts {
