@@ -16,7 +16,7 @@ import {
     StakingReserveInstance,
     SupplyScheduleFakeInstance,
     TraderWalletContract,
-    TraderWalletInstance,
+    TraderWalletInstance
 } from "../../../types/truffle"
 import { ClearingHouse } from "../../../types/web3/ClearingHouse"
 import { assertionHelper } from "../../helper/assertion-plugin"
@@ -1592,252 +1592,172 @@ describe("ClearingHouse Test", () => {
 
                 await amm.setFluctuationLimitRatio(toDecimal(0.1))
 
-                // AMM after: close to 1021.8093699518 : 97.8656126482, price: 10.4409438852
-                // fluctuation: (13.225 - 10.4409438852) / 13.225 = 0.2105146401
+            // AMM after: close to 1021.8093699518 : 97.8656126482, price: 10.4409438852
+            // fluctuation: (13.225 - 10.4409438852) / 13.225 = 0.2105146401
+            await syncAmmPriceToOracle()
+            await expectRevert(
+                traderWallet1.threeLiquidations(amm.address, alice, carol, relayer),
+                "price is over fluctuation limit",
+            )
+        })
+
+        describe("liquidator front run hack", () => {
+            beforeEach(async () => {
+                await transfer(admin, carol, 1000)
+                await approve(alice, clearingHouse.address, 1000)
+                await approve(bob, clearingHouse.address, 1000)
+                await approve(carol, clearingHouse.address, 1000)
+                await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
+            })
+
+            async function makeAliceLiquidatableByShort(): Promise<void> {
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(9.09), {
+                    from: bob,
+                })
+                await forwardBlockTimestamp(15)
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(7.57), {
+                    from: alice,
+                })
+                await forwardBlockTimestamp(15)
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(7.58), {
+                    from: bob,
+                })
+                await forwardBlockTimestamp(15)
+                // remainMargin = (margin + unrealizedPnL) = 20 - 15.38 = 4.62
+                // marginRatio of alice = remainMargin / openNotional = 4.62 / 100 = 0.0462 < minMarginRatio(0.05)
+            }
+
+            async function makeAliceLiquidatableByLong(): Promise<void> {
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(0), {
+                    from: bob,
+                })
+                await forwardBlockTimestamp(15)
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(0), {
+                    from: alice,
+                })
+                await forwardBlockTimestamp(15)
+                await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
+                await forwardBlockTimestamp(15)
+                // marginRatio = (margin + unrealizedPnL) / openNotional = (20 + (-21.95)) / 100 = -0.0195 < 0.05 = minMarginRatio
+            }
+
+            it("liquidator can open position and liquidate in the next block", async () => {
+                await makeAliceLiquidatableByShort()
+
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(0), {
+                    from: carol,
+                })
+                await forwardBlockTimestamp(15)
                 await syncAmmPriceToOracle()
+                expectEvent(await clearingHouse.liquidate(amm.address, alice, { from: carol }), "PositionLiquidated")
+            })
+
+            it("can open position (short) and liquidate, but can't do anything more action in the same block", async () => {
+                await makeAliceLiquidatableByShort()
+
+                // short to make alice loss more and make insuranceFund loss more
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(0), {
+                    from: carol,
+                })
+                await syncAmmPriceToOracle()
+                await clearingHouse.liquidate(amm.address, alice, { from: carol })
                 await expectRevert(
-                    traderWallet1.threeLiquidations(amm.address, alice, carol, relayer),
-                    "price is over fluctuation limit",
+                    clearingHouse.closePosition(amm.address, toDecimal(0), { from: carol }),
+                    "only one action allowed",
                 )
             })
 
-            describe("liquidator front run hack", () => {
-                beforeEach(async () => {
-                    await transfer(admin, carol, 1000)
-                    await approve(alice, clearingHouse.address, 1000)
-                    await approve(bob, clearingHouse.address, 1000)
-                    await approve(carol, clearingHouse.address, 1000)
-                    await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
+            it("can open position (long) and liquidate, but can't do anything more action in the same block", async () => {
+                await makeAliceLiquidatableByLong()
+
+                // short to make alice loss more and make insuranceFund loss more
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(0), {
+                    from: carol,
                 })
+                await syncAmmPriceToOracle()
+                await clearingHouse.liquidate(amm.address, alice, { from: carol })
+                await expectRevert(
+                    clearingHouse.closePosition(amm.address, toDecimal(0), { from: carol }),
+                    "only one action allowed",
+                )
+            })
 
-                async function makeAliceLiquidatableByShort(): Promise<void> {
-                    await clearingHouse.openPosition(
-                        amm.address,
-                        Side.BUY,
-                        toDecimal(20),
-                        toDecimal(5),
-                        toDecimal(9.09),
-                        {
-                            from: bob,
-                        },
-                    )
-                    await forwardBlockTimestamp(15)
-                    await clearingHouse.openPosition(
-                        amm.address,
-                        Side.BUY,
-                        toDecimal(20),
-                        toDecimal(5),
-                        toDecimal(7.57),
-                        {
-                            from: alice,
-                        },
-                    )
-                    await forwardBlockTimestamp(15)
-                    await clearingHouse.openPosition(
-                        amm.address,
-                        Side.SELL,
-                        toDecimal(20),
-                        toDecimal(5),
-                        toDecimal(7.58),
-                        {
-                            from: bob,
-                        },
-                    )
-                    await forwardBlockTimestamp(15)
-                    // remainMargin = (margin + unrealizedPnL) = 20 - 15.38 = 4.62
-                    // marginRatio of alice = remainMargin / openNotional = 4.62 / 100 = 0.0462 < minMarginRatio(0.05)
-                }
+            it("can open position and liquidate, but can't do anything more action in the same block", async () => {
+                await makeAliceLiquidatableByShort()
 
-                async function makeAliceLiquidatableByLong(): Promise<void> {
-                    await clearingHouse.openPosition(
-                        amm.address,
-                        Side.SELL,
-                        toDecimal(20),
-                        toDecimal(5),
-                        toDecimal(0),
-                        {
-                            from: bob,
-                        },
-                    )
-                    await forwardBlockTimestamp(15)
-                    await clearingHouse.openPosition(
-                        amm.address,
-                        Side.SELL,
-                        toDecimal(20),
-                        toDecimal(5),
-                        toDecimal(0),
-                        {
-                            from: alice,
-                        },
-                    )
-                    await forwardBlockTimestamp(15)
-                    await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
-                    await forwardBlockTimestamp(15)
-                    // marginRatio = (margin + unrealizedPnL) / openNotional = (20 + (-21.95)) / 100 = -0.0195 < 0.05 = minMarginRatio
-                }
-
-                it("liquidator can open position and liquidate in the next block", async () => {
-                    await makeAliceLiquidatableByShort()
-
-                    await clearingHouse.openPosition(
-                        amm.address,
-                        Side.SELL,
-                        toDecimal(20),
-                        toDecimal(5),
-                        toDecimal(0),
-                        {
-                            from: carol,
-                        },
-                    )
-                    await forwardBlockTimestamp(15)
-                    await syncAmmPriceToOracle()
-                    expectEvent(
-                        await clearingHouse.liquidate(amm.address, alice, { from: carol }),
-                        "PositionLiquidated",
-                    )
+                // open a long position, make alice loss less
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(1), toDecimal(0), {
+                    from: carol,
                 })
+                await syncAmmPriceToOracle()
+                await clearingHouse.liquidate(amm.address, alice, { from: carol })
+                await expectRevert(
+                    clearingHouse.closePosition(amm.address, toDecimal(0), { from: carol }),
+                    "only one action allowed",
+                )
+            })
 
-                it("can open position (short) and liquidate, but can't do anything more action in the same block", async () => {
-                    await makeAliceLiquidatableByShort()
+            it("can open position (even the same side, short), but can't do anything more action in the same block", async () => {
+                await makeAliceLiquidatableByLong()
 
-                    // short to make alice loss more and make insuranceFund loss more
-                    await clearingHouse.openPosition(
-                        amm.address,
-                        Side.SELL,
-                        toDecimal(20),
-                        toDecimal(5),
-                        toDecimal(0),
-                        {
-                            from: carol,
-                        },
-                    )
-                    await syncAmmPriceToOracle()
-                    await clearingHouse.liquidate(amm.address, alice, { from: carol })
-                    await expectRevert(
-                        clearingHouse.closePosition(amm.address, toDecimal(0), { from: carol }),
-                        "only one action allowed",
-                    )
+                // open a short position, make alice loss less
+                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(1), toDecimal(0), {
+                    from: carol,
                 })
+                await syncAmmPriceToOracle()
+                await clearingHouse.liquidate(amm.address, alice, { from: carol })
+                await expectRevert(
+                    clearingHouse.closePosition(amm.address, toDecimal(0), { from: carol }),
+                    "only one action allowed",
+                )
+            })
 
-                it("can open position (long) and liquidate, but can't do anything more action in the same block", async () => {
-                    await makeAliceLiquidatableByLong()
+            it("liquidator can't open and liquidate position in the same block, even from different msg.sender", async () => {
+                await transfer(admin, carol, 1000)
+                await approve(alice, clearingHouse.address, 1000)
+                await approve(bob, clearingHouse.address, 1000)
+                await approve(carol, clearingHouse.address, 1000)
+                await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
 
-                    // short to make alice loss more and make insuranceFund loss more
-                    await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(0), {
-                        from: carol,
-                    })
-                    await syncAmmPriceToOracle()
-                    await clearingHouse.liquidate(amm.address, alice, { from: carol })
-                    await expectRevert(
-                        clearingHouse.closePosition(amm.address, toDecimal(0), { from: carol }),
-                        "only one action allowed",
-                    )
+                traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
+                traderWallet2 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
+
+                await approve(alice, traderWallet1.address, 500)
+                await approve(alice, traderWallet2.address, 500)
+                await transfer(alice, traderWallet1.address, 500)
+                await transfer(alice, traderWallet2.address, 500)
+
+                await makeAliceLiquidatableByShort()
+                await traderWallet1.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(0), {
+                    from: bob,
                 })
+                await syncAmmPriceToOracle()
+                await traderWallet2.liquidate(amm.address, alice, { from: bob })
+                await expectRevert(traderWallet1.closePosition(amm.address, { from: bob }), "only one action allowed")
+            })
 
-                it("can open position and liquidate, but can't do anything more action in the same block", async () => {
-                    await makeAliceLiquidatableByShort()
+            it("liquidator can't open and liquidate position in the same block, even from different tx.origin", async () => {
+                await transfer(admin, carol, 1000)
+                await approve(alice, clearingHouse.address, 1000)
+                await approve(bob, clearingHouse.address, 1000)
+                await approve(carol, clearingHouse.address, 1000)
+                await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
 
-                    // open a long position, make alice loss less
-                    await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(1), toDecimal(0), {
-                        from: carol,
-                    })
-                    await syncAmmPriceToOracle()
-                    await clearingHouse.liquidate(amm.address, alice, { from: carol })
-                    await expectRevert(
-                        clearingHouse.closePosition(amm.address, toDecimal(0), { from: carol }),
-                        "only one action allowed",
-                    )
+                traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
+                traderWallet2 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
+
+                await approve(alice, traderWallet1.address, 500)
+                await approve(alice, traderWallet2.address, 500)
+                await transfer(alice, traderWallet1.address, 500)
+                await transfer(alice, traderWallet2.address, 500)
+
+                await makeAliceLiquidatableByShort()
+                await traderWallet1.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(0), {
+                    from: bob,
                 })
-
-                it("can open position (even the same side, short), but can't do anything more action in the same block", async () => {
-                    await makeAliceLiquidatableByLong()
-
-                    // open a short position, make alice loss less
-                    await clearingHouse.openPosition(
-                        amm.address,
-                        Side.SELL,
-                        toDecimal(10),
-                        toDecimal(1),
-                        toDecimal(0),
-                        {
-                            from: carol,
-                        },
-                    )
-                    await syncAmmPriceToOracle()
-                    await clearingHouse.liquidate(amm.address, alice, { from: carol })
-                    await expectRevert(
-                        clearingHouse.closePosition(amm.address, toDecimal(0), { from: carol }),
-                        "only one action allowed",
-                    )
-                })
-
-                it("liquidator can't open and liquidate position in the same block, even from different msg.sender", async () => {
-                    await transfer(admin, carol, 1000)
-                    await approve(alice, clearingHouse.address, 1000)
-                    await approve(bob, clearingHouse.address, 1000)
-                    await approve(carol, clearingHouse.address, 1000)
-                    await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
-
-                    traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
-                    traderWallet2 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
-
-                    await approve(alice, traderWallet1.address, 500)
-                    await approve(alice, traderWallet2.address, 500)
-                    await transfer(alice, traderWallet1.address, 500)
-                    await transfer(alice, traderWallet2.address, 500)
-
-                    await makeAliceLiquidatableByShort()
-                    await traderWallet1.openPosition(
-                        amm.address,
-                        Side.SELL,
-                        toDecimal(20),
-                        toDecimal(5),
-                        toDecimal(0),
-                        {
-                            from: bob,
-                        },
-                    )
-                    await syncAmmPriceToOracle()
-                    await traderWallet2.liquidate(amm.address, alice, { from: bob })
-                    await expectRevert(
-                        traderWallet1.closePosition(amm.address, { from: bob }),
-                        "only one action allowed",
-                    )
-                })
-
-                it("liquidator can't open and liquidate position in the same block, even from different tx.origin", async () => {
-                    await transfer(admin, carol, 1000)
-                    await approve(alice, clearingHouse.address, 1000)
-                    await approve(bob, clearingHouse.address, 1000)
-                    await approve(carol, clearingHouse.address, 1000)
-                    await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
-
-                    traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
-                    traderWallet2 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
-
-                    await approve(alice, traderWallet1.address, 500)
-                    await approve(alice, traderWallet2.address, 500)
-                    await transfer(alice, traderWallet1.address, 500)
-                    await transfer(alice, traderWallet2.address, 500)
-
-                    await makeAliceLiquidatableByShort()
-                    await traderWallet1.openPosition(
-                        amm.address,
-                        Side.SELL,
-                        toDecimal(20),
-                        toDecimal(5),
-                        toDecimal(0),
-                        {
-                            from: bob,
-                        },
-                    )
-                    await syncAmmPriceToOracle()
-                    await traderWallet2.liquidate(amm.address, alice, { from: carol })
-                    await expectRevert(
-                        traderWallet1.closePosition(amm.address, { from: admin }),
-                        "only one action allowed",
-                    )
-                })
+                await syncAmmPriceToOracle()
+                await traderWallet2.liquidate(amm.address, alice, { from: carol })
+                await expectRevert(traderWallet1.closePosition(amm.address, { from: admin }), "only one action allowed")
             })
         })
     })
