@@ -5,7 +5,7 @@ import hre, { ethers, upgrades } from "hardhat"
 import { TASK_COMPILE } from "hardhat/builtin-tasks/task-names"
 import { SRC_DIR } from "../../constants"
 import { flatten } from "../../scripts/flatten"
-import { ClearingHouse } from "../../types/ethers"
+import { ClearingHouse, InsuranceFund, MetaTxGateway } from "../../types/ethers"
 import { getImplementation } from "../contract/DeployUtil"
 import { AmmInstanceName, ContractFullyQualifiedName, ContractName } from "../ContractName"
 import { MigrationContext, MigrationDefinition } from "../Migration"
@@ -54,7 +54,21 @@ const migration: MigrationDefinition = {
                 const clearingHouseContract = await context.factory.create<ClearingHouse>(
                     ContractFullyQualifiedName.FlattenClearingHouse,
                 )
-                newImplContractAddr = await clearingHouseContract.prepareUpgradeContractLegacy()
+                // in normal case we don't need to do anything to the implementation contract
+                const insuranceFundContract = context.factory.create<InsuranceFund>(
+                    ContractFullyQualifiedName.FlattenInsuranceFund,
+                )
+                const metaTxGatewayContract = context.factory.create<MetaTxGateway>(
+                    ContractFullyQualifiedName.FlattenMetaTxGateway,
+                )
+
+                newImplContractAddr = await clearingHouseContract.prepareUpgradeContract(
+                    context.deployConfig.initMarginRequirement,
+                    context.deployConfig.maintenanceMarginRequirement,
+                    context.deployConfig.liquidationFeeRatio,
+                    insuranceFundContract.address!,
+                    metaTxGatewayContract.address!,
+                )
             },
             async (): Promise<void> => {
                 console.info("do upgrade")
