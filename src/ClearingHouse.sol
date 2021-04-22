@@ -102,7 +102,7 @@ contract ClearingHouse is
     //
 
     enum Side { BUY, SELL }
-    enum PnlCalcOption { SPOT_PRICE, TWAP, ORACLE }
+    enum PnlCalcOption { SPOT_PRICE, TWAP }
 
     /// @notice This struct records personal position information
     /// @param size denominated in amm.baseAsset
@@ -558,16 +558,9 @@ contract ClearingHouse is
      * @param _trader trader address
      */
     function liquidate(IAmm _amm, address _trader) external nonReentrant() {
+        // check conditions
         requireAmm(_amm, true);
         SignedDecimal.signedDecimal memory marginRatio = getMarginRatio(_amm, _trader);
-
-        // including oracle-based margin ratio as reference price when amm is over spread limit
-        if (_amm.isOverSpreadLimit()) {
-            SignedDecimal.signedDecimal memory marginRatioBasedOnOracle = _getMarginRatioBasedOnOracle(_amm, _trader);
-            if (marginRatioBasedOnOracle.subD(marginRatio).toInt() > 0) {
-                marginRatio = marginRatioBasedOnOracle;
-            }
-        }
         requireMoreMarginRatio(marginRatio, maintenanceMarginRatio, false);
 
         // update states
@@ -731,30 +724,10 @@ contract ClearingHouse is
             spotPricePnl.toInt() > twapPricePnl.toInt()
                 ? (spotPricePnl, spotPositionNotional)
                 : (twapPricePnl, twapPositionNotional);
-        return _getMarginRatio(_amm, position, unrealizedPnl, positionNotional);
-    }
 
-    function _getMarginRatioBasedOnOracle(IAmm _amm, address _trader)
-        internal
-        view
-        returns (SignedDecimal.signedDecimal memory)
-    {
-        Position memory position = getPosition(_amm, _trader);
-        requirePositionSize(position.size);
-        (Decimal.decimal memory oraclePositionNotional, SignedDecimal.signedDecimal memory oraclePricePnl) =
-            (getPositionNotionalAndUnrealizedPnl(_amm, _trader, PnlCalcOption.ORACLE));
-        return _getMarginRatio(_amm, position, oraclePricePnl, oraclePositionNotional);
-    }
-
-    function _getMarginRatio(
-        IAmm _amm,
-        Position memory _position,
-        SignedDecimal.signedDecimal memory _unrealizedPnl,
-        Decimal.decimal memory _positionNotional
-    ) internal view returns (SignedDecimal.signedDecimal memory) {
         (Decimal.decimal memory remainMargin, Decimal.decimal memory badDebt, , ) =
-            calcRemainMarginWithFundingPayment(_amm, _position, _unrealizedPnl);
-        return MixedDecimal.fromDecimal(remainMargin).subD(badDebt).divD(_positionNotional);
+            calcRemainMarginWithFundingPayment(_amm, position, unrealizedPnl);
+        return MixedDecimal.fromDecimal(remainMargin).subD(badDebt).divD(positionNotional);
     }
 
     /**
@@ -793,11 +766,8 @@ contract ClearingHouse is
             IAmm.Dir dir = isShortPosition ? IAmm.Dir.REMOVE_FROM_AMM : IAmm.Dir.ADD_TO_AMM;
             if (_pnlCalcOption == PnlCalcOption.TWAP) {
                 positionNotional = _amm.getOutputTwap(dir, positionSizeAbs);
-            } else if (_pnlCalcOption == PnlCalcOption.SPOT_PRICE) {
-                positionNotional = _amm.getOutputPrice(dir, positionSizeAbs);
             } else {
-                Decimal.decimal memory oraclePrice = _amm.getUnderlyingPrice();
-                positionNotional = positionSizeAbs.mulD(oraclePrice);
+                positionNotional = _amm.getOutputPrice(dir, positionSizeAbs);
             }
             // unrealizedPnlForLongPosition = positionNotional - openNotional
             // unrealizedPnlForShortPosition = positionNotionalWhenBorrowed - positionNotionalWhenReturned =

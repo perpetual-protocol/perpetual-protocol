@@ -916,37 +916,6 @@ describe("Amm Unit Test", () => {
         })
     })
 
-    describe("isOverSpreadLimit", () => {
-        beforeEach(async () => {
-            await amm.setOpen(true)
-            expect(await amm.getSpotPrice()).eq(toFullDigit(10))
-        })
-
-        it("will fail if price feed return 0", async () => {
-            await priceFeed.setPrice(0)
-            await expectRevert(amm.isOverSpreadLimit(), "underlying price is 0")
-        })
-
-        it("is true if abs((marketPrice-oraclePrice)/oraclePrice) >= 10%", async () => {
-            // (10-12)/12=0.16
-            await priceFeed.setPrice(toFullDigit(12))
-            expect(await amm.isOverSpreadLimit()).eq(true)
-
-            // (10-8)/8=0.25
-            await priceFeed.setPrice(toFullDigit(8))
-            expect(await amm.isOverSpreadLimit()).eq(true)
-        })
-
-        it("is false if abs((marketPrice-oraclePrice)/oraclePrice) < 10%", async () => {
-            // (10-10.5)/10.5=-0.04
-            await priceFeed.setPrice(toFullDigit(10.5))
-            expect(await amm.isOverSpreadLimit()).eq(false)
-            // (10-9.5)/9.5=0.05
-            await priceFeed.setPrice(toFullDigit(9.5))
-            expect(await amm.isOverSpreadLimit()).eq(false)
-        })
-    })
-
     describe("AmmCalculator", () => {
         beforeEach(async () => {
             await amm.setOpen(true)
