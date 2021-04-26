@@ -18,7 +18,7 @@
       "chainId": 100,
       "network": "xdai",
       "externalContracts": {
-        "foundationGovernance": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
+        "foundationGovernance": "0x44883405Eb9826448d3E8eCC25889C5941E79d9b",
         "arbitrageur": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
         "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
         "ambBridgeOnXDai": "0xc38D4991c951fE8BCE1a12bEef2046eF36b0FA4A",
@@ -29,7 +29,7 @@
     }
   },
   "nextMigration": {
-    "batchIndex": 31,
+    "batchIndex": 33,
     "taskIndex": 0
   }
 }
