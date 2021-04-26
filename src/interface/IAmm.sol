@@ -28,14 +28,13 @@ interface IAmm {
         Dir _dir,
         Decimal.decimal calldata _quoteAssetAmount,
         Decimal.decimal calldata _baseAssetAmountLimit,
-        bool _singleTxFluctuationCheck
+        bool _canOverFluctuationLimit
     ) external returns (Decimal.decimal memory);
 
     function swapOutput(
         Dir _dir,
         Decimal.decimal calldata _baseAssetAmount,
-        Decimal.decimal calldata _quoteAssetAmountLimit,
-        bool _singleTxFluctuationCheck
+        Decimal.decimal calldata _quoteAssetAmountLimit
     ) external returns (Decimal.decimal memory);
 
     function shutdown() external;

@@ -213,6 +213,9 @@ describe("ClearingHouse Test", () => {
         })
 
         it("is 0 when everyone close position", async () => {
+            // avoid two closing positions from exceeding the fluctuation limit
+            await amm.setFluctuationLimitRatio(toDecimal(0.8))
+
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(250), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
@@ -1400,7 +1403,7 @@ describe("ClearingHouse Test", () => {
                 expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 100).to.eq(1084.78)
             })
 
-            it("liquidate complete position if the price impact of single tx exceeds the fluctuation limit ", async () => {
+            it("liquidate one complete position with the price impact exceeding the fluctuation limit ", async () => {
                 await amm.setFluctuationLimitRatio(toDecimal(0.147))
                 await clearingHouse.setPartialLiquidationRatio(toDecimal(1))
 
@@ -1425,18 +1428,18 @@ describe("ClearingHouse Test", () => {
                 expectEvent(await clearingHouse.liquidate(amm.address, alice, { from: carol }), "PositionLiquidated")
             })
 
-            it("liquidate partial position if the price impact of single tx exceeds the fluctuation limit ", async () => {
+            it("partially liquidate one position with the price impact exceeding the fluctuation limit ", async () => {
                 await clearingHouse.setPartialLiquidationRatio(toDecimal(0.5))
 
                 await approve(alice, clearingHouse.address, 100)
                 await approve(bob, clearingHouse.address, 100)
                 await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
 
-                // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100 DAI
+                // bob pays 20 margin * 5x quote to get 9.0909090909 base
                 // AMM after: 1100 : 90.9090909091
                 await openSmallPositions(bob, Side.BUY, toDecimal(4), toDecimal(5), 5)
 
-                // when alice create a 20 margin * 5x long position when 7.5757575758 quoteAsset = 100 DAI
+                // alice pays 20 margin * 5x quote to get 7.5757575758 base
                 // AMM after: 1200 : 83.3333333333
                 await openSmallPositions(alice, Side.BUY, toDecimal(4), toDecimal(5), 5)
 
@@ -1462,9 +1465,55 @@ describe("ClearingHouse Test", () => {
                 expectEvent(await clearingHouse.liquidate(amm.address, alice, { from: carol }), "PositionLiquidated")
             })
 
-            it("force error, liquidate two positions while exceeding the fluctuation limit", async () => {
+            it("force error, partially liquidate two positions while exceeding the fluctuation limit", async () => {
                 await amm.setFluctuationLimitRatio(toDecimal(0.147))
-                // trigger full liquidation
+                await clearingHouse.setPartialLiquidationRatio(toDecimal(0.5))
+                traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
+
+                await transfer(admin, traderWallet1.address, 1000)
+                await transfer(admin, bob, 1000)
+                await transfer(admin, carol, 1000)
+                await approve(alice, clearingHouse.address, 100)
+                await approve(bob, clearingHouse.address, 100)
+                await approve(carol, clearingHouse.address, 100)
+                // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
+                await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
+
+                // bob pays 20 margin * 5x quote to get 9.0909090909 base
+                // AMM after: 1100 : 90.9090909091, price: 12.1
+                await openSmallPositions(bob, Side.BUY, toDecimal(10), toDecimal(5), 2)
+
+                // carol pays 10 margin * 5x quote to get 3.95256917 base
+                // AMM after: 1150 : 86.9565217391
+                await openSmallPositions(carol, Side.BUY, toDecimal(5), toDecimal(5), 2)
+
+                // alice pays 10 margin * 5x quote to get 3.6231884391 base
+                // alice + carol base: 7.5757576091
+                // AMM after: 1200 : 83.3333333, price: 14.4
+                await openSmallPositions(alice, Side.BUY, toDecimal(5), toDecimal(5), 2)
+
+                // AMM after: 1100 : 90.9090909091, price: 12.1
+                await openSmallPositions(bob, Side.SELL, toDecimal(10), toDecimal(5), 2)
+
+                // for verifying that even though the first tx can exceed the fluctuation limit,
+                // there cannot be a second tx after it
+                await amm.setFluctuationLimitRatio(toDecimal(0.038))
+
+                // half of alice's base asset: 3.6231884391 / 2 = 1.8115942196
+                // AMM after: 1078.5079927008 : 92.7206851287, price: 11.6317949032
+                // fluctuation: (12.1 - 11.63) / 12.1 = 0.03884297521
+                // half of carol's base asset: 3.95256917 / 2 = 1.976284585
+                // AMM after: 1055.9999998134 : 94.6969697137, price: 11.1513599961
+                // fluctuation: (11.63 - 11.15) / 11.63 = 0.04127257094
+                await expectRevert(
+                    traderWallet1.twoLiquidations(amm.address, alice, carol),
+                    "price is already over fluctuation limit",
+                )
+            })
+
+            it("force error, liquidate two complete positions while exceeding the fluctuation limit", async () => {
+                await amm.setFluctuationLimitRatio(toDecimal(0.147))
+                // full liquidation
                 await clearingHouse.setPartialLiquidationRatio(toDecimal(1))
                 traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
 
@@ -1477,20 +1526,23 @@ describe("ClearingHouse Test", () => {
                 // maintenance margin ratio should set 20%, but due to rounding error, below margin ratio becomes 19.99..9%
                 await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.199), { from: admin })
 
-                // when bob create a 20 margin * 5x long position when 9.0909090909 quoteAsset = 100
+                // bob pays 20 margin * 5x quote to get 9.0909090909 base
                 // AMM after: 1100 : 90.9090909091, price: 12.1
                 await openSmallPositions(bob, Side.BUY, toDecimal(10), toDecimal(5), 2)
 
-                // when carol create a 10 margin * 5x long position when 7.5757575758 quoteAsset = 100
-                // AMM after: 1150 : 86.9565
+                // carol pays 10 margin * 5x quote to get 3.95256917 base
+                // AMM after: 1150 : 86.9565217391
                 await openSmallPositions(carol, Side.BUY, toDecimal(5), toDecimal(5), 2)
 
-                // when alice create a 10 margin * 5x long position
+                // alice pays 10 margin * 5x quote to get 3.6231884391 base
+                // alice + carol base: 7.5757576091
                 // AMM after: 1200 : 83.3333333, price: 14.4
                 await openSmallPositions(alice, Side.BUY, toDecimal(5), toDecimal(5), 2)
 
                 // AMM after: 1100 : 90.9090909091, price: 12.1
                 await openSmallPositions(bob, Side.SELL, toDecimal(10), toDecimal(5), 2)
+
+                await amm.setFluctuationLimitRatio(toDecimal(0.075))
 
                 // AMM after: 1015.384615384615384672 : 98.484848484848484854, price: 10.31
                 // fluctuation: (12.1 - 11.19) / 12.1 = 0.07520661157
@@ -1499,7 +1551,7 @@ describe("ClearingHouse Test", () => {
                 await syncAmmPriceToOracle()
                 await expectRevert(
                     traderWallet1.twoLiquidations(amm.address, alice, carol),
-                    "price is over fluctuation limit",
+                    "price is already over fluctuation limit",
                 )
             })
 
@@ -1538,12 +1590,14 @@ describe("ClearingHouse Test", () => {
                 // AMM after: 1150 : 86.9565, price: 13.225
                 await openSmallPositions(bob, Side.SELL, toDecimal(4), toDecimal(5), 5)
 
+                await amm.setFluctuationLimitRatio(toDecimal(0.1))
+
                 // AMM after: close to 1021.8093699518 : 97.8656126482, price: 10.4409438852
                 // fluctuation: (13.225 - 10.4409438852) / 13.225 = 0.2105146401
                 await syncAmmPriceToOracle()
                 await expectRevert(
                     traderWallet1.threeLiquidations(amm.address, alice, carol, relayer),
-                    "price is over fluctuation limit",
+                    "price is already over fluctuation limit",
                 )
             })
 
@@ -1825,110 +1879,210 @@ describe("ClearingHouse Test", () => {
         })
     })
 
-    describe("close position slippage limit", () => {
-        beforeEach(async () => {
-            await forwardBlockTimestamp(900)
+    describe("fluctuation limit, except liquidation", () => {
+        it("force error, open position/internalIncrease exceeds the fluctuation limit", async () => {
+            await approve(alice, clearingHouse.address, 100)
+            await amm.setFluctuationLimitRatio(toDecimal(0.2))
+
+            // alice pays 20 margin * 5x long quote when 9.0909091 base
+            // AMM after: 1100 : 90.9090909, price: 12.1000000012
+            await expectRevert(
+                clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(9), {
+                    from: alice,
+                }),
+                "price is over fluctuation limit",
+            )
         })
 
-        // Case 1
-        it("closePosition, originally long, (amount should pay = 118.03279) at the limit of min quote amount = 118", async () => {
+        it("force error, reduce position exceeds the fluctuation limit", async () => {
+            await approve(alice, clearingHouse.address, 500)
+            await amm.setFluctuationLimitRatio(toDecimal(1))
+
+            // alice pays 250 margin * 1x long to get 20 base
+            // AMM after: 1250 : 80, price: 15.625
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(250), toDecimal(1), toDecimal(0), {
+                from: alice,
+            })
+
+            await amm.setFluctuationLimitRatio(toDecimal(0.078))
+            // AMM after: 1200 : 83.3333333333, price: 14.4
+            // price fluctuation: (15.625 - 14.4) / 15.625 = 0.0784
+            await expectRevert(
+                clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(50), toDecimal(1), toDecimal(0), {
+                    from: alice,
+                }),
+                "price is over fluctuation limit",
+            )
+        })
+    })
+
+    describe("close position limit", () => {
+        it("force error, exceeding fluctuation limit twice in the same block", async () => {
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
 
-            // when bob create a 20 margin * 5x short position when 9.0909091 quoteAsset = 100 DAI
-            // AMM after: 1100 : 90.9090909
+            // when bob create a 20 margin * 5x long position when 9.0909091 quoteAsset = 100 DAI
+            // AMM after: 1100 : 90.9090909, price: 12.1000000012
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(9), {
                 from: bob,
             })
 
-            // when alice create a 20 margin * 5x short position when 7.5757609 quoteAsset = 100 DAI
-            // AMM after: 1200 : 83.3333333
-            await forwardBlockTimestamp(15)
-            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(7.5), {
-                from: alice,
-            })
-
-            // when bob close his position
-            // AMM after: 1081.96721 : 92.4242424
-            await forwardBlockTimestamp(15)
-            await clearingHouse.closePosition(amm.address, toDecimal(118), { from: bob })
-
-            const quoteAssetReserve = await amm.quoteAssetReserve()
-            const baseAssetReserve = await amm.baseAssetReserve()
-            expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 100).to.eq(1081.96)
-            expect(parseFloat(baseAssetReserve.toString().substr(0, 6)) / 10000).to.eq(92.4242)
-        })
-
-        // Case 2
-        it("closePosition, originally short, (amount should pay = 78.048) at the limit of max quote amount = 79", async () => {
-            await approve(alice, clearingHouse.address, 100)
-            await approve(bob, clearingHouse.address, 100)
-
-            // when bob create a 20 margin * 5x short position when 11.1111111111 quoteAsset = 100 DAI
-            // AMM after: 900 : 111.1111111111
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(11.12), {
-                from: bob,
-            })
-
-            // when alice create a 20 margin * 5x short position when 13.8888888889 quoteAsset = 100 DAI
-            // AMM after: 800 : 125
-            await forwardBlockTimestamp(15)
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(13.89), {
-                from: alice,
-            })
-
-            // when bob close his position
-            // AMM after: 878.0487804877 : 113.8888888889
-            await forwardBlockTimestamp(15)
-            await clearingHouse.closePosition(amm.address, toDecimal(79), { from: bob })
-
-            const quoteAssetReserve = await amm.quoteAssetReserve()
-            const baseAssetReserve = await amm.baseAssetReserve()
-            expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 1000).to.eq(878.048)
-            expect(parseFloat(baseAssetReserve.toString().substr(0, 6)) / 1000).to.eq(113.888)
-        })
-
-        // expectRevert section
-        // Case 1
-        it("force error, closePosition, originally long, less than min quote amount = 119", async () => {
-            await approve(alice, clearingHouse.address, 100)
-            await approve(bob, clearingHouse.address, 100)
-
-            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(9), {
-                from: bob,
-            })
-
+            // when alice create a 20 margin * 5x long position when 7.5757609 quoteAsset = 100 DAI
+            // AMM after: 1200 : 83.3333333, price: 14.4000000058
             await forwardBlockTimestamp(15)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(7.5), {
                 from: alice,
             })
 
             await forwardBlockTimestamp(15)
+            // set 0.15 here to avoid the above opening positions from failing
+            await amm.setFluctuationLimitRatio(toDecimal(0.15))
+
+            // after alice closes her position, price: 12.1000000012
+            // price fluctuation: (14.4000000058 - 12.1000000012) / 14.4000000058 = 0.1597222225
+            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
+
+            // after bob closes his position, price: 10
+            // price fluctuation: (12.1000000012 - 10) / 12.1000000012 = 0.1735537191
             await expectRevert(
-                clearingHouse.closePosition(amm.address, toDecimal(119), { from: bob }),
-                "Less than minimal quote token",
+                clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob }),
+                "price is already over fluctuation limit",
             )
         })
 
-        // Case 2
-        it("force error, closePosition, originally short, more than max quote amount = 78", async () => {
-            await approve(alice, clearingHouse.address, 100)
-            await approve(bob, clearingHouse.address, 100)
-
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(11.12), {
-                from: bob,
+        describe("slippage limit", () => {
+            beforeEach(async () => {
+                await forwardBlockTimestamp(900)
             })
 
-            await forwardBlockTimestamp(15)
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(13.89), {
-                from: alice,
+            // Case 1
+            it("closePosition, originally long, (amount should pay = 118.03279) at the limit of min quote amount = 118", async () => {
+                await approve(alice, clearingHouse.address, 100)
+                await approve(bob, clearingHouse.address, 100)
+
+                // when bob create a 20 margin * 5x short position when 9.0909091 quoteAsset = 100 DAI
+                // AMM after: 1100 : 90.9090909
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(9), {
+                    from: bob,
+                })
+
+                // when alice create a 20 margin * 5x short position when 7.5757609 quoteAsset = 100 DAI
+                // AMM after: 1200 : 83.3333333
+                await forwardBlockTimestamp(15)
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(7.5), {
+                    from: alice,
+                })
+
+                // when bob close his position
+                // AMM after: 1081.96721 : 92.4242424
+                await forwardBlockTimestamp(15)
+                await clearingHouse.closePosition(amm.address, toDecimal(118), { from: bob })
+
+                const quoteAssetReserve = await amm.quoteAssetReserve()
+                const baseAssetReserve = await amm.baseAssetReserve()
+                expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 100).to.eq(1081.96)
+                expect(parseFloat(baseAssetReserve.toString().substr(0, 6)) / 10000).to.eq(92.4242)
             })
 
-            await forwardBlockTimestamp(15)
-            await expectRevert(
-                clearingHouse.closePosition(amm.address, toDecimal(78), { from: bob }),
-                "More than maximal quote token",
-            )
+            // Case 2
+            it("closePosition, originally short, (amount should pay = 78.048) at the limit of max quote amount = 79", async () => {
+                await approve(alice, clearingHouse.address, 100)
+                await approve(bob, clearingHouse.address, 100)
+
+                // when bob create a 20 margin * 5x short position when 11.1111111111 quoteAsset = 100 DAI
+                // AMM after: 900 : 111.1111111111
+                await clearingHouse.openPosition(
+                    amm.address,
+                    Side.SELL,
+                    toDecimal(20),
+                    toDecimal(5),
+                    toDecimal(11.12),
+                    {
+                        from: bob,
+                    },
+                )
+
+                // when alice create a 20 margin * 5x short position when 13.8888888889 quoteAsset = 100 DAI
+                // AMM after: 800 : 125
+                await forwardBlockTimestamp(15)
+                await clearingHouse.openPosition(
+                    amm.address,
+                    Side.SELL,
+                    toDecimal(20),
+                    toDecimal(5),
+                    toDecimal(13.89),
+                    {
+                        from: alice,
+                    },
+                )
+
+                // when bob close his position
+                // AMM after: 878.0487804877 : 113.8888888889
+                await forwardBlockTimestamp(15)
+                await clearingHouse.closePosition(amm.address, toDecimal(79), { from: bob })
+
+                const quoteAssetReserve = await amm.quoteAssetReserve()
+                const baseAssetReserve = await amm.baseAssetReserve()
+                expect(parseFloat(quoteAssetReserve.toString().substr(0, 6)) / 1000).to.eq(878.048)
+                expect(parseFloat(baseAssetReserve.toString().substr(0, 6)) / 1000).to.eq(113.888)
+            })
+
+            // expectRevert section
+            // Case 1
+            it("force error, closePosition, originally long, less than min quote amount = 119", async () => {
+                await approve(alice, clearingHouse.address, 100)
+                await approve(bob, clearingHouse.address, 100)
+
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(9), {
+                    from: bob,
+                })
+
+                await forwardBlockTimestamp(15)
+                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(5), toDecimal(7.5), {
+                    from: alice,
+                })
+
+                await forwardBlockTimestamp(15)
+                await expectRevert(
+                    clearingHouse.closePosition(amm.address, toDecimal(119), { from: bob }),
+                    "Less than minimal quote token",
+                )
+            })
+
+            // Case 2
+            it("force error, closePosition, originally short, more than max quote amount = 78", async () => {
+                await approve(alice, clearingHouse.address, 100)
+                await approve(bob, clearingHouse.address, 100)
+
+                await clearingHouse.openPosition(
+                    amm.address,
+                    Side.SELL,
+                    toDecimal(20),
+                    toDecimal(5),
+                    toDecimal(11.12),
+                    {
+                        from: bob,
+                    },
+                )
+
+                await forwardBlockTimestamp(15)
+                await clearingHouse.openPosition(
+                    amm.address,
+                    Side.SELL,
+                    toDecimal(20),
+                    toDecimal(5),
+                    toDecimal(13.89),
+                    {
+                        from: alice,
+                    },
+                )
+
+                await forwardBlockTimestamp(15)
+                await expectRevert(
+                    clearingHouse.closePosition(amm.address, toDecimal(78), { from: bob }),
+                    "More than maximal quote token",
+                )
+            })
         })
     })
 
@@ -2129,6 +2283,9 @@ describe("ClearingHouse Test", () => {
         })
 
         it("close then liquidate", async () => {
+            // avoid two actions from exceeding the fluctuation limit
+            await amm.setFluctuationLimitRatio(toDecimal(0.5))
+
             await makeLiquidatableByShort(alice)
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(1), toDecimal(0), {
                 from: bob,
@@ -2139,9 +2296,12 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.liquidate(amm.address, alice)
         })
 
-        it("failed when close then liquidate then open", async () => {
+        it("force error, close then liquidate then open", async () => {
+            // avoid actions from exceeding the fluctuation limit
+            await amm.setFluctuationLimitRatio(toDecimal(0.5))
+
             await makeLiquidatableByShort(alice)
-            await traderWallet1.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(5), toDecimal(0))
+            await traderWallet1.openPosition(amm.address, Side.SELL, toDecimal(5), toDecimal(1), toDecimal(0))
             await forwardBlockTimestamp(15)
             await traderWallet1.closePosition(amm.address)
             await syncAmmPriceToOracle()
