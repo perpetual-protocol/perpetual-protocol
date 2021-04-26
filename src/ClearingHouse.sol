@@ -540,9 +540,37 @@ contract ClearingHouse is
         // update position
         address trader = _msgSender();
         adjustPositionForLiquidityChanged(_amm, trader);
-        PositionResp memory positionResp = internalClosePosition(_amm, trader, _quoteAssetAmountLimit);
 
+        PositionResp memory positionResp;
         {
+            Position memory position = getPosition(_amm, trader);
+            // if it is long position, close a position means short it(which means base dir is ADD_TO_AMM) and vice versa
+            IAmm.Dir dirOfBase = position.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM;
+
+            // check if this position exceed fluctuation limit
+            // if over fluctuation limit, then close partial position. Otherwise close all.
+            // if partialLiquidationRatio is 1, then close whole position
+            if (
+                _amm.isOverFluctuationLimit(dirOfBase, position.size.abs()) &&
+                partialLiquidationRatio.cmp(Decimal.one()) < 0
+            ) {
+                Decimal.decimal memory partiallyClosedPositionNotional =
+                    _amm.getOutputPrice(dirOfBase, position.size.mulD(partialLiquidationRatio).abs());
+
+                positionResp = openReversePosition(
+                    _amm,
+                    position.size.toInt() > 0 ? Side.SELL : Side.BUY,
+                    trader,
+                    partiallyClosedPositionNotional,
+                    Decimal.one(),
+                    Decimal.zero(),
+                    true
+                );
+                setPosition(_amm, trader, positionResp.position);
+            } else {
+                positionResp = internalClosePosition(_amm, trader, _quoteAssetAmountLimit);
+            }
+
             // add scope for stack too deep error
             // transfer the actual token from trader and vault
             IERC20 quoteToken = _amm.quoteAsset();
@@ -562,13 +590,13 @@ contract ClearingHouse is
         emit PositionChanged(
             trader,
             address(_amm),
-            0, // margin
+            positionResp.position.margin.toUint(),
             positionResp.exchangedQuoteAssetAmount.toUint(),
             positionResp.exchangedPositionSize.toInt(),
             transferredFee.toUint(),
             positionResp.position.size.toInt(),
             positionResp.realizedPnl.toInt(),
-            0, // unrealizedPnl
+            positionResp.unrealizedPnlAfter.toInt(),
             positionResp.badDebt.toUint(),
             0,
             spotPrice,

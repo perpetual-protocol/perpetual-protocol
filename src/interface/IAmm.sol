@@ -50,6 +50,11 @@ interface IAmm {
     // VIEW
     //
 
+    function isOverFluctuationLimit(Dir _dirOfBase, Decimal.decimal memory _baseAssetAmount)
+        external
+        view
+        returns (bool);
+
     function calcBaseAssetAfterLiquidityMigration(
         SignedDecimal.signedDecimal memory _baseAssetAmount,
         Decimal.decimal memory _fromQuoteReserve,
