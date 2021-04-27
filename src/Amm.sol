@@ -239,7 +239,7 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
     }
 
     /**
-     * @notice swap your base asset to quote asset; the impact of the price can be restricted with fluctuationLimitRatio
+     * @notice swap your base asset to quote asset; NOTE it is only used during close/liquidate positions so it always allows going over fluctuation limit
      * @dev only clearingHouse can call this function
      * @param _dirOfBase ADD_TO_AMM for short, REMOVE_FROM_AMM for long, opposite direction from swapInput
      * @param _baseAssetAmount base asset amount
@@ -770,6 +770,8 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             }
         }
 
+        // as mentioned in swapOutput(), it always allows going over fluctuation limit because
+        // it is only used by close/liquidate positions
         updateReserve(dirOfQuote, quoteAssetAmount, _baseAssetAmount, true);
         emit SwapOutput(_dirOfBase, quoteAssetAmount.toUint(), _baseAssetAmount.toUint());
         return quoteAssetAmount;
