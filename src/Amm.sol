@@ -442,11 +442,11 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
         (Decimal.decimal memory upperLimit, Decimal.decimal memory lowerLimit) = getPriceBoundariesOfLastBlock();
 
-        Decimal.decimal memory quoteAssetBack = getOutputPrice(_dirOfBase, _baseAssetAmount);
+        Decimal.decimal memory quoteAssetExchanged = getOutputPrice(_dirOfBase, _baseAssetAmount);
         Decimal.decimal memory price =
             (_dirOfBase == Dir.REMOVE_FROM_AMM)
-                ? quoteAssetReserve.addD(quoteAssetBack).divD(baseAssetReserve.subD(_baseAssetAmount))
-                : quoteAssetReserve.subD(quoteAssetBack).divD(baseAssetReserve.addD(_baseAssetAmount));
+                ? quoteAssetReserve.addD(quoteAssetExchanged).divD(baseAssetReserve.subD(_baseAssetAmount))
+                : quoteAssetReserve.subD(quoteAssetExchanged).divD(baseAssetReserve.addD(_baseAssetAmount));
 
         if (price.cmp(upperLimit) <= 0 && price.cmp(lowerLimit) >= 0) {
             return false;
