@@ -1048,7 +1048,7 @@ contract ClearingHouse is
     ) internal returns (PositionResp memory positionResp) {
         // new position size is larger than or equal to the old position size
         // so either close or close then open a larger position
-        PositionResp memory closePositionResp = internalClosePosition(_amm, _msgSender(), Decimal.zero());
+        PositionResp memory closePositionResp = internalClosePosition(_amm, _trader, Decimal.zero());
 
         // the old position is underwater. trader should close a position first
         require(closePositionResp.badDebt.toUint() == 0, "reduce an underwater position");
