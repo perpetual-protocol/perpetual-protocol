@@ -7,6 +7,9 @@ on:
       - master
       - release/*
 
+permissions:
+    pull-requests: read|write
+
 jobs:
   build:
     name: Hotfix PR back to develop
