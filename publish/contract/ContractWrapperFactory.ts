@@ -46,7 +46,8 @@ export class ContractWrapperFactory {
         ammFullyQualifiedContractName:
             | ContractFullyQualifiedName.Amm
             | ContractFullyQualifiedName.AmmV1
-            | ContractFullyQualifiedName.FlattenAmm,
+            | ContractFullyQualifiedName.FlattenAmm
+            | ContractFullyQualifiedName.FlattenAmmUnderClearingHouse,
     ): AmmContractWrapper {
         return new AmmContractWrapper(
             this.layerType,

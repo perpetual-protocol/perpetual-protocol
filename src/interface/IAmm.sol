@@ -27,14 +27,14 @@ interface IAmm {
     function swapInput(
         Dir _dir,
         Decimal.decimal calldata _quoteAssetAmount,
-        Decimal.decimal calldata _baseAssetAmountLimit
+        Decimal.decimal calldata _baseAssetAmountLimit,
+        bool _canOverFluctuationLimit
     ) external returns (Decimal.decimal memory);
 
     function swapOutput(
         Dir _dir,
         Decimal.decimal calldata _baseAssetAmount,
-        Decimal.decimal calldata _quoteAssetAmountLimit,
-        bool _skipFluctuationCheck
+        Decimal.decimal calldata _quoteAssetAmountLimit
     ) external returns (Decimal.decimal memory);
 
     function shutdown() external;
@@ -49,6 +49,11 @@ interface IAmm {
     //
     // VIEW
     //
+
+    function isOverFluctuationLimit(Dir _dirOfBase, Decimal.decimal memory _baseAssetAmount)
+        external
+        view
+        returns (bool);
 
     function calcBaseAssetAfterLiquidityMigration(
         SignedDecimal.signedDecimal memory _baseAssetAmount,

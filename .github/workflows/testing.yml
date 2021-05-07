@@ -39,7 +39,7 @@ jobs:
                 NODE_OPTIONS: "--max-old-space-size=4096"
 
             - name: Run contract mainnet fork upgrade tests
-              run: npm run simulate staging 0001-layer2-clearingHouse.ts
+              run: npm run simulate production 0001-layer2-clearingHouse.ts
 
             # - name: Run contract coverage
             #   run: npm run coverage

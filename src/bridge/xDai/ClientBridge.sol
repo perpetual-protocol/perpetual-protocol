@@ -16,6 +16,8 @@ contract ClientBridge is BaseBridge, BaseRelayRecipient {
 
     string public override versionRecipient;
 
+    uint256[50] private __gap;
+
     //**********************************************************//
     //  The order of above state variables can not be changed   //
     //**********************************************************//
@@ -24,7 +26,6 @@ contract ClientBridge is BaseBridge, BaseRelayRecipient {
     mapping(IERC20 => Decimal.decimal) public minWithdrawalAmountMap;
 
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
-    uint256[50] private __gap;
 
     //
     // PUBLIC

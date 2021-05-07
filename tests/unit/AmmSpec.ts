@@ -92,8 +92,8 @@ describe("Amm Unit Test", () => {
         it("can't do almost everything when it's beginning", async () => {
             const error = "amm was closed"
             await expectRevert(amm.settleFunding({ from: admin }), error)
-            await expectRevert(amm.swapInput(Dir.ADD_TO_AMM, toDecimal(600), toDecimal(0)), error)
-            await expectRevert(amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(600), toDecimal(0), true), error)
+            await expectRevert(amm.swapInput(Dir.ADD_TO_AMM, toDecimal(600), toDecimal(0), false), error)
+            await expectRevert(amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(600), toDecimal(0)), error)
         })
 
         it("can't do almost everything when it's closed", async () => {
@@ -101,8 +101,8 @@ describe("Amm Unit Test", () => {
             await amm.setOpen(false)
             const error = "amm was closed"
             await expectRevert(amm.settleFunding({ from: admin }), error)
-            await expectRevert(amm.swapInput(Dir.ADD_TO_AMM, toDecimal(600), toDecimal(0)), error)
-            await expectRevert(amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(600), toDecimal(0), true), error)
+            await expectRevert(amm.swapInput(Dir.ADD_TO_AMM, toDecimal(600), toDecimal(0), false), error)
+            await expectRevert(amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(600), toDecimal(0)), error)
         })
 
         it("force error: stranger close amm", async () => {
@@ -206,7 +206,7 @@ describe("Amm Unit Test", () => {
         })
         it("swapInput, Long ", async () => {
             // quote asset = (1000 * 100 / (1000 + 600 ))) - 100 = - 37.5
-            const receipt = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(600), toDecimal(0))
+            const receipt = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(600), toDecimal(0), false)
             expectEvent(receipt, "SwapInput", {
                 dir: Dir.ADD_TO_AMM.toString(),
                 quoteAssetAmount: toFullDigit(600),
@@ -223,7 +223,7 @@ describe("Amm Unit Test", () => {
 
         it("swapInput, short ", async () => {
             // quote asset = (1000 * 100 / (1000 - 600)) - 100 = 150
-            const receipt = await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(600), toDecimal(0))
+            const receipt = await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(600), toDecimal(0), false)
             expectEvent(receipt, "SwapInput", {
                 dir: Dir.REMOVE_FROM_AMM.toString(),
                 quoteAssetAmount: toFullDigit(600),
@@ -240,7 +240,7 @@ describe("Amm Unit Test", () => {
 
         it("swapOutput, short", async () => {
             // base asset = 1000 - (1000 * 100 / (100 + 150)) = 600
-            const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(150), toDecimal(0), true)
+            const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(150), toDecimal(0))
             expectEvent(receipt, "SwapOutput", {
                 dir: Dir.ADD_TO_AMM.toString(),
                 quoteAssetAmount: toFullDigit(600),
@@ -253,7 +253,7 @@ describe("Amm Unit Test", () => {
 
         it("swapOutput, long", async () => {
             // base asset = (1000 * 100 / (100 - 50)) - 1000 = 1000
-            const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(50), toDecimal(0), true)
+            const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(50), toDecimal(0))
             expectEvent(receipt, "SwapOutput", {
                 dir: Dir.REMOVE_FROM_AMM.toString(),
                 quoteAssetAmount: toFullDigit(1000),
@@ -267,7 +267,7 @@ describe("Amm Unit Test", () => {
 
         it("swapInput, short and then long", async () => {
             // quote asset = (1000 * 100 / (1000 - 480) - 100 = 92.30769230769...
-            const response = await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(480), toDecimal(0))
+            const response = await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(480), toDecimal(0), false)
             expectEvent(response, "SwapInput", {
                 dir: Dir.REMOVE_FROM_AMM.toString(),
                 quoteAssetAmount: toFullDigit(480),
@@ -278,7 +278,7 @@ describe("Amm Unit Test", () => {
             expect(await amm.baseAssetReserve()).to.eq("192307692307692307693")
 
             // quote asset = 192.307 - (1000 * 100 / (520 + 960)) = 30.555...
-            const response2 = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(960), toDecimal(0))
+            const response2 = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(960), toDecimal(0), false)
             expectEvent(response2, "SwapInput", {
                 dir: Dir.ADD_TO_AMM.toString(),
                 quoteAssetAmount: toFullDigit(960),
@@ -291,40 +291,40 @@ describe("Amm Unit Test", () => {
         })
 
         it("swapInput, short, long and long", async () => {
-            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(200), toDecimal(0))
+            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(200), toDecimal(0), false)
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(800))
             expect(await amm.baseAssetReserve()).to.eq(toFullDigit(125))
 
             // swapped base asset = 13.88...8
             // base reserved = 125 - 13.88...8 = 111.11...2
-            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(100), toDecimal(0))
+            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(100), toDecimal(0), false)
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(900))
             expect(await amm.baseAssetReserve()).to.eq("111111111111111111112")
 
-            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(200), toDecimal(0))
+            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(200), toDecimal(0), false)
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(1100))
             expect(await amm.baseAssetReserve()).to.eq("90909090909090909092")
         })
 
         it("swapInput, short, long and short", async () => {
-            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(200), toDecimal(25))
+            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(200), toDecimal(25), false)
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(800))
             expect(await amm.baseAssetReserve()).to.eq(toFullDigit(125))
 
             // swapped base asset = 13.88...8
             // base reserved = 125 - 13.88...8 = 111.11...2
-            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(450), toDecimal(45))
+            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(450), toDecimal(45), false)
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(1250))
             expect(await amm.baseAssetReserve()).to.eq(toFullDigit(80))
 
-            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(250), toDecimal(20))
+            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(250), toDecimal(20), false)
             expect(await amm.quoteAssetReserve()).to.eq(toFullDigit(1000))
             expect(await amm.baseAssetReserve()).to.eq(toFullDigit(100))
         })
 
         it("swapOutput, short and not dividable", async () => {
             const amount = await amm.getOutputPrice(Dir.ADD_TO_AMM, toDecimal(5))
-            const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(5), toDecimal(0), true)
+            const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(5), toDecimal(0))
             expectEvent(receipt, "SwapOutput", {
                 dir: Dir.ADD_TO_AMM.toString(),
                 quoteAssetAmount: amount.d,
@@ -334,7 +334,7 @@ describe("Amm Unit Test", () => {
 
         it("swapOutput, long and not dividable", async () => {
             const amount = await amm.getOutputPrice(Dir.REMOVE_FROM_AMM, toDecimal(5))
-            const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(5), toDecimal(0), true)
+            const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(5), toDecimal(0))
             expectEvent(receipt, "SwapOutput", {
                 dir: Dir.REMOVE_FROM_AMM.toString(),
                 quoteAssetAmount: amount.d,
@@ -345,7 +345,7 @@ describe("Amm Unit Test", () => {
         it("swapOutput, long and then short the same size, should got different base asset amount", async () => {
             // quote asset = (1000 * 100 / (100 - 10)) - 1000 = 111.111...2
             const amount1 = await amm.getOutputPrice(Dir.REMOVE_FROM_AMM, toDecimal(10))
-            await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0), true)
+            await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0))
             expect(await amm.quoteAssetReserve()).to.eq("1111111111111111111112")
             expect(await amm.baseAssetReserve()).to.eq(toFullDigit(90))
 
@@ -360,7 +360,7 @@ describe("Amm Unit Test", () => {
             // but someone front run it, long 200 before the order 600/37.5
             await amm.mockSetReserve(toDecimal(1250), toDecimal(80))
             await expectRevert(
-                amm.swapInput(Dir.ADD_TO_AMM, toDecimal(600), toDecimal(37.5)),
+                amm.swapInput(Dir.ADD_TO_AMM, toDecimal(600), toDecimal(37.5), false),
                 "Less than minimal base token",
             )
         })
@@ -370,7 +370,7 @@ describe("Amm Unit Test", () => {
             // but someone front run it, short 200 before the order 600/-150
             await amm.mockSetReserve(toDecimal(800), toDecimal(125))
             await expectRevert(
-                amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(600), toDecimal(150)),
+                amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(600), toDecimal(150), false),
                 "More than maximal base token",
             )
         })
@@ -383,7 +383,7 @@ describe("Amm Unit Test", () => {
             // 1250 - 1250 * 80 / (80 + 20) = 1250 - 1000 = 250
             it("swapOutput, short", async () => {
                 await amm.mockSetReserve(toDecimal(1250), toDecimal(80))
-                const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(20), toDecimal(100), true)
+                const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(20), toDecimal(100))
 
                 expectEvent(receipt, "SwapOutput", {
                     dir: Dir.ADD_TO_AMM.toString(),
@@ -397,7 +397,7 @@ describe("Amm Unit Test", () => {
 
             it("swapOutput, short, (amount should pay = 250) at the limit of min quote amount = 249", async () => {
                 await amm.mockSetReserve(toDecimal(1250), toDecimal(80))
-                const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(20), toDecimal(249), true)
+                const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(20), toDecimal(249))
 
                 expectEvent(receipt, "SwapOutput", {
                     dir: Dir.ADD_TO_AMM.toString(),
@@ -412,7 +412,7 @@ describe("Amm Unit Test", () => {
             it("force error, swapOutput, short, less than min quote amount = 251", async () => {
                 await amm.mockSetReserve(toDecimal(1250), toDecimal(80))
                 await expectRevert(
-                    amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(20), toDecimal(251), true),
+                    amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(20), toDecimal(251)),
                     "Less than minimal quote token",
                 )
             })
@@ -420,7 +420,7 @@ describe("Amm Unit Test", () => {
             it("force error, swapOutput, short, far less than min quote amount = 400", async () => {
                 await amm.mockSetReserve(toDecimal(1250), toDecimal(80))
                 await expectRevert(
-                    amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(20), toDecimal(400), true),
+                    amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(20), toDecimal(400)),
                     "Less than minimal quote token",
                 )
             })
@@ -429,7 +429,7 @@ describe("Amm Unit Test", () => {
             it("swapOutput, long", async () => {
                 await amm.mockSetReserve(toDecimal(800), toDecimal(125))
 
-                const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(25), toDecimal(400), true)
+                const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(25), toDecimal(400))
                 expectEvent(receipt, "SwapOutput", {
                     dir: Dir.REMOVE_FROM_AMM.toString(),
                     quoteAssetAmount: toFullDigit(200),
@@ -443,7 +443,7 @@ describe("Amm Unit Test", () => {
             it("swapOutput, long, (amount should pay = 200) at the limit of max quote amount = 201", async () => {
                 await amm.mockSetReserve(toDecimal(800), toDecimal(125))
 
-                const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(25), toDecimal(201), true)
+                const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(25), toDecimal(201))
                 expectEvent(receipt, "SwapOutput", {
                     dir: Dir.REMOVE_FROM_AMM.toString(),
                     quoteAssetAmount: toFullDigit(200),
@@ -458,7 +458,7 @@ describe("Amm Unit Test", () => {
                 // base asset =
                 await amm.mockSetReserve(toDecimal(800), toDecimal(125))
                 await expectRevert(
-                    amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(25), toDecimal(199), true),
+                    amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(25), toDecimal(199)),
                     "More than maximal quote token",
                 )
             })
@@ -467,7 +467,7 @@ describe("Amm Unit Test", () => {
                 // base asset = (1000 * 100 / (100 - 50)) - 1000 = 1000
                 await amm.mockSetReserve(toDecimal(800), toDecimal(125))
                 await expectRevert(
-                    amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(25), toDecimal(100), true),
+                    amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(25), toDecimal(100)),
                     "More than maximal quote token",
                 )
             })
@@ -480,81 +480,139 @@ describe("Amm Unit Test", () => {
             await amm.setOpen(true)
             await moveToNextBlocks()
         })
-
-        it("swapInput, price up and under fluctuation", async () => {
+        it("swapInput, price goes up within the fluctuation limit", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // BUY 24, reserve will be 1024 : 97.66, price is 1024 / 97.66 = 10.49
-            const receipt = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(24), toDecimal(0))
+            const receipt = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(24), toDecimal(0), false)
             expectEvent(receipt, "SwapInput")
         })
 
-        it("swapInput, price down and under fluctuation", async () => {
+        it("swapInput, price goes down within the fluctuation limit", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // SELL 25, reserve will be 975 : 102.56, price is 975 / 102.56 = 9.51
-            const receipt = await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(25), toDecimal(0))
+            const receipt = await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(25), toDecimal(0), false)
             expectEvent(receipt, "SwapInput")
         })
 
-        it("swapOutput, price up and under fluctuation", async () => {
+        it("swapInput, price goes down, up and then down within the fluctuation limit", async () => {
+            // fluctuation is 5%, price is between 9.5 ~ 10.5
+            // SELL 25, reserve will be 975 : 102.56, price is 975 / 102.56 = 9.51
+            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(25), toDecimal(0), false)
+
+            // BUY 49, reserve will be 1024 : 97.66, price is 1024 / 97.66 = 10.49
+            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(49), toDecimal(0), false)
+
+            // SELL 49, reserve will be 975 : 102.56, price is 975 / 102.56 = 9.51
+            const receipt = await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(49), toDecimal(0), false)
+            expectEvent(receipt, "SwapInput")
+        })
+
+        it("swapInput, price can go up and over the fluctuation limit once", async () => {
+            // fluctuation is 5%, price is between 9.5 ~ 10.5
+            // BUY 25, reserve will be 1025 : 97.56, price is 1025 / 97.56 = 10.50625
+            // but _canOverFluctuationLimit is true so it's ok to skip the check
+            const receipt = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(25), toDecimal(0), true)
+            expectEvent(receipt, "SwapInput")
+        })
+
+        it("swapOutput, price goes up within the fluctuation limit", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // BUY 2.4 base, reserve will be 1024.6 : 97.6, price is 1024.6 / 97.6 = 10.5
-            const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(2.4), toDecimal(0), true)
+            const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(2.4), toDecimal(0))
             expectEvent(receipt, "SwapOutput")
         })
 
-        it("swapOutput, price down and under fluctuation", async () => {
+        it("swapOutput, price goes down within the fluctuation limit", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // SELL 2.5 base, reserve will be 975.6 : 102.5, price is 975.6 / 102.5 = 9.52
-            const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(2.5), toDecimal(0), true)
+            const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(2.5), toDecimal(0))
             expectEvent(receipt, "SwapOutput")
         })
 
-        it("force error, swapInput, price up but reach the upper limit", async () => {
+        it("force error, swapInput, price goes up but cannot over the fluctuation limit", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // BUY 25, reserve will be 1025 : 97.56, price is 1025 / 97.56 = 10.51
             await expectRevert(
-                amm.swapInput(Dir.ADD_TO_AMM, toDecimal(25), toDecimal(0)),
+                amm.swapInput(Dir.ADD_TO_AMM, toDecimal(25), toDecimal(0), false),
                 "price is over fluctuation limit",
             )
         })
 
-        it("force error, swapInput, price down but reach the lower limit", async () => {
+        it("force error, swapInput, price goes down but cannot over the fluctuation limit", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // SELL 26, reserve will be 974 : 102.67, price is 974 / 102.67 = 9.49
             await expectRevert(
-                amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(26), toDecimal(0)),
+                amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(26), toDecimal(0), false),
                 "price is over fluctuation limit",
             )
         })
 
-        it("can swapOutput(close long) even exceeds fluctuation limit if the price impact is larger than the limit, but the rest will fail during that block", async () => {
+        it("force error, swapInput long can exceed the fluctuation limit once, but the rest will fail during that block", async () => {
+            // fluctuation is 5%, price is between 9.5 ~ 10.5
+            // BUY 25, reserve will be 1025 : 97.56, price is 1025 / 97.56 = 10.50625
+            // _canOverFluctuationLimit is true so it's ok to skip the check the first time, while the rest cannot
+            const receipt = await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(25), toDecimal(0), true)
+            expectEvent(receipt, "SwapInput")
+            await expectRevert(
+                amm.swapInput(Dir.ADD_TO_AMM, toDecimal(1), toDecimal(0), true),
+                "price is already over fluctuation limit",
+            )
+        })
+
+        it("force error, swapInput short can exceed the fluctuation limit once, but the rest will fail during that block", async () => {
+            // fluctuation is 5%, price is between 9.5 ~ 10.5
+            // SELL 30, reserve will be 970 : 103.09, price is 975 / 102.56 = 9.40
+            // _canOverFluctuationLimit is true so it's ok to skip the check the first time, while the rest cannot
+            const receipt = await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(30), toDecimal(0), true)
+            expectEvent(receipt, "SwapInput")
+            await expectRevert(
+                amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(1), toDecimal(0), true),
+                "price is already over fluctuation limit",
+            )
+        })
+
+        it("force error, swapOutput(close long) can exceed the fluctuation limit once, but the rest txs in that block will fail", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // BUY 2.5 base, reserve will be 1025.6 : 97.5, price is 1025.6 / 97.5 = 10.52
-            expectEvent(await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(2.5), toDecimal(0), false), "SwapOutput")
+            expectEvent(await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(2.5), toDecimal(0)), "SwapOutput")
             await expectRevert(
-                amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(0.1), toDecimal(0), false),
-                "price is over fluctuation limit",
+                amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(0.1), toDecimal(0)),
+                "price is already over fluctuation limit",
             )
         })
 
-        it("can swapOutput(close short) even exceeds fluctuation limit if the price impact is larger than the limit, but the rest will fail during that block", async () => {
+        it("force error, swapOutput(close short) can only exceed fluctuation limit once, but the rest txs in that block will fail", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
-            // SELL 2.7 base, reserve will be 973.7 : 102.7, price is 973.7 / 102.7 = 9.48
-            expectEvent(await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(2.7), toDecimal(0), false), "SwapOutput")
+            // SELL 3 base, reserve will be 970.873 : 103, price is 970.873 / 103 = 9.425
+            expectEvent(await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(3), toDecimal(0)), "SwapOutput")
+
+            // SELL 3 base again, reserve will be 943.396 : 106, price is 970.873 / 106 = 8.899
             await expectRevert(
-                amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(0.1), toDecimal(0), false),
-                "price is over fluctuation limit",
+                amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(3), toDecimal(0)),
+                "price is already over fluctuation limit",
             )
         })
 
-        it("force error, swap many times to over the fluctuation in a single block", async () => {
+        it("force error, swapOutput(close short) can only exceed fluctuation limit once, but the rest txs in that block will fail, including the price comes inside the range", async () => {
+            // fluctuation is 5%, price is between 9.5 ~ 10.5
+            // SELL 3 base, reserve will be 970.873 : 103, price is 970.873 / 103 = 9.425
+            expectEvent(await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(3), toDecimal(0)), "SwapOutput")
+
+            // BUY 5 base again, reserve will be 1020.4081632653 : 98, price is 10.4123281966
+            await expectRevert(
+                amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(5), toDecimal(0)),
+                "price is already over fluctuation limit",
+            )
+        })
+
+        it("force error, swap many times and the price is over the fluctuation limit in a single block", async () => {
             // fluctuation is 5%, price is between 9.5 ~ 10.5
             // BUY 10+10+10, reserve will be 1030 : 97.09, price is 1030 / 97.09 = 10.61
             await moveToNextBlocks(1)
-            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0))
-            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0))
+            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0), false)
+            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0), false)
             await expectRevert(
-                amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0)),
+                amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0), false),
                 "price is over fluctuation limit",
             )
         })
@@ -562,29 +620,29 @@ describe("Amm Unit Test", () => {
         it("force error, compare price fluctuation with previous blocks in a block", async () => {
             // BUY 10, reserve will be 1010 : 99.01, price is 1010 / 99.01 = 10.2
             // fluctuation is 5%, price is between 9.69 ~ 10.71
-            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0))
+            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0), false)
             await moveToNextBlocks(1)
 
             // SELL 26, reserve will be 984 : 101.63, price is 984 / 101.63 = 9.68
             const error = "price is over fluctuation limit"
-            await expectRevert(amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(26), toDecimal(0)), error)
+            await expectRevert(amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(26), toDecimal(0), false), error)
 
             // BUY 30, reserve will be 1040 : 96.15, price is 1040 / 96.15 = 10.82
-            await expectRevert(amm.swapInput(Dir.ADD_TO_AMM, toDecimal(30), toDecimal(0)), error)
+            await expectRevert(amm.swapInput(Dir.ADD_TO_AMM, toDecimal(30), toDecimal(0), false), error)
             // should revert as well if BUY 30 separately
-            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0))
-            await expectRevert(amm.swapInput(Dir.ADD_TO_AMM, toDecimal(20), toDecimal(0)), error)
+            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0), false)
+            await expectRevert(amm.swapInput(Dir.ADD_TO_AMM, toDecimal(20), toDecimal(0), false), error)
         })
 
         it("force error, the value of fluctuation is the same even when no any tradings for blocks", async () => {
             // BUY 10, reserve will be 1010 : 99.01, price is 1010 / 99.01 = 10.2
             // fluctuation is 5%, price is between 9.69 ~ 10.71
-            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0))
+            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0), false)
             await moveToNextBlocks(3)
 
             // BUY 25, reserve will be 1035 : 96.62, price is 1035 / 96.62 = 10.712
             await expectRevert(
-                amm.swapInput(Dir.ADD_TO_AMM, toDecimal(25), toDecimal(0)),
+                amm.swapInput(Dir.ADD_TO_AMM, toDecimal(25), toDecimal(0), false),
                 "price is over fluctuation limit",
             )
         })
@@ -593,13 +651,16 @@ describe("Amm Unit Test", () => {
     describe("swapInput and swapOutput", () => {
         beforeEach(async () => {
             await amm.setOpen(true)
+
+            // avoid actions from exceeding the fluctuation limit
+            await amm.setFluctuationLimitRatio(toDecimal(0.5))
         })
         it("use getOutputPrice to query price and use it to swapInput(long)", async () => {
             // when trader ask what's the requiredQuoteAsset if trader want to remove 10 baseAsset from amm
             const requiredQuoteAsset = await amm.getOutputPrice(Dir.REMOVE_FROM_AMM, toDecimal(10))
 
             // when trader add requiredQuoteAsset to amm
-            const receipt = await amm.swapInput(Dir.ADD_TO_AMM, requiredQuoteAsset, toDecimal(0))
+            const receipt = await amm.swapInput(Dir.ADD_TO_AMM, requiredQuoteAsset, toDecimal(0), false)
 
             // then event.baseAssetAmount should be equal to 10
 
@@ -615,7 +676,7 @@ describe("Amm Unit Test", () => {
             const requiredQuoteAsset = await amm.getOutputPrice(Dir.ADD_TO_AMM, toDecimal(10))
 
             // when trader remove requiredQuoteAsset to amm
-            const receipt = await amm.swapInput(Dir.REMOVE_FROM_AMM, requiredQuoteAsset, toDecimal(0))
+            const receipt = await amm.swapInput(Dir.REMOVE_FROM_AMM, requiredQuoteAsset, toDecimal(0), false)
 
             // then event.baseAssetAmount should be equal to 10
             expectEvent(receipt, "SwapInput", {
@@ -630,7 +691,7 @@ describe("Amm Unit Test", () => {
             const receivedBaseAsset = await amm.getInputPrice(Dir.ADD_TO_AMM, toDecimal(10))
 
             // when trader trade quoteAsset for receivedBaseAsset (amount as above)
-            const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, receivedBaseAsset, toDecimal(0), true)
+            const receipt = await amm.swapOutput(Dir.REMOVE_FROM_AMM, receivedBaseAsset, toDecimal(0))
 
             // then event.quoteAsset should be equal to 10
             // if swapOutput is adjusted, the price should be higher (>= 10)
@@ -646,7 +707,7 @@ describe("Amm Unit Test", () => {
             const receivedBaseAsset = await amm.getInputPrice(Dir.REMOVE_FROM_AMM, toDecimal(10))
 
             // when trader trade quoteAsset for receivedBaseAsset (amount as above)
-            const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, receivedBaseAsset, toDecimal(0), true)
+            const receipt = await amm.swapOutput(Dir.ADD_TO_AMM, receivedBaseAsset, toDecimal(0))
 
             // then event.quoteAsset should be equal to 10
             // if swapOutput is adjusted, the price should be higher (>= 10)
@@ -658,8 +719,8 @@ describe("Amm Unit Test", () => {
         })
 
         it("swapInput twice, short and long", async () => {
-            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0))
-            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0))
+            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0), false)
+            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0), false)
 
             // then the reserve shouldn't be less than the original reserve
             expect(await amm.baseAssetReserve()).eq("100000000000000000001")
@@ -667,8 +728,8 @@ describe("Amm Unit Test", () => {
         })
 
         it("swapInput twice, long and short", async () => {
-            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0))
-            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0))
+            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0), false)
+            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0), false)
 
             // then the reserve shouldn't be less than the original reserve
             expect(await amm.baseAssetReserve()).eq("100000000000000000001")
@@ -676,8 +737,8 @@ describe("Amm Unit Test", () => {
         })
 
         it("swapOutput twice, short and long", async () => {
-            await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0), true)
-            await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0), true)
+            await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0))
+            await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0))
 
             // then the reserve shouldn't be less than the original reserve
             expect(await amm.baseAssetReserve()).eq(toFullDigit(100))
@@ -685,8 +746,8 @@ describe("Amm Unit Test", () => {
         })
 
         it("swapOutput twice, long and short", async () => {
-            await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0), true)
-            await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0), true)
+            await amm.swapOutput(Dir.ADD_TO_AMM, toDecimal(10), toDecimal(0))
+            await amm.swapOutput(Dir.REMOVE_FROM_AMM, toDecimal(10), toDecimal(0))
             // then the reserve shouldn't be less than the original reserve
             expect(await amm.baseAssetReserve()).eq(toFullDigit(100))
             expect(await amm.quoteAssetReserve()).eq("1000000000000000000001")
@@ -702,9 +763,9 @@ describe("Amm Unit Test", () => {
             for (let i = 0; i < 30; i++) {
                 // console.log((await amm.getOutputPrice(Dir.ADD_TO_AMM, toDecimal(10))).d.toString())
                 if (i % 3 == 0) {
-                    await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0))
+                    await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0), false)
                 } else {
-                    await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(50), toDecimal(0))
+                    await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(50), toDecimal(0), false)
                 }
 
                 await forward(14)
@@ -728,7 +789,7 @@ describe("Amm Unit Test", () => {
 
             it("the timestamp of latest snapshot is now, the latest snapshot wont have any effect ", async () => {
                 // price is 8.12 but time weighted is zero
-                await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0))
+                await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0), false)
                 // 210 / 14 = 15 snapshots,
                 // average is 9.04 =
                 // (8.12 x 5 snapshots x 14 secs + 9.03 x 5 x 14 + 10 x 5 x 14) / 210
@@ -745,7 +806,7 @@ describe("Amm Unit Test", () => {
 
             it("asking interval less than latest snapshot, return latest price directly", async () => {
                 // price is 8.1
-                await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0))
+                await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0), false)
                 await forward(300)
                 expect(await amm.getTwapPrice(210)).to.eq("8099999999999999998")
             })
@@ -767,9 +828,9 @@ describe("Amm Unit Test", () => {
                     // getInputTwap/getOutputPrice get 15 mins average
                     for (let i = 0; i < 34; i++) {
                         if (i % 3 == 0) {
-                            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0))
+                            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0), false)
                         } else {
-                            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(50), toDecimal(0))
+                            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(50), toDecimal(0), false)
                         }
                         await forward(14)
                     }
@@ -787,15 +848,15 @@ describe("Amm Unit Test", () => {
                     // getInputTwap/getOutputPrice get 15 mins average
                     for (let i = 0; i < 34; i++) {
                         if (i % 3 == 0) {
-                            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0))
+                            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0), false)
                         } else {
-                            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(50), toDecimal(0))
+                            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(50), toDecimal(0), false)
                         }
                         await forward(14)
                     }
 
                     // price is 8.12 but time weighted is zero
-                    await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0))
+                    await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0), false)
 
                     const twap = await amm.getInputTwap(Dir.ADD_TO_AMM, toDecimal(10))
                     expect(twap).to.eq("1103873668968336329")
@@ -824,9 +885,9 @@ describe("Amm Unit Test", () => {
                     // getInputTwap/getOutputPrice get 15 mins average
                     for (let i = 0; i < 34; i++) {
                         if (i % 3 == 0) {
-                            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0))
+                            await amm.swapInput(Dir.REMOVE_FROM_AMM, toDecimal(100), toDecimal(0), false)
                         } else {
-                            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(50), toDecimal(0))
+                            await amm.swapInput(Dir.ADD_TO_AMM, toDecimal(50), toDecimal(0), false)
                         }
 
                         await forward(14)
