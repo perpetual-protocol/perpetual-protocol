@@ -279,14 +279,15 @@ contract ClearingHouse is
     function addMargin(IAmm _amm, Decimal.decimal calldata _addedMargin) external whenNotPaused() nonReentrant() {
         // check condition
         requireAmm(_amm, true);
-        requireNonZeroInput(_addedMargin);
+        IERC20 quoteToken = _amm.quoteAsset();
+        requireNonZeroAmount(quoteToken, _addedMargin);
         // update margin part in personal position
         address trader = _msgSender();
         Position memory position = adjustPositionForLiquidityChanged(_amm, trader);
         position.margin = position.margin.addD(_addedMargin);
         setPosition(_amm, trader, position);
         // transfer token from trader
-        _transferFrom(_amm.quoteAsset(), trader, address(this), _addedMargin);
+        _transferFrom(quoteToken, trader, address(this), _addedMargin);
         emit MarginChanged(trader, address(_amm), int256(_addedMargin.toUint()), 0);
     }
 
@@ -298,7 +299,9 @@ contract ClearingHouse is
     function removeMargin(IAmm _amm, Decimal.decimal calldata _removedMargin) external whenNotPaused() nonReentrant() {
         // check condition
         requireAmm(_amm, true);
-        requireNonZeroInput(_removedMargin);
+        IERC20 quoteToken = _amm.quoteAsset();
+        requireNonZeroAmount(quoteToken, _removedMargin);
+
         // update margin part in personal position
         address trader = _msgSender();
         Position memory position = adjustPositionForLiquidityChanged(_amm, trader);
@@ -317,7 +320,7 @@ contract ClearingHouse is
         // check margin ratio
         requireMoreMarginRatio(getMarginRatio(_amm, trader), initMarginRatio, true);
         // transfer token back to trader
-        withdraw(_amm.quoteAsset(), trader, _removedMargin);
+        withdraw(quoteToken, trader, _removedMargin);
         emit MarginChanged(trader, address(_amm), marginDelta.toInt(), fundingPayment.toInt());
     }
 
@@ -430,7 +433,8 @@ contract ClearingHouse is
         Decimal.decimal memory _baseAssetAmountLimit
     ) public whenNotPaused() nonReentrant() {
         requireAmm(_amm, true);
-        requireNonZeroInput(_quoteAssetAmount);
+        IERC20 quoteToken = _amm.quoteAsset();
+        requireNonZeroAmount(quoteToken, _quoteAssetAmount);
         requireNonZeroInput(_leverage);
         requireMoreMarginRatio(MixedDecimal.fromDecimal(Decimal.one()).divD(_leverage), initMarginRatio, true);
         requireNotRestrictionMode(_amm);
@@ -476,7 +480,6 @@ contract ClearingHouse is
             }
 
             // transfer the actual token between trader and vault
-            IERC20 quoteToken = _amm.quoteAsset();
             if (positionResp.marginToVault.toInt() > 0) {
                 _transferFrom(quoteToken, trader, address(this), positionResp.marginToVault.abs());
             } else if (positionResp.marginToVault.toInt() < 0) {
@@ -1355,6 +1358,10 @@ contract ClearingHouse is
     function requireAmm(IAmm _amm, bool _open) private view {
         require(insuranceFund.isExistedAmm(_amm), "amm not found");
         require(_open == _amm.open(), _open ? "amm was closed" : "amm is open");
+    }
+
+    function requireNonZeroAmount(IERC20 _token, Decimal.decimal memory _decimal) private view {
+        require(_toUint(_token, _decimal) != 0, "amount is incorrect");
     }
 
     function requireNonZeroInput(Decimal.decimal memory _decimal) private pure {
