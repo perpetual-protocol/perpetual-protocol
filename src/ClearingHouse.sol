@@ -1361,7 +1361,7 @@ contract ClearingHouse is
     }
 
     function requireNonZeroAmount(IERC20 _token, Decimal.decimal memory _decimal) private view {
-        require(_toUint(_token, _decimal) != 0, "amount is incorrect");
+        require(_toUint(_token, _decimal) != 0, "incorrect amount");
     }
 
     function requireNonZeroInput(Decimal.decimal memory _decimal) private pure {
