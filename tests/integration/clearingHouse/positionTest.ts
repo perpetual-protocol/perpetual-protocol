@@ -1334,6 +1334,43 @@ describe("ClearingHouse - open/close position Test", () => {
                 expect(await quoteToken.balanceOf(alice)).eq(toFullDigit(5000, +(await quoteToken.decimals())))
             })
         })
+
+        describe("revert when quote amount is less than minimum value of USDC", () => {
+            it("openPosition", async () => {
+                await expectRevert(
+                    clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(0.9e-6), toDecimal(10), toDecimal(0), {
+                        from: alice,
+                    }),
+                    "incorrect amount",
+                )
+            })
+            it("addMargin", async () => {
+                await expectRevert(
+                    clearingHouse.addMargin(amm.address, toDecimal(0.9e-6), { from: alice }),
+                    "incorrect amount",
+                )
+            })
+            it("removeMargin", async () => {
+                await expectRevert(
+                    clearingHouse.addMargin(amm.address, toDecimal(0.9e-6), { from: alice }),
+                    "incorrect amount",
+                )
+            })
+
+            it("can open a position if the amount is valid", async () => {
+                const r = await clearingHouse.openPosition(
+                    amm.address,
+                    Side.BUY,
+                    toDecimal(1e-6),
+                    toDecimal(1),
+                    toDecimal(0),
+                    {
+                        from: alice,
+                    },
+                )
+                expectEvent.inTransaction(r.tx, clearingHouse, "PositionChanged")
+            })
+        })
     })
 
     describe("position upper bound", () => {
