@@ -274,16 +274,18 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
         // if premiumFraction is positive, premiumFraction = min(twapIndex * maxFundingRate, premiumFraction)
         // if premiumFraction is negative, premiumFraction = max(twapIndex * -maxFundingRate, premiumFraction)
-        if (premiumFraction.toInt() > 0) {
-            Decimal.decimal memory premiumFractionLimit = underlyingPrice.mulD(maxFundingRate);
-            if (premiumFractionLimit.cmp(premiumFraction.abs()) < 0) {
-                premiumFraction = MixedDecimal.fromDecimal(premiumFractionLimit);
-            }
-        } else {
-            SignedDecimal.signedDecimal memory negativePremiumFractionLimit =
-                MixedDecimal.fromDecimal(underlyingPrice).mulD(maxFundingRate).mulScalar(-1);
-            if (negativePremiumFractionLimit.toInt() > premiumFraction.toInt()) {
-                premiumFraction = negativePremiumFractionLimit;
+        if (maxFundingRate.toUint() > 0) {
+            if (premiumFraction.toInt() > 0) {
+                Decimal.decimal memory maxPremiumFraction = underlyingPrice.mulD(maxFundingRate);
+                if (maxPremiumFraction.cmp(premiumFraction.abs()) < 0) {
+                    premiumFraction = MixedDecimal.fromDecimal(maxPremiumFraction);
+                }
+            } else {
+                SignedDecimal.signedDecimal memory minPremiumFraction =
+                    MixedDecimal.fromDecimal(underlyingPrice).mulD(maxFundingRate).mulScalar(-1);
+                if (minPremiumFraction.toInt() > premiumFraction.toInt()) {
+                    premiumFraction = minPremiumFraction;
+                }
             }
         }
 
