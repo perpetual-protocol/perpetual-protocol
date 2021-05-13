@@ -299,45 +299,43 @@ describe("ClearingHouse Test", () => {
                 from: bob,
             })
 
-            await amm.setMaxFundingRate(toDecimal(0.05/100))
+            await amm.setMaxFundingRate(toDecimal(0.05 / 100))
         })
 
         it("positive funding rate: greater than maxFundingRate", async () => {
             // given the underlying twap price is 1.59, and current spot price is 400B/250Q = $1.6
             await mockPriceFeed.setTwapPrice(toFullDigit(1.59))
 
-            // when funding rate is larger than 0.05%(maxFundingRate), then funding rate should be capped to 0.05%
+            // when funding rate is larger than 0.05% (maxFundingRate), then funding rate should be capped to 0.05%
+            // and premiumFraction would be (fundingRate * twapIndexPrice) = 0.05% * 1.59 = 0.000795
             await gotoNextFundingTime()
             await clearingHouse.payFunding(amm.address)
-            // expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(0.05/100))
-            // 0.000795000000000000
+            expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(0.05 / 100 * 1.59))
 
-            // then alice need to pay 0.05% of her position size as fundingPayment
+            // then alice need to pay (her position size * premiumFraction) as fundingPayment
             // {pos size: 37.5, margin: 300}
-            // funding payment = 37.5 * 0.05%  = 0.01875
-            // remain maring = 300 - 0.01875
+            // funding payment = 37.5 * 0.000795 = 0.0298125
+            // remain margin = 300 - 0.0298125
             const alicePosition = await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, alice)
             expect(alicePosition.size).to.eq(toFullDigit(37.5))
-            expect(alicePosition.margin).to.eq(toFullDigit(299.98125))
-            // 299970187500000000000
+            expect(alicePosition.margin).to.eq(toFullDigit(299.9701875))
 
-            // then bob will get 0.05% of her position size as fundingPayment
+            // then bob will get (his position size * premiumFraction) as fundingPayment
             // {pos size: -187.5, margin: 1200}
-            // funding payment = -187.5 * 0.05%  = -0.09375
-            // remain maring = 1200 - (-0.09375) = 1200.09375
+            // funding payment = -187.5 * 0.000795 = -0.1490625
+            // remain margin = 1200 - (-0.1490625) = 1200.1490625
             const bobPosition = await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, bob)
             expect(bobPosition.size).to.eq(toFullDigit(-187.5))
-            expect(bobPosition.margin).to.eq(toFullDigit(1200.09375))
+            expect(bobPosition.margin).to.eq(toFullDigit(1200.1490625))
 
-            // then fundingPayment will generate 0.01875 + (-0.09375) = -0.075 loss
-            // clearingHouse: 1500 + 0.075
-            // insuranceFund: 5000 - 0.075
+            // then fundingPayment will generate 0.0298125 + (-0.1490625) = -0.11925 loss
+            // clearingHouse: 1500 + 0.11925
+            // insuranceFund: 5000 - 0.11925
             const clearingHouseQuoteTokenBalance = await quoteToken.balanceOf(clearingHouse.address)
-            expect(clearingHouseQuoteTokenBalance).to.eq(toFullDigit(1500.075, +(await quoteToken.decimals())))
+            expect(clearingHouseQuoteTokenBalance).to.eq(toFullDigit(1500.11925, +(await quoteToken.decimals())))
             const insuranceFundBaseToken = await quoteToken.balanceOf(insuranceFund.address)
-            expect(insuranceFundBaseToken).to.eq(toFullDigit(4999.925, +(await quoteToken.decimals())))
+            expect(insuranceFundBaseToken).to.eq(toFullDigit(4999.88075, +(await quoteToken.decimals())))
         })
-
     })
 
     describe("payFunding: when alice.size = 37.5 & bob.size = -187.5", () => {
