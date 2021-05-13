@@ -137,6 +137,10 @@
         "CRVUSDC": {
           "name": "Amm",
           "address": "0x093c250B04bb79b86968da87B524A533533a0fAE"
+        },
+        "MKRUSDC": {
+          "name": "Amm",
+          "address": "0xef22c60555E9e7b5367C8123597286756D1A53f5"
         }
       },
       "accounts": [],
