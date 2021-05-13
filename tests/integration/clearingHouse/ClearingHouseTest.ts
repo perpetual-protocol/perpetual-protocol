@@ -285,6 +285,61 @@ describe("ClearingHouse Test", () => {
         })
     })
 
+    describe.only("payFunding: maximum funding rate", () => {
+        beforeEach(async () => {
+            // given alice takes 2x long position (37.5B) with 300 margin
+            await approve(alice, clearingHouse.address, 600)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(300), toDecimal(2), toDecimal(37.5), {
+                from: alice,
+            })
+
+            // given bob takes 1x short position (-187.5B) with 1200 margin
+            await approve(bob, clearingHouse.address, 1200)
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1200), toDecimal(1), toDecimal(187.5), {
+                from: bob,
+            })
+
+            await amm.setMaxFundingRate(toDecimal(0.05/100))
+        })
+
+        it("positive funding rate: greater than maxFundingRate", async () => {
+            // given the underlying twap price is 1.59, and current spot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(1.59))
+
+            // when funding rate is larger than 0.05%(maxFundingRate), then funding rate should be capped to 0.05%
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+            // expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(0.05/100))
+            // 0.000795000000000000
+
+            // then alice need to pay 0.05% of her position size as fundingPayment
+            // {pos size: 37.5, margin: 300}
+            // funding payment = 37.5 * 0.05%  = 0.01875
+            // remain maring = 300 - 0.01875
+            const alicePosition = await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, alice)
+            expect(alicePosition.size).to.eq(toFullDigit(37.5))
+            expect(alicePosition.margin).to.eq(toFullDigit(299.98125))
+            // 299970187500000000000
+
+            // then bob will get 0.05% of her position size as fundingPayment
+            // {pos size: -187.5, margin: 1200}
+            // funding payment = -187.5 * 0.05%  = -0.09375
+            // remain maring = 1200 - (-0.09375) = 1200.09375
+            const bobPosition = await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, bob)
+            expect(bobPosition.size).to.eq(toFullDigit(-187.5))
+            expect(bobPosition.margin).to.eq(toFullDigit(1200.09375))
+
+            // then fundingPayment will generate 0.01875 + (-0.09375) = -0.075 loss
+            // clearingHouse: 1500 + 0.075
+            // insuranceFund: 5000 - 0.075
+            const clearingHouseQuoteTokenBalance = await quoteToken.balanceOf(clearingHouse.address)
+            expect(clearingHouseQuoteTokenBalance).to.eq(toFullDigit(1500.075, +(await quoteToken.decimals())))
+            const insuranceFundBaseToken = await quoteToken.balanceOf(insuranceFund.address)
+            expect(insuranceFundBaseToken).to.eq(toFullDigit(4999.925, +(await quoteToken.decimals())))
+        })
+
+    })
+
     describe("payFunding: when alice.size = 37.5 & bob.size = -187.5", () => {
         beforeEach(async () => {
             // given alice takes 2x long position (37.5B) with 300 margin
