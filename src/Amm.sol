@@ -143,6 +143,8 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
     //◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤ add state variables below ◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤//
 
+    Decimal.decimal public maxFundingRate;
+
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
 
     //
@@ -269,6 +271,21 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         SignedDecimal.signedDecimal memory premium =
             MixedDecimal.fromDecimal(getTwapPrice(spotPriceTwapInterval)).subD(underlyingPrice);
         SignedDecimal.signedDecimal memory premiumFraction = premium.mulScalar(fundingPeriod).divScalar(int256(1 days));
+
+        // if premiumFraction is positive, premiumFraction = min(twapIndex * maxFundingRate, premiumFraction)
+        // if premiumFraction is negative, premiumFraction = max(twapIndex * -maxFundingRate, premiumFraction)
+        if (premiumFraction.toInt() > 0) {
+            Decimal.decimal memory premiumFractionLimit = underlyingPrice.mulD(maxFundingRate);
+            if (premiumFractionLimit.cmp(premiumFraction.abs()) < 0) {
+                premiumFraction = MixedDecimal.fromDecimal(premiumFractionLimit);
+            }
+        } else {
+            SignedDecimal.signedDecimal memory negativePremiumFractionLimit =
+                MixedDecimal.fromDecimal(underlyingPrice).mulD(maxFundingRate).mulScalar(-1);
+            if (negativePremiumFractionLimit.toInt() > premiumFraction.toInt()) {
+                premiumFraction = negativePremiumFractionLimit;
+            }
+        }
 
         // update funding rate = premiumFraction / twapIndexPrice
         updateFundingRate(premiumFraction, underlyingPrice);
@@ -412,6 +429,10 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         maxHoldingBaseAsset = _maxHoldingBaseAsset;
         openInterestNotionalCap = _openInterestNotionalCap;
         emit CapChanged(maxHoldingBaseAsset.toUint(), openInterestNotionalCap.toUint());
+    }
+
+    function setMaxFundingRate(Decimal.decimal memory _maxFundingRate) external onlyOwner {
+        maxFundingRate = _maxFundingRate;
     }
 
     /**
