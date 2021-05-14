@@ -16,7 +16,7 @@ import {
     StakingReserveInstance,
     SupplyScheduleFakeInstance,
     TraderWalletContract,
-    TraderWalletInstance
+    TraderWalletInstance,
 } from "../../../types/truffle"
 import { ClearingHouse } from "../../../types/web3/ClearingHouse"
 import { assertionHelper } from "../../helper/assertion-plugin"
@@ -567,6 +567,7 @@ describe("ClearingHouse Test", () => {
     describe("add/remove margin", () => {
         beforeEach(async () => {
             await approve(alice, clearingHouse.address, 2000)
+            await approve(bob, clearingHouse.address, 2000)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(60), toDecimal(10), toDecimal(37.5), {
                 from: alice,
             })
@@ -594,6 +595,11 @@ describe("ClearingHouse Test", () => {
             expect(await clearingHouseViewer.getPersonalBalanceWithFundingPayment(quoteToken.address, alice)).to.eq(
                 toFullDigit(140),
             )
+        })
+
+        it("add margin even if there is no position opened yet", async () => {
+            const r = await clearingHouse.addMargin(amm.address, toDecimal(1), { from: bob })
+            expectEvent.inTransaction(r.tx, clearingHouse, "MarginChanged")
         })
 
         it("remove margin", async () => {
@@ -642,17 +648,17 @@ describe("ClearingHouse Test", () => {
             })
         })
 
-        it("Force error, remove margin - not enough position margin", async () => {
+        it("force error, remove margin - no enough margin", async () => {
             // margin is 60, try to remove more than 60
             const removedMargin = 61
 
             await expectRevert(
                 clearingHouse.removeMargin(amm.address, toDecimal(removedMargin), { from: alice }),
-                "revert margin is not enough",
+                "margin is not enough",
             )
         })
 
-        it("Force error, remove margin - not enough ratio (4%)", async () => {
+        it("force error, remove margin - no enough margin ratio (4%)", async () => {
             const removedMargin = 36
 
             // remove margin 36
@@ -662,6 +668,23 @@ describe("ClearingHouse Test", () => {
                 clearingHouse.removeMargin(amm.address, toDecimal(removedMargin), { from: alice }),
                 "Margin ratio not meet criteria",
             )
+        })
+
+        it("force error, remove margin - no position opened yet and neither is there any margin", async () => {
+            await expectRevert(
+                clearingHouse.removeMargin(amm.address, toDecimal(1), { from: bob }),
+                "margin is not enough",
+            )
+        })
+
+        it("force error, remove margin - no position opened yet but there is margin (edge case)", async () => {
+            await clearingHouse.addMargin(amm.address, toDecimal(1), { from: bob })
+
+            await expectRevert(
+                clearingHouse.removeMargin(amm.address, toDecimal(1), { from: bob }),
+                "positionSize is 0",
+            )
+            // NOTE: in this scenario, users have to open a small position to removeMargin
         })
     })
 
@@ -1602,7 +1625,6 @@ describe("ClearingHouse Test", () => {
                     "price is already over fluctuation limit",
                 )
             })
-
         })
 
         describe("liquidator front run hack", () => {
