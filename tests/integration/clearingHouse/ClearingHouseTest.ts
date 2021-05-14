@@ -285,7 +285,7 @@ describe("ClearingHouse Test", () => {
         })
     })
 
-    describe.only("payFunding: maximum funding rate", () => {
+    describe("payFunding: maximum funding rate", () => {
         beforeEach(async () => {
             // given alice takes 2x long position (37.5B) with 300 margin
             await approve(alice, clearingHouse.address, 600)
@@ -312,7 +312,7 @@ describe("ClearingHouse Test", () => {
             await clearingHouse.payFunding(amm.address)
             expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(0.05 / 100 * 1.59))
 
-            // then alice need to pay (her position size * premiumFraction) as fundingPayment
+            // then alice needs to pay (her position size * premiumFraction) as fundingPayment
             // {pos size: 37.5, margin: 300}
             // funding payment = 37.5 * 0.000795 = 0.0298125
             // remain margin = 300 - 0.0298125
@@ -335,6 +335,59 @@ describe("ClearingHouse Test", () => {
             expect(clearingHouseQuoteTokenBalance).to.eq(toFullDigit(1500.11925, +(await quoteToken.decimals())))
             const insuranceFundBaseToken = await quoteToken.balanceOf(insuranceFund.address)
             expect(insuranceFundBaseToken).to.eq(toFullDigit(4999.88075, +(await quoteToken.decimals())))
+        })
+    })
+
+    describe("payFunding: minimum funding rate", () => {
+        beforeEach(async () => {
+            // given alice takes 2x long position (37.5B) with 300 margin
+            await approve(alice, clearingHouse.address, 600)
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(300), toDecimal(2), toDecimal(37.5), {
+                from: alice,
+            })
+
+            // given bob takes 1x short position (-187.5B) with 1200 margin
+            await approve(bob, clearingHouse.address, 1200)
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1200), toDecimal(1), toDecimal(187.5), {
+                from: bob,
+            })
+
+            await amm.setMaxFundingRate(toDecimal(0.05 / 100))
+        })
+
+        it("negative funding rate: less than minFundingRate", async () => {
+            // given the underlying twap price is 1.61, and current spot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(1.61))
+
+            // when funding rate is less than -0.05% (minFundingRate), then funding rate should be capped to -0.05%
+            // and premiumFraction would be (fundingRate * twapIndexPrice) = -0.05% * 1.61 = -0.000805
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+            expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(-0.05 / 100 * 1.61))
+
+            // then alice will get (her position size * premiumFraction) as fundingPayment
+            // {pos size: 37.5, margin: 300}
+            // funding payment = -37.5 * 0.000805 = -0.0301875
+            // remain margin = 300 - (-0.0301875)
+            const alicePosition = await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, alice)
+            expect(alicePosition.size).to.eq(toFullDigit(37.5))
+            expect(alicePosition.margin).to.eq(toFullDigit(300.0301875))
+
+            // then bob needs to pay (his position size * premiumFraction) as fundingPayment
+            // {pos size: -187.5, margin: 1200}
+            // funding payment = 187.5 * 0.000805 = 0.1509375
+            // remain margin = 1200 - 0.1509375 = 1199.8490625
+            const bobPosition = await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, bob)
+            expect(bobPosition.size).to.eq(toFullDigit(-187.5))
+            expect(bobPosition.margin).to.eq(toFullDigit(1199.8490625))
+
+            // then fundingPayment will generate (-0.0301875) + 0.1509375 = 0.12075 gain
+            // clearingHouse: 1500 - 0.12075
+            // insuranceFund: 5000 + 0.12075
+            const clearingHouseQuoteTokenBalance = await quoteToken.balanceOf(clearingHouse.address)
+            expect(clearingHouseQuoteTokenBalance).to.eq(toFullDigit(1499.87925, +(await quoteToken.decimals())))
+            const insuranceFundBaseToken = await quoteToken.balanceOf(insuranceFund.address)
+            expect(insuranceFundBaseToken).to.eq(toFullDigit(5000.12075, +(await quoteToken.decimals())))
         })
     })
 
