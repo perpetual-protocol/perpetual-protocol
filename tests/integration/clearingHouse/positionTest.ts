@@ -1335,40 +1335,81 @@ describe("ClearingHouse - open/close position Test", () => {
             })
         })
 
-        describe("revert when quote amount is less than minimum value of USDC", () => {
-            it("openPosition", async () => {
-                await expectRevert(
-                    clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(0.9e-6), toDecimal(10), toDecimal(0), {
+        describe("quote amount is at the boundary of minimum value of USDC (10 ^ -6)", () => {
+            describe("valid token amount (>= 10 ^ -6)", () => {
+                it("openPosition", async () => {
+                    const r = await clearingHouse.openPosition(
+                        amm.address,
+                        Side.BUY,
+                        toDecimal(1e-6),
+                        toDecimal(1),
+                        toDecimal(0),
+                        {
+                            from: alice,
+                        },
+                    )
+                    expectEvent.inTransaction(r.tx, clearingHouse, "PositionChanged")
+                })
+
+                it("addMargin", async () => {
+                    await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0), {
                         from: alice,
-                    }),
-                    "incorrect amount",
-                )
-            })
-            it("addMargin", async () => {
-                await expectRevert(
-                    clearingHouse.addMargin(amm.address, toDecimal(0.9e-6), { from: alice }),
-                    "incorrect amount",
-                )
-            })
-            it("removeMargin", async () => {
-                await expectRevert(
-                    clearingHouse.addMargin(amm.address, toDecimal(0.9e-6), { from: alice }),
-                    "incorrect amount",
-                )
+                    })
+                    const r = await clearingHouse.addMargin(amm.address, toDecimal(1e-6), {
+                        from: alice,
+                    })
+                    expectEvent.inTransaction(r.tx, clearingHouse, "MarginChanged")
+                })
+
+                it("removeMargin", async () => {
+                    await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0), {
+                        from: alice,
+                    })
+
+                    const r = await clearingHouse.removeMargin(amm.address, toDecimal(1e-6), {
+                        from: alice,
+                    })
+                    expectEvent.inTransaction(r.tx, clearingHouse, "MarginChanged")
+                })
             })
 
-            it("can open a position if the amount is valid", async () => {
-                const r = await clearingHouse.openPosition(
-                    amm.address,
-                    Side.BUY,
-                    toDecimal(1e-6),
-                    toDecimal(1),
-                    toDecimal(0),
-                    {
+            describe("force error, the token amount is invalid/too small (< 10 ^ -6)", () => {
+                it("openPosition", async () => {
+                    await expectRevert(
+                        clearingHouse.openPosition(
+                            amm.address,
+                            Side.BUY,
+                            toDecimal(0.9e-6),
+                            toDecimal(10),
+                            toDecimal(0),
+                            {
+                                from: alice,
+                            },
+                        ),
+                        "invalid token amount",
+                    )
+                })
+
+                it("addMargin", async () => {
+                    // can addMargin even if there is no position opened yet
+                    await expectRevert(
+                        clearingHouse.addMargin(amm.address, toDecimal(0.9e-6), { from: alice }),
+                        "invalid token amount",
+                    )
+                })
+
+                it("removeMargin", async () => {
+                    // cannot removeMargin if there is no position opened yet
+                    // thus, have to open a position first
+                    await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0), {
                         from: alice,
-                    },
-                )
-                expectEvent.inTransaction(r.tx, clearingHouse, "PositionChanged")
+                    })
+
+                    await expectRevert(
+                        clearingHouse.removeMargin(amm.address, toDecimal(0.9e-6), { from: alice }),
+                        "invalid token amount",
+                    )
+                })
             })
         })
     })
