@@ -11,7 +11,7 @@ const ammConfig = makeAmmConfig(
     AmmInstanceName.MKRUSDC,
     "MKR",
     // get this value from Asana, Daniel will calculate this value as x
-    BigNumber.from(1_600).mul(DEFAULT_DIGITS),
+    BigNumber.from(1_700).mul(DEFAULT_DIGITS),
     DEFAULT_DIGITS.mul(20),
     BigNumber.from(DEFAULT_DIGITS).mul(2_000_000),
 )
