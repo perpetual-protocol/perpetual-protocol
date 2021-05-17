@@ -272,20 +272,16 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
             MixedDecimal.fromDecimal(getTwapPrice(spotPriceTwapInterval)).subD(underlyingPrice);
         SignedDecimal.signedDecimal memory premiumFraction = premium.mulScalar(fundingPeriod).divScalar(int256(1 days));
 
-        // if premiumFraction is positive, premiumFraction = min(twapIndex * maxFundingRate, premiumFraction)
-        // if premiumFraction is negative, premiumFraction = max(twapIndex * -maxFundingRate, premiumFraction)
         if (maxFundingRate.toUint() > 0) {
-            if (premiumFraction.toInt() > 0) {
-                Decimal.decimal memory maxPremiumFraction = underlyingPrice.mulD(maxFundingRate);
-                if (maxPremiumFraction.cmp(premiumFraction.abs()) < 0) {
-                    premiumFraction = MixedDecimal.fromDecimal(maxPremiumFraction);
-                }
-            } else {
-                SignedDecimal.signedDecimal memory minPremiumFraction =
-                    MixedDecimal.fromDecimal(underlyingPrice).mulD(maxFundingRate).mulScalar(-1);
-                if (minPremiumFraction.toInt() > premiumFraction.toInt()) {
-                    premiumFraction = minPremiumFraction;
-                }
+            // if premiumFraction is positive, premiumFraction = min(twapIndex * maxFundingRate, premiumFraction)
+            // if premiumFraction is negative, premiumFraction = max(twapIndex * -maxFundingRate, premiumFraction)
+            Decimal.decimal memory boundaryOfPremiumFraction = underlyingPrice.mulD(maxFundingRate);
+            if (premiumFraction.abs().cmp(boundaryOfPremiumFraction) > 0) {
+                SignedDecimal.signedDecimal memory signedBoundaryOfPremiumFraction =
+                    MixedDecimal.fromDecimal(boundaryOfPremiumFraction);
+                premiumFraction = premiumFraction.toInt() > 0
+                    ? signedBoundaryOfPremiumFraction
+                    : signedBoundaryOfPremiumFraction.mulScalar(-1);
             }
         }
 
