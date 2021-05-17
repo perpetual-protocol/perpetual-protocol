@@ -285,7 +285,7 @@ describe("ClearingHouse Test", () => {
         })
     })
 
-    describe.only("payFunding: maximum funding rate", () => {
+    describe("payFunding: maximum funding rate", () => {
         beforeEach(async () => {
             // given alice takes 2x long position (37.5B) with 300 margin
             await approve(alice, clearingHouse.address, 600)
@@ -302,7 +302,7 @@ describe("ClearingHouse Test", () => {
             await amm.setMaxFundingRate(toDecimal(0.05 / 100))
         })
 
-        it("positive funding rate: greater than maxFundingRate", async () => {
+        it("positive funding rate: larger than maxFundingRate", async () => {
             // given the underlying twap price is 1.59, and current spot price is 400B/250Q = $1.6
             await mockPriceFeed.setTwapPrice(toFullDigit(1.59))
 
@@ -337,7 +337,7 @@ describe("ClearingHouse Test", () => {
             expect(insuranceFundBaseToken).to.eq(toFullDigit(4999.88075, +(await quoteToken.decimals())))
         })
 
-        it("negative funding rate: less than minFundingRate", async () => {
+        it("negative funding rate: less than (-maxFundingRate)", async () => {
             // given the underlying twap price is 1.61, and current spot price is 400B/250Q = $1.6
             await mockPriceFeed.setTwapPrice(toFullDigit(1.61))
 
@@ -372,25 +372,25 @@ describe("ClearingHouse Test", () => {
             expect(insuranceFundBaseToken).to.eq(toFullDigit(5000.12075, +(await quoteToken.decimals())))
         })
 
-        it("less than maxFundingRate, make sure ClearingHouse applies ", async () => {
+        it("positive funding rate and less than maxFundingRate, make sure ClearingHouse applies current funding rate", async () => {
             // set max funding rate to 2%
             await amm.setMaxFundingRate(toDecimal(2 / 100))
 
             // given the underlying twap price is 1.59, and current snapShot price is 400B/250Q = $1.6
             await mockPriceFeed.setTwapPrice(toFullDigit(1.59))
 
-            // when the new fundingRate is 1% which means underlyingPrice < snapshotPrice
+            // when the new premium fraction is 1 which means underlyingPrice < snapshotPrice
             await gotoNextFundingTime()
             await clearingHouse.payFunding(amm.address)
             expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(0.01))
 
-            // then alice need to pay 1% of her position size as fundingPayment
+            // then alice need to pay 1x of her position size as fundingPayment
             // {balance: 37.5, margin: 300} => {balance: 37.5, margin: 299.625}
             const alicePosition = await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, alice)
             expect(alicePosition.size).to.eq(toFullDigit(37.5))
             expect(alicePosition.margin).to.eq(toFullDigit(299.625))
 
-            // then bob will get 1% of her position size as fundingPayment
+            // then bob will get 1x of her position size as fundingPayment
             // {balance: -187.5, margin: 1200} => {balance: -187.5, margin: 1201.875}
             const bobPosition = await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, bob)
             expect(bobPosition.size).to.eq(toFullDigit(-187.5))
@@ -403,6 +403,39 @@ describe("ClearingHouse Test", () => {
             expect(clearingHouseQuoteTokenBalance).to.eq(toFullDigit(1501.5, +(await quoteToken.decimals())))
             const insuranceFundBaseToken = await quoteToken.balanceOf(insuranceFund.address)
             expect(insuranceFundBaseToken).to.eq(toFullDigit(4998.5, +(await quoteToken.decimals())))
+        })
+
+        it("negative funding rate and more than (-maxFundingRate), make sure ClearingHouse applies current funding rate", async () => {
+            // set max funding rate to 2%
+            await amm.setMaxFundingRate(toDecimal(2 / 100))
+
+            // given the underlying twap price is 1.59, and current snapShot price is 400B/250Q = $1.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(1.61))
+
+            // when the new premium fraction is -1 which means underlyingPrice > snapshotPrice
+            await gotoNextFundingTime()
+            await clearingHouse.payFunding(amm.address)
+            expect(await clearingHouse.getLatestCumulativePremiumFraction(amm.address)).eq(toFullDigit(-0.01))
+
+            // then alice need to pay -1x of her position size as fundingPayment
+            // {pos size: 37.5, margin: 300} => { margin: 300.375}
+            const alicePosition = await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, alice)
+            expect(alicePosition.size).to.eq(toFullDigit(37.5))
+            expect(alicePosition.margin).to.eq(toFullDigit(300.375))
+
+            // then bob will get -1x of her position size as fundingPayment
+            // {pos size: -187.5, margin: 1200} => { margin: 1200 + 1.875 = 1,198.125}
+            const bobPosition = await clearingHouseViewer.getPersonalPositionWithFundingPayment(amm.address, bob)
+            expect(bobPosition.size).to.eq(toFullDigit(-187.5))
+            expect(bobPosition.margin).to.eq(toFullDigit(1198.125))
+
+            // then fundingPayment will generate 1.5 loss and clearingHouse will withdraw in advanced from insuranceFund
+            // clearingHouse: 1500 - 1.5
+            // insuranceFund: 5000 + 1.5
+            const clearingHouseQuoteTokenBalance = await quoteToken.balanceOf(clearingHouse.address)
+            expect(clearingHouseQuoteTokenBalance).to.eq(toFullDigit(1498.5, +(await quoteToken.decimals())))
+            const insuranceFundBaseToken = await quoteToken.balanceOf(insuranceFund.address)
+            expect(insuranceFundBaseToken).to.eq(toFullDigit(5001.5, +(await quoteToken.decimals())))
         })
     })
 
@@ -1929,16 +1962,15 @@ describe("ClearingHouse Test", () => {
             const metaTx = {
                 from: bob,
                 to: clearingHouse.address,
-                functionSignature: "",
-                // clearingHouseWeb3Contract.methods
-                //     .openPosition(
-                //         amm.address,
-                //         Side.SELL,
-                //         [toFullDigitStr(20)],
-                //         [toFullDigitStr(5)],
-                //         [toFullDigitStr(11.12)],
-                //     )
-                //     .encodeABI(),
+                functionSignature: clearingHouseWeb3Contract.methods
+                    .openPosition(
+                        amm.address,
+                        Side.SELL,
+                        [toFullDigitStr(20)],
+                        [toFullDigitStr(5)],
+                        [toFullDigitStr(11.12)],
+                    )
+                    .encodeABI(),
                 nonce: 0,
             }
 
