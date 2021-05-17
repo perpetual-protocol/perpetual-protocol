@@ -141,6 +141,10 @@
         "MKRUSDC": {
           "name": "Amm",
           "address": "0xef22c60555E9e7b5367C8123597286756D1A53f5"
+        },
+        "CREAMUSDC": {
+          "name": "Amm",
+          "address": "0xf154f84697CD5072F767741C51Dd821Ff34BdF49"
         }
       },
       "accounts": [],
