@@ -143,8 +143,6 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
 
     //◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤ add state variables below ◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤//
 
-    Decimal.decimal public maxFundingRate;
-
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
 
     //
@@ -271,19 +269,6 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         SignedDecimal.signedDecimal memory premium =
             MixedDecimal.fromDecimal(getTwapPrice(spotPriceTwapInterval)).subD(underlyingPrice);
         SignedDecimal.signedDecimal memory premiumFraction = premium.mulScalar(fundingPeriod).divScalar(int256(1 days));
-
-        if (maxFundingRate.toUint() > 0) {
-            // if premiumFraction is positive, premiumFraction = min(twapIndex * maxFundingRate, premiumFraction)
-            // if premiumFraction is negative, premiumFraction = max(twapIndex * -maxFundingRate, premiumFraction)
-            Decimal.decimal memory boundaryOfPremiumFraction = underlyingPrice.mulD(maxFundingRate);
-            if (premiumFraction.abs().cmp(boundaryOfPremiumFraction) > 0) {
-                SignedDecimal.signedDecimal memory signedBoundaryOfPremiumFraction =
-                    MixedDecimal.fromDecimal(boundaryOfPremiumFraction);
-                premiumFraction = premiumFraction.toInt() > 0
-                    ? signedBoundaryOfPremiumFraction
-                    : signedBoundaryOfPremiumFraction.mulScalar(-1);
-            }
-        }
 
         // update funding rate = premiumFraction / twapIndexPrice
         updateFundingRate(premiumFraction, underlyingPrice);
@@ -427,10 +412,6 @@ contract Amm is IAmm, PerpFiOwnableUpgrade, BlockContext {
         maxHoldingBaseAsset = _maxHoldingBaseAsset;
         openInterestNotionalCap = _openInterestNotionalCap;
         emit CapChanged(maxHoldingBaseAsset.toUint(), openInterestNotionalCap.toUint());
-    }
-
-    function setMaxFundingRate(Decimal.decimal memory _maxFundingRate) external onlyOwner {
-        maxFundingRate = _maxFundingRate;
     }
 
     /**
