@@ -37,6 +37,14 @@
         "PerpStakingRewardNoVesting": {
           "name": "PerpRewardVesting",
           "address": "0xc2a9e84D77f4B534F049b593C282c5c91F24808A"
+        },
+        "MetaTxGateway": {
+          "name": "MetaTxGateway",
+          "address": "0x4B0E18570024598700268C73ce161BC587f9A69D"
+        },
+        "RootBridgeV2": {
+          "name": "RootBridgeV2",
+          "address": "0x09b0aBf075136189b60bEC98E2c9F4E971b24E86"
         }
       },
       "accounts": [],
