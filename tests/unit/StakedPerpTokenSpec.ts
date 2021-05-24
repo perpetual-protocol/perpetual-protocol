@@ -377,4 +377,16 @@ describe("StakedPerpTokenSpec", () => {
             )
         })
     })
+
+    describe("setCooldownPeriod()", () => {
+        it("set to 5 days", async () => {
+            await stakedPerpToken.setCooldownPeriod(new BN(60 * 60 * 24 * 5))
+            const cooldownPeriod = await stakedPerpToken.cooldownPeriod()
+            expect(cooldownPeriod).to.eq(432000)
+        })
+
+        it("force error, cooldownPeriod cannot be 0", async () => {
+            await expectRevert(stakedPerpToken.setCooldownPeriod(new BN(0)), "invalid input")
+        })
+    })
 })
