@@ -153,6 +153,10 @@
         "CREAMUSDC": {
           "name": "Amm",
           "address": "0x7B479a0a816ca33F8EB5A3312d1705a34d2d4C82"
+        },
+        "GRTUSDC": {
+          "name": "Amm",
+          "address": "0x187C938543f2BDE09Fe39034Fe3Ff797A3D35cA0"
         }
       },
       "accounts": [],
