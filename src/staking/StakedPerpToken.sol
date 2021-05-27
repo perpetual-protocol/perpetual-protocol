@@ -159,6 +159,11 @@ contract StakedPerpToken is IERC20WithCheckpointing, ERC20ViewOnly, DecimalERC20
         emit StakeModuleRemoved(address(_stakeModule));
     }
 
+    function setCooldownPeriod(uint256 _cooldownPeriod) external onlyOwner {
+        require(_cooldownPeriod != 0, "invalid input");
+        cooldownPeriod = _cooldownPeriod;
+    }
+
     //
     // VIEW FUNCTIONS
     //
