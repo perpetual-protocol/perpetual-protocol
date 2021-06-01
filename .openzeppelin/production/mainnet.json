@@ -1252,6 +1252,215 @@
           }
         }
       }
+    },
+    "8d396f2a6ce9829100283c4864e7526a81f0c58ea42e739b622c4b4092b646fb": {
+      "address": "0x425e0EC09f9Bcdfd20283Bf23251cCB74D118813",
+      "txHash": "0x51dd374d2ce8374ed4ebb81070f1ac4d8f2fdf3d961b00d780fe48d3b256daaa",
+      "layout": {
+        "storage": [
+          {
+            "contract": "DecimalERC20",
+            "label": "decimalMap",
+            "type": "t_mapping(t_address,t_uint256)",
+            "src": "src/utils/DecimalERC20.sol:12"
+          },
+          {
+            "contract": "DecimalERC20",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/utils/DecimalERC20.sol:23"
+          },
+          {
+            "contract": "Initializable",
+            "label": "initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
+          },
+          {
+            "contract": "Initializable",
+            "label": "______gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
+          },
+          {
+            "contract": "ContextUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol:37"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:20"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_candidate",
+            "type": "t_address",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:21"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:95"
+          },
+          {
+            "contract": "BlockContext",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/utils/BlockContext.sol:13"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "name",
+            "type": "t_string_storage",
+            "src": "src/staking/StakedPerpToken.sol:40"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "symbol",
+            "type": "t_string_storage",
+            "src": "src/staking/StakedPerpToken.sol:41"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "decimals",
+            "type": "t_uint8",
+            "src": "src/staking/StakedPerpToken.sol:42"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "totalSupplyHistory",
+            "type": "t_struct(History)31669_storage",
+            "src": "src/staking/StakedPerpToken.sol:46"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "balancesHistory",
+            "type": "t_mapping(t_address,t_struct(History)31669_storage)",
+            "src": "src/staking/StakedPerpToken.sol:49"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "stakerCooldown",
+            "type": "t_mapping(t_address,t_uint256)",
+            "src": "src/staking/StakedPerpToken.sol:52"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "stakerWithdrawPendingBalance",
+            "type": "t_mapping(t_address,t_struct(decimal)32236_storage)",
+            "src": "src/staking/StakedPerpToken.sol:55"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "stakeModules",
+            "type": "t_array(t_address)dyn_storage",
+            "src": "src/staking/StakedPerpToken.sol:57"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "perpToken",
+            "type": "t_contract(IERC20)2022",
+            "src": "src/staking/StakedPerpToken.sol:58"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "cooldownPeriod",
+            "type": "t_uint256",
+            "src": "src/staking/StakedPerpToken.sol:59"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/staking/StakedPerpToken.sol:73"
+          }
+        ],
+        "types": {
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_uint8": {
+            "label": "uint8"
+          },
+          "t_struct(History)31669_storage": {
+            "label": "struct Checkpointing.History",
+            "members": [
+              {
+                "label": "history",
+                "type": "t_array(t_struct(Checkpoint)31665_storage)dyn_storage"
+              }
+            ]
+          },
+          "t_array(t_struct(Checkpoint)31665_storage)dyn_storage": {
+            "label": "struct Checkpointing.Checkpoint[]"
+          },
+          "t_struct(Checkpoint)31665_storage": {
+            "label": "struct Checkpointing.Checkpoint",
+            "members": [
+              {
+                "label": "time",
+                "type": "t_uint64"
+              },
+              {
+                "label": "value",
+                "type": "t_uint192"
+              }
+            ]
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_uint192": {
+            "label": "uint192"
+          },
+          "t_mapping(t_address,t_struct(History)31669_storage)": {
+            "label": "mapping(address => struct Checkpointing.History)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_address,t_struct(decimal)32236_storage)": {
+            "label": "mapping(address => struct Decimal.decimal)"
+          },
+          "t_struct(decimal)32236_storage": {
+            "label": "struct Decimal.decimal",
+            "members": [
+              {
+                "label": "d",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_contract(IERC20)2022": {
+            "label": "contract IERC20"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        }
+      }
     }
   },
   "admin": {
