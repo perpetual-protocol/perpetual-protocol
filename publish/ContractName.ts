@@ -20,6 +20,7 @@ export enum AmmInstanceName {
     MKRUSDC = "MKRUSDC",
     CREAMUSDC = "CREAMUSDC",
     GRTUSDC = "GRTUSDC",
+    ALPHAUSDC = "ALPHAUSDC",
 }
 
 export enum ContractName {

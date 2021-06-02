@@ -157,6 +157,10 @@
         "GRTUSDC": {
           "name": "Amm",
           "address": "0x187C938543f2BDE09Fe39034Fe3Ff797A3D35cA0"
+        },
+        "ALPHAUSDC": {
+          "name": "Amm",
+          "address": "0x26789518695b56e16F14008c35Dc1b281Bd5fc0E"
         }
       },
       "accounts": [],
