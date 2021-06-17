@@ -162,6 +162,10 @@
         "ALPHAUSDC": {
           "name": "Amm",
           "address": "0xDcCFe6668B33928c4c11009B54F2c0782f86dc67"
+        },
+        "FTTUSDC": {
+          "name": "Amm",
+          "address": "0x7954B8A9559200a90286c7A13c3021b60b2CDd2a"
         }
       },
       "accounts": [],
