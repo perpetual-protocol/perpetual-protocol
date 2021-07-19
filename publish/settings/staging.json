@@ -12,7 +12,8 @@
         "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
         "ambBridgeOnEth": "0xD4075FB57fCf038bFc702c915Ef9592534bED5c1",
         "multiTokenMediatorOnEth": "0x30F693708fc604A57F1958E3CFa059F902e6d4CB",
-        "proxyAdmin": "0x0C55fE453eC5166FA56e495Dc02953cB0E29A67a"
+        "proxyAdmin": "0x0C55fE453eC5166FA56e495Dc02953cB0E29A67a",
+        "referral": "0x76bD35cE58D960F049b16e34f178d5Ee57122474"
       }
     },
     "layer2": {
