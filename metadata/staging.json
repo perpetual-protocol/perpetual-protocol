@@ -58,8 +58,7 @@
         "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
         "ambBridgeOnEth": "0xD4075FB57fCf038bFc702c915Ef9592534bED5c1",
         "multiTokenMediatorOnEth": "0x30F693708fc604A57F1958E3CFa059F902e6d4CB",
-        "proxyAdmin": "0x0C55fE453eC5166FA56e495Dc02953cB0E29A67a",
-        "referral": "0x76bD35cE58D960F049b16e34f178d5Ee57122474"
+        "proxyAdmin": "0x0C55fE453eC5166FA56e495Dc02953cB0E29A67a"
       }
     },
     "layer2": {
@@ -179,7 +178,8 @@
         "multiTokenMediatorOnXDai": "0xA34c65d76b997a824a5E384471bBa73b0013F5DA",
         "tether": "0xe0B887D54e71329318a036CF50f30Dbe4444563c",
         "usdc": "0xe0B887D54e71329318a036CF50f30Dbe4444563c",
-        "proxyAdmin": "0x773F8ff05Faa57F915a70713CD33787F826ECdc7"
+        "proxyAdmin": "0x773F8ff05Faa57F915a70713CD33787F826ECdc7",
+        "referral": "0xEBF01cc4af96cfE356c90aB6AE9f83A0D6d8b6A4"
       }
     }
   }
