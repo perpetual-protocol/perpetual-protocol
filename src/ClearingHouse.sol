@@ -103,6 +103,7 @@ contract ClearingHouse is
 
     enum Side { BUY, SELL }
     enum PnlCalcOption { SPOT_PRICE, TWAP, ORACLE }
+    enum PnlPreferenceOption { MAX, MIN }
 
     /// @notice This struct records personal position information
     /// @param size denominated in amm.baseAsset
@@ -321,8 +322,14 @@ contract ClearingHouse is
         position.lastUpdatedCumulativePremiumFraction = latestCumulativePremiumFraction;
 
         setPosition(_amm, trader, position);
-        // check margin ratio
-        requireMoreMarginRatio(getMarginRatio(_amm, trader), initMarginRatio, true);
+
+        // check enough collateral
+        // we use the way that Curie calculates the free collateral
+        require(
+            calcFreeCollateral(_amm, trader, remainMargin.subD(badDebt)).toInt() >= 0,
+            "free collateral is not enough"
+        );
+
         // transfer token back to trader
         withdraw(quoteToken, trader, _removedMargin);
         emit MarginChanged(trader, address(_amm), marginDelta.toInt(), fundingPayment.toInt());
@@ -782,15 +789,8 @@ contract ClearingHouse is
     function getMarginRatio(IAmm _amm, address _trader) public view returns (SignedDecimal.signedDecimal memory) {
         Position memory position = getPosition(_amm, _trader);
         requirePositionSize(position.size);
-
-        (Decimal.decimal memory spotPositionNotional, SignedDecimal.signedDecimal memory spotPricePnl) =
-            (getPositionNotionalAndUnrealizedPnl(_amm, _trader, PnlCalcOption.SPOT_PRICE));
-        (Decimal.decimal memory twapPositionNotional, SignedDecimal.signedDecimal memory twapPricePnl) =
-            (getPositionNotionalAndUnrealizedPnl(_amm, _trader, PnlCalcOption.TWAP));
         (SignedDecimal.signedDecimal memory unrealizedPnl, Decimal.decimal memory positionNotional) =
-            spotPricePnl.toInt() > twapPricePnl.toInt()
-                ? (spotPricePnl, spotPositionNotional)
-                : (twapPricePnl, twapPositionNotional);
+            getPreferencePositionNotionalAndUnrealizedPnl(_amm, _trader, PnlPreferenceOption.MIN);
         return _getMarginRatio(_amm, position, unrealizedPnl, positionNotional);
     }
 
@@ -815,6 +815,12 @@ contract ClearingHouse is
         (Decimal.decimal memory remainMargin, Decimal.decimal memory badDebt, , ) =
             calcRemainMarginWithFundingPayment(_amm, _position, _unrealizedPnl);
         return MixedDecimal.fromDecimal(remainMargin).subD(badDebt).divD(_positionNotional);
+    }
+
+    function getFreeCollateral(IAmm _amm, address _trader) external view returns (SignedDecimal.signedDecimal memory) {
+        (Decimal.decimal memory remainMargin, Decimal.decimal memory badDebt, , ) =
+            calcRemainMarginWithFundingPayment(_amm, getPosition(_amm, _trader), SignedDecimal.zero());
+        return calcFreeCollateral(_amm, _trader, remainMargin.subD(badDebt));
     }
 
     /**
@@ -1342,6 +1348,49 @@ contract ClearingHouse is
         } else {
             remainMargin = signedRemainMargin.abs();
         }
+    }
+
+    /// @param _marginWithFundingPayment margin + funding payment - bad debt
+    function calcFreeCollateral(
+        IAmm _amm,
+        address _trader,
+        Decimal.decimal memory _marginWithFundingPayment
+    ) internal view returns (SignedDecimal.signedDecimal memory) {
+        (SignedDecimal.signedDecimal memory unrealizedPnl, Decimal.decimal memory positionNotional) =
+            getPreferencePositionNotionalAndUnrealizedPnl(_amm, _trader, PnlPreferenceOption.MIN);
+
+        // min(margin + funding, margin + funding + unrealized PnL) - position value * 10%
+        SignedDecimal.signedDecimal memory accountValue = unrealizedPnl.addD(_marginWithFundingPayment);
+        SignedDecimal.signedDecimal memory minCollateral =
+            accountValue.subD(_marginWithFundingPayment).toInt() > 0
+                ? MixedDecimal.fromDecimal(_marginWithFundingPayment)
+                : accountValue;
+        return minCollateral.subD(positionNotional.mulD(initMarginRatio));
+    }
+
+    function getPreferencePositionNotionalAndUnrealizedPnl(
+        IAmm _amm,
+        address _trader,
+        PnlPreferenceOption _pnlPreference
+    )
+        internal
+        view
+        returns (SignedDecimal.signedDecimal memory unrealizedPnl, Decimal.decimal memory positionNotional)
+    {
+        (Decimal.decimal memory spotPositionNotional, SignedDecimal.signedDecimal memory spotPricePnl) =
+            (getPositionNotionalAndUnrealizedPnl(_amm, _trader, PnlCalcOption.SPOT_PRICE));
+        (Decimal.decimal memory twapPositionNotional, SignedDecimal.signedDecimal memory twapPricePnl) =
+            (getPositionNotionalAndUnrealizedPnl(_amm, _trader, PnlCalcOption.TWAP));
+
+        // 1 ^ 1 = 0
+        // 1 ^ 0 = 1
+        // 0 ^ 1 = 1
+        // 0 ^ 0 = 0
+        // FIXME --> use `==` and add more comment
+        (unrealizedPnl, positionNotional) = (_pnlPreference == PnlPreferenceOption.MAX) !=
+            (spotPricePnl.toInt() > twapPricePnl.toInt())
+            ? (twapPricePnl, twapPositionNotional)
+            : (spotPricePnl, spotPositionNotional);
     }
 
     function getUnadjustedPosition(IAmm _amm, address _trader) public view returns (Position memory position) {
