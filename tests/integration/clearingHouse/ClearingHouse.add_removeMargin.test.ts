@@ -78,17 +78,13 @@ describe("ClearingHouse add/remove margin Test", () => {
         admin = addresses[0]
         alice = addresses[1]
         bob = addresses[2]
-        carol = addresses[3]
-        relayer = addresses[4]
 
         const contracts = await fullDeploy({ sender: admin })
-        metaTxGateway = contracts.metaTxGateway
         amm = contracts.amm
         insuranceFund = contracts.insuranceFund
         quoteToken = contracts.quoteToken
         mockPriceFeed = contracts.priceFeed
         rewardsDistribution = contracts.rewardsDistribution
-        stakingReserve = contracts.stakingReserve
         clearingHouse = contracts.clearingHouse
         clearingHouseViewer = contracts.clearingHouseViewer
         supplySchedule = contracts.supplySchedule
@@ -111,11 +107,6 @@ describe("ClearingHouse add/remove margin Test", () => {
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(60), toDecimal(10), toDecimal(37.5), {
                 from: alice,
             })
-
-            const clearingHouseQuoteTokenBalance = await quoteToken.balanceOf(clearingHouse.address)
-            expect(clearingHouseQuoteTokenBalance).eq(toFullDigit(60, +(await quoteToken.decimals())))
-            const allowance = await quoteToken.allowance(alice, clearingHouse.address)
-            expect(allowance).to.eq(toFullDigit(2000 - 60, +(await quoteToken.decimals())))
         })
 
         it("add margin", async () => {
@@ -188,6 +179,20 @@ describe("ClearingHouse add/remove margin Test", () => {
             })
         })
 
+        it("remove margin - no position opened yet but there is margin (edge case)", async () => {
+            await clearingHouse.addMargin(amm.address, toDecimal(1), { from: bob })
+
+            const receipt = await clearingHouse.removeMargin(amm.address, toDecimal(1), {
+                from: bob,
+            })
+            await expectEvent.inTransaction(receipt.tx, clearingHouse, "MarginChanged", {
+                sender: bob,
+                amm: amm.address,
+                amount: toFullDigit(-1),
+                fundingPayment: "0",
+            })
+        })
+
         it("force error, remove margin - no enough margin", async () => {
             // margin is 60, try to remove more than 60
             const removedMargin = 61
@@ -201,12 +206,14 @@ describe("ClearingHouse add/remove margin Test", () => {
         it("force error, remove margin - no enough margin ratio (4%)", async () => {
             const removedMargin = 36
 
+            // min(margin + funding, margin + funding + unrealized PnL) - position value * 10%
+            // min(60 - 36, 60 - 36) - 600 * 0.1 = -24
             // remove margin 36
             // remain margin -> 60 - 36 = 24
             // margin ratio -> 24 / 600 = 4%
             await expectRevert(
                 clearingHouse.removeMargin(amm.address, toDecimal(removedMargin), { from: alice }),
-                "Margin ratio not meet criteria",
+                "free collateral is not enough",
             )
         })
 
@@ -216,15 +223,96 @@ describe("ClearingHouse add/remove margin Test", () => {
                 "margin is not enough",
             )
         })
+    })
 
-        it("force error, remove margin - no position opened yet but there is margin (edge case)", async () => {
-            await clearingHouse.addMargin(amm.address, toDecimal(1), { from: bob })
+    describe.only("remove margin with unrealized PnL", () => {
+        beforeEach(async () => {
+            await approve(alice, clearingHouse.address, 2000)
+            await approve(bob, clearingHouse.address, 2000)
+            // await mockPriceFeed.setTwapPrice(toFullDigit(10))
+        })
+
+        it.only("force error, remove margin when a long position with profit", async () => {
+            // reserve 1000 : 100
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(60), toDecimal(5), toDecimal(0), {
+                from: alice,
+            })
+            // reserve 1300 : 76.92, price = 16.9
+
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(60), toDecimal(5), toDecimal(0), {
+                from: bob,
+            })
+            // reserve 1600 : 62.5, price = 25.6
+            await mockPriceFeed.setTwapPrice(toFullDigit(30))
+
+            // margin: 60
+            // positionSize: 23.08
+            // positionNotional: 431.5026875438
+            // unrealizedPnl: 431.5026875438 - 300 = 131.5026875438
+            // min(margin + funding, margin + funding + unrealized PnL) - position value * 10%
+            // min(60, 60 + 131.5026875438) - 431.5 * 0.1 = 16.85
+            // can not remove margin > 16.85
+            console.log((await clearingHouse.getFreeCollateral(amm.address, alice)).d.toString())
+            // 38426966292134831461
+            const pos = await clearingHouse.getPosition(amm.address, alice)
+            console.log(pos.margin.d.toString(), pos.size.d.toString(), pos.openNotional.d.toString())
+            // 60000000000000000000 23076923076923076923 300000000000000000000
+            await expectRevert(
+                clearingHouse.removeMargin(amm.address, toDecimal(17), { from: alice }),
+                "free collateral is not enough",
+            )
+        })
+
+        it("force error, remove margin when a long position with loss", async () => {
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(60), toDecimal(5), toDecimal(0), {
+                from: alice,
+            })
+            // min(margin + funding, margin + funding + unrealized PnL) - position value * 10%
+            // min(60, 60 + (-??)) -
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(120), toDecimal(5), toDecimal(0), {
+                from: bob,
+            })
+            console.log(await (await amm.getSpotPrice()).d.toString())
 
             await expectRevert(
                 clearingHouse.removeMargin(amm.address, toDecimal(1), { from: bob }),
-                "positionSize is 0",
+                "free collateral is not enough",
             )
-            // NOTE: in this scenario, users have to open a small position to removeMargin
+        })
+        it("force error, remove margin when a short position with profit", async () => {
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(60), toDecimal(5), toDecimal(0), {
+                from: alice,
+            })
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(60), toDecimal(5), toDecimal(0), {
+                from: bob,
+            })
+            console.log(await (await amm.getSpotPrice()).d.toString())
+
+            // min(margin + funding, margin + funding + unrealized PnL) - position value * 10%
+            // min(60, 60 + (-??)) -
+
+            await expectRevert(
+                clearingHouse.removeMargin(amm.address, toDecimal(1), { from: bob }),
+                "free collateral is not enough",
+            )
+        })
+
+        it("force error, remove margin when a short position with loss", async () => {
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(60), toDecimal(5), toDecimal(0), {
+                from: alice,
+            })
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(60), toDecimal(5), toDecimal(0), {
+                from: bob,
+            })
+            console.log(await (await amm.getSpotPrice()).d.toString())
+
+            // min(margin + funding, margin + funding + unrealized PnL) - position value * 10%
+            // min(60, 60 + (-??)) -
+
+            await expectRevert(
+                clearingHouse.removeMargin(amm.address, toDecimal(1), { from: bob }),
+                "free collateral is not enough",
+            )
         })
     })
 })

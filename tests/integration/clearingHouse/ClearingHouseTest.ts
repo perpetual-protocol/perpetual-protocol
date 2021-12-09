@@ -1684,15 +1684,16 @@ describe("ClearingHouse Test", () => {
             const metaTx = {
                 from: bob,
                 to: clearingHouse.address,
-                functionSignature: clearingHouseWeb3Contract.methods
-                    .openPosition(
-                        amm.address,
-                        Side.SELL,
-                        [toFullDigitStr(20)],
-                        [toFullDigitStr(5)],
-                        [toFullDigitStr(11.12)],
-                    )
-                    .encodeABI(),
+                functionSignature: "",
+                // clearingHouseWeb3Contract.methods
+                //     .openPosition(
+                //         amm.address,
+                //         Side.SELL,
+                //         [toFullDigitStr(20)],
+                //         [toFullDigitStr(5)],
+                //         [toFullDigitStr(11.12)],
+                //     )
+                //     .encodeABI(),
                 nonce: 0,
             }
 
