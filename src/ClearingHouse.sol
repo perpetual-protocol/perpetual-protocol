@@ -103,7 +103,7 @@ contract ClearingHouse is
 
     enum Side { BUY, SELL }
     enum PnlCalcOption { SPOT_PRICE, TWAP, ORACLE }
-    enum PnlPreferenceOption { MAX, MIN }
+    enum PnlPreferenceOption { MAX_PNL, MIN_PNL }
 
     /// @notice This struct records personal position information
     /// @param size denominated in amm.baseAsset
@@ -790,7 +790,7 @@ contract ClearingHouse is
         Position memory position = getPosition(_amm, _trader);
         requirePositionSize(position.size);
         (SignedDecimal.signedDecimal memory unrealizedPnl, Decimal.decimal memory positionNotional) =
-            getPreferencePositionNotionalAndUnrealizedPnl(_amm, _trader, PnlPreferenceOption.MIN);
+            getPreferencePositionNotionalAndUnrealizedPnl(_amm, _trader, PnlPreferenceOption.MIN_PNL);
         return _getMarginRatio(_amm, position, unrealizedPnl, positionNotional);
     }
 
@@ -1357,9 +1357,9 @@ contract ClearingHouse is
         Decimal.decimal memory _marginWithFundingPayment
     ) internal view returns (SignedDecimal.signedDecimal memory) {
         (SignedDecimal.signedDecimal memory unrealizedPnl, Decimal.decimal memory positionNotional) =
-            getPreferencePositionNotionalAndUnrealizedPnl(_amm, _trader, PnlPreferenceOption.MIN);
+            getPreferencePositionNotionalAndUnrealizedPnl(_amm, _trader, PnlPreferenceOption.MIN_PNL);
 
-        // min(margin + funding, margin + funding + unrealized PnL) - position value * 10%
+        // min(margin + funding, margin + funding + unrealized PnL) - position value * initMarginRatio
         SignedDecimal.signedDecimal memory accountValue = unrealizedPnl.addD(_marginWithFundingPayment);
         SignedDecimal.signedDecimal memory minCollateral =
             accountValue.subD(_marginWithFundingPayment).toInt() > 0
@@ -1388,7 +1388,7 @@ contract ClearingHouse is
         // 0 ^ 1 = 1
         // 0 ^ 0 = 0
         // FIXME --> use `==` and add more comment
-        (unrealizedPnl, positionNotional) = (_pnlPreference == PnlPreferenceOption.MAX) !=
+        (unrealizedPnl, positionNotional) = (_pnlPreference == PnlPreferenceOption.MAX_PNL) !=
             (spotPricePnl.toInt() > twapPricePnl.toInt())
             ? (twapPricePnl, twapPositionNotional)
             : (spotPricePnl, spotPositionNotional);
