@@ -321,14 +321,14 @@ contract ClearingHouse is
         position.margin = remainMargin;
         position.lastUpdatedCumulativePremiumFraction = latestCumulativePremiumFraction;
 
-        setPosition(_amm, trader, position);
-
         // check enough collateral
         // we use the way that Curie calculates the free collateral
         require(
             calcFreeCollateral(_amm, trader, remainMargin.subD(badDebt)).toInt() >= 0,
             "free collateral is not enough"
         );
+
+        setPosition(_amm, trader, position);
 
         // transfer token back to trader
         withdraw(quoteToken, trader, _removedMargin);
@@ -1365,6 +1365,7 @@ contract ClearingHouse is
             accountValue.subD(_marginWithFundingPayment).toInt() > 0
                 ? MixedDecimal.fromDecimal(_marginWithFundingPayment)
                 : accountValue;
+
         return minCollateral.subD(positionNotional.mulD(initMarginRatio));
     }
 
