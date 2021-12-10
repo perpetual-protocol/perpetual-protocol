@@ -380,6 +380,8 @@ describe("ClearingHouse add/remove margin Test", () => {
                 })
                 await forwardBlockTimestamp(450)
                 // reserve 1250 : 80 price = 15.625
+                // push the price up, so that CH uses twap to calculate the loss
+                await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
 
                 // margin: 60
                 // positionSize: 23.08
@@ -392,7 +394,7 @@ describe("ClearingHouse add/remove margin Test", () => {
                     clearingHouse.removeMargin(amm.address, toDecimal(35.5), { from: alice }),
                     "free collateral is not enough",
                 )
-                clearingHouse.removeMargin(amm.address, toDecimal(35.4), { from: alice })
+                await clearingHouse.removeMargin(amm.address, toDecimal(35.4), { from: alice })
             })
 
             it("remove margin when a short position with profit", async () => {
@@ -418,7 +420,7 @@ describe("ClearingHouse add/remove margin Test", () => {
                     clearingHouse.removeMargin(amm.address, toDecimal(15.6), { from: alice }),
                     "free collateral is not enough",
                 )
-                clearingHouse.removeMargin(amm.address, toDecimal(15.5), { from: alice })
+                await clearingHouse.removeMargin(amm.address, toDecimal(15.5), { from: alice })
             })
 
             it("remove margin when a short position with loss", async () => {
@@ -432,6 +434,9 @@ describe("ClearingHouse add/remove margin Test", () => {
                 await forwardBlockTimestamp(450)
                 // reserve 800 : 125, price = 6.4
 
+                // pull the price down, so that CH uses twap to calculate the loss
+                await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
+
                 // margin: 20
                 // positionSize: -11.11
                 // positionNotional: (112.1 + 100) / 2 = 106.05
@@ -443,7 +448,7 @@ describe("ClearingHouse add/remove margin Test", () => {
                     clearingHouse.removeMargin(amm.address, toDecimal(8.7), { from: alice }),
                     "free collateral is not enough",
                 )
-                clearingHouse.removeMargin(amm.address, toDecimal(8.6), { from: alice })
+                await clearingHouse.removeMargin(amm.address, toDecimal(8.6), { from: alice })
             })
         })
     })
