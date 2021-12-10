@@ -212,17 +212,19 @@ contract ClearingHouse is
         IInsuranceFund _insuranceFund,
         address _trustedForwarder
     ) public initializer {
-        require(address(_insuranceFund) != address(0), "Invalid IInsuranceFund");
+        // require(address(_insuranceFund) != address(0), "Invalid IInsuranceFund");
 
         __OwnerPausable_init();
-        __ReentrancyGuard_init();
 
-        versionRecipient = "1.0.0"; // we are not using it atm
-        initMarginRatio = Decimal.decimal(_initMarginRatio);
-        maintenanceMarginRatio = Decimal.decimal(_maintenanceMarginRatio);
-        liquidationFeeRatio = Decimal.decimal(_liquidationFeeRatio);
-        insuranceFund = _insuranceFund;
-        trustedForwarder = _trustedForwarder;
+        // comment these out for reducing bytecode size
+        // __ReentrancyGuard_init();
+
+        // versionRecipient = "1.0.0"; // we are not using it atm
+        // initMarginRatio = Decimal.decimal(_initMarginRatio);
+        // maintenanceMarginRatio = Decimal.decimal(_maintenanceMarginRatio);
+        // liquidationFeeRatio = Decimal.decimal(_liquidationFeeRatio);
+        // insuranceFund = _insuranceFund;
+        // trustedForwarder = _trustedForwarder;
     }
 
     //
@@ -819,18 +821,6 @@ contract ClearingHouse is
         (Decimal.decimal memory remainMargin, Decimal.decimal memory badDebt, , ) =
             calcRemainMarginWithFundingPayment(_amm, _position, _unrealizedPnl);
         return MixedDecimal.fromDecimal(remainMargin).subD(badDebt).divD(_positionNotional);
-    }
-
-    /**
-     * @notice get withdrawable margin
-     * @param _amm IAmm address
-     * @param _trader trader address
-     * @return withdrawable margin in 18 digits
-     */
-    function getFreeCollateral(IAmm _amm, address _trader) external view returns (SignedDecimal.signedDecimal memory) {
-        (Decimal.decimal memory remainMargin, Decimal.decimal memory badDebt, , ) =
-            calcRemainMarginWithFundingPayment(_amm, getPosition(_amm, _trader), SignedDecimal.zero());
-        return calcFreeCollateral(_amm, _trader, remainMargin.subD(badDebt));
     }
 
     /**

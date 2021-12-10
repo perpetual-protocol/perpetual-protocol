@@ -255,7 +255,7 @@ describe("ClearingHouse add/remove margin Test", () => {
                     clearingHouse.removeMargin(amm.address, toDecimal(38.5), { from: alice }),
                     "free collateral is not enough",
                 )
-                const freeCollateral = await clearingHouse.getFreeCollateral(amm.address, alice)
+                const freeCollateral = await clearingHouseViewer.getFreeCollateral(amm.address, alice)
                 expect(freeCollateral).to.eq("38426966292134831461")
                 await clearingHouse.removeMargin(amm.address, freeCollateral, { from: alice })
             })
@@ -282,7 +282,7 @@ describe("ClearingHouse add/remove margin Test", () => {
                     clearingHouse.removeMargin(amm.address, toDecimal(26), { from: alice }),
                     "free collateral is not enough",
                 )
-                const freeCollateral = await clearingHouse.getFreeCollateral(amm.address, alice)
+                const freeCollateral = await clearingHouseViewer.getFreeCollateral(amm.address, alice)
                 expect(freeCollateral).to.eq("25858208955223880594")
                 await clearingHouse.removeMargin(amm.address, freeCollateral, { from: alice })
             })
@@ -308,7 +308,7 @@ describe("ClearingHouse add/remove margin Test", () => {
                     clearingHouse.removeMargin(amm.address, toDecimal(16.5), { from: alice }),
                     "free collateral is not enough",
                 )
-                const freeCollateral = await clearingHouse.getFreeCollateral(amm.address, alice)
+                const freeCollateral = await clearingHouseViewer.getFreeCollateral(amm.address, alice)
                 expect(freeCollateral).to.eq("16097560975609756098")
                 await clearingHouse.removeMargin(amm.address, freeCollateral, { from: alice })
             })
@@ -333,7 +333,7 @@ describe("ClearingHouse add/remove margin Test", () => {
                     clearingHouse.removeMargin(amm.address, toDecimal(2.5), { from: alice }),
                     "free collateral is not enough",
                 )
-                const freeCollateral = await clearingHouse.getFreeCollateral(amm.address, alice)
+                const freeCollateral = await clearingHouseViewer.getFreeCollateral(amm.address, alice)
                 expect(freeCollateral).to.eq("2282608695652173905")
                 await clearingHouse.removeMargin(amm.address, freeCollateral, { from: alice })
             })

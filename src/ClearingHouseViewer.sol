@@ -117,6 +117,36 @@ contract ClearingHouseViewer {
         return clearingHouse.getMarginRatio(_amm, _trader);
     }
 
+    /**
+     * @notice get withdrawable margin
+     * @param _amm IAmm address
+     * @param _trader trader address
+     * @return withdrawable margin in 18 digits
+     */
+    function getFreeCollateral(IAmm _amm, address _trader) external view returns (SignedDecimal.signedDecimal memory) {
+        // get trader's margin
+        ClearingHouse.Position memory position = getPersonalPositionWithFundingPayment(_amm, _trader);
+
+        // get trader's unrealized PnL and choose the least beneficial one for the trader
+        (Decimal.decimal memory spotPositionNotional, SignedDecimal.signedDecimal memory spotPricePnl) =
+            (clearingHouse.getPositionNotionalAndUnrealizedPnl(_amm, _trader, ClearingHouse.PnlCalcOption.SPOT_PRICE));
+        (Decimal.decimal memory twapPositionNotional, SignedDecimal.signedDecimal memory twapPricePnl) =
+            (clearingHouse.getPositionNotionalAndUnrealizedPnl(_amm, _trader, ClearingHouse.PnlCalcOption.TWAP));
+
+        SignedDecimal.signedDecimal memory unrealizedPnl;
+        Decimal.decimal memory positionNotional;
+        (unrealizedPnl, positionNotional) = (spotPricePnl.toInt() > twapPricePnl.toInt())
+            ? (twapPricePnl, twapPositionNotional)
+            : (spotPricePnl, spotPositionNotional);
+
+        // min(margin + funding, margin + funding + unrealized PnL) - position value * initMarginRatio
+        SignedDecimal.signedDecimal memory accountValue = unrealizedPnl.addD(position.margin);
+        SignedDecimal.signedDecimal memory minCollateral =
+            accountValue.subD(position.margin).toInt() > 0 ? MixedDecimal.fromDecimal(position.margin) : accountValue;
+
+        return minCollateral.subD(positionNotional.mulD(Decimal.decimal(clearingHouse.initMarginRatio())));
+    }
+
     //
     // PRIVATE
     //
