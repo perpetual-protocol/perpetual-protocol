@@ -794,7 +794,7 @@ contract ClearingHouse is
         Position memory position = getPosition(_amm, _trader);
         requirePositionSize(position.size);
         (SignedDecimal.signedDecimal memory unrealizedPnl, Decimal.decimal memory positionNotional) =
-            getPreferencePositionNotionalAndUnrealizedPnl(_amm, _trader, PnlPreferenceOption.MIN_PNL);
+            getPreferencePositionNotionalAndUnrealizedPnl(_amm, _trader, PnlPreferenceOption.MAX_PNL);
         return _getMarginRatio(_amm, position, unrealizedPnl, positionNotional);
     }
 
