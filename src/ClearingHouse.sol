@@ -1362,9 +1362,7 @@ contract ClearingHouse is
         // min(margin + funding, margin + funding + unrealized PnL) - position value * initMarginRatio
         SignedDecimal.signedDecimal memory accountValue = unrealizedPnl.addD(_marginWithFundingPayment);
         SignedDecimal.signedDecimal memory minCollateral =
-            accountValue.subD(_marginWithFundingPayment).toInt() > 0
-                ? MixedDecimal.fromDecimal(_marginWithFundingPayment)
-                : accountValue;
+            unrealizedPnl.toInt() > 0 ? MixedDecimal.fromDecimal(_marginWithFundingPayment) : accountValue;
 
         return minCollateral.subD(positionNotional.mulD(initMarginRatio));
     }
