@@ -249,14 +249,14 @@ describe("ClearingHouse add/remove margin Test", () => {
                 // positionNotional: 431.5026875438
                 // unrealizedPnl: 431.5026875438 - 300 = 131.5026875438
                 // min(margin + funding, margin + funding + unrealized PnL) - position value * 5%
-                // min(60, 60 + 131.5026875438) - 431.5 * 0.05 = 38.425
-                // can not remove margin > 38.425
+                // min(60, 60 + 131.5026875438) - 300 * 0.05 = 42
+                // can not remove margin > 45
                 await expectRevert(
-                    clearingHouse.removeMargin(amm.address, toDecimal(38.5), { from: alice }),
+                    clearingHouse.removeMargin(amm.address, toDecimal(45.01), { from: alice }),
                     "free collateral is not enough",
                 )
                 const freeCollateral = await clearingHouseViewer.getFreeCollateral(amm.address, alice)
-                expect(freeCollateral).to.eq("38426966292134831461")
+                expect(freeCollateral).to.eq(toFullDigit(45))
                 await clearingHouse.removeMargin(amm.address, freeCollateral, { from: alice })
             })
 
@@ -276,14 +276,14 @@ describe("ClearingHouse add/remove margin Test", () => {
                 // positionNotional: 279.88
                 // unrealizedPnl: 279.88 - 300 =  -20.12
                 // min(margin + funding, margin + funding + unrealized PnL) - position value * 5%
-                // min(60, 60 + (-20.12)) - 279.88 * 0.05 = 25.886
-                // can not remove margin > 25.886
+                // min(60, 60 + (-20.12)) - 300 * 0.05 = 24.88
+                // can not remove margin > 24.88
                 await expectRevert(
-                    clearingHouse.removeMargin(amm.address, toDecimal(26), { from: alice }),
+                    clearingHouse.removeMargin(amm.address, toDecimal(24.9), { from: alice }),
                     "free collateral is not enough",
                 )
                 const freeCollateral = await clearingHouseViewer.getFreeCollateral(amm.address, alice)
-                expect(freeCollateral).to.eq("25858208955223880594")
+                expect(freeCollateral).to.eq("24850746268656716414")
                 await clearingHouse.removeMargin(amm.address, freeCollateral, { from: alice })
             })
 
@@ -359,13 +359,13 @@ describe("ClearingHouse add/remove margin Test", () => {
                 // positionNotional: (300 + 431.5) / 2 = 365.75
                 // unrealizedPnl: 365.75 - 300 = 65.75
                 // min(margin + funding, margin + funding + unrealized PnL) - position value * 5%
-                // min(60, 60 + 65.75) - 365.75 * 0.05 = 41.7125
-                // can not remove margin > 41.7125
+                // min(60, 60 + 65.75) - 300 * 0.05 = 45
+                // can not remove margin > 45
                 await expectRevert(
-                    clearingHouse.removeMargin(amm.address, toDecimal(42), { from: alice }),
+                    clearingHouse.removeMargin(amm.address, toDecimal(45.01), { from: alice }),
                     "free collateral is not enough",
                 )
-                await clearingHouse.removeMargin(amm.address, toDecimal(41.712), { from: alice })
+                await clearingHouse.removeMargin(amm.address, toDecimal(45), { from: alice })
             })
 
             it("remove margin when a long position with loss", async () => {
@@ -385,16 +385,17 @@ describe("ClearingHouse add/remove margin Test", () => {
 
                 // margin: 60
                 // positionSize: 23.08
-                // positionNotional: (300 + 279.88) / 2 = 289.94
-                // unrealizedPnl: 289.94 - 300 =  -10.06
+                // positionNotional: (300 + 279.85) / 2 = 289.925
+                // unrealizedPnl: 289.925 - 300 =  -10.075
                 // min(margin + funding, margin + funding + unrealized PnL) - position value * 5%
-                // min(60, 60 + (-10.06)) - 289.94 * 0.05 = 35.443
-                // can not remove margin > 35.443
+                // min(60, 60 + (-10.075)) - 300 * 0.05 = 34.925
+                // can not remove margin > 34.925
                 await expectRevert(
-                    clearingHouse.removeMargin(amm.address, toDecimal(35.5), { from: alice }),
+                    clearingHouse.removeMargin(amm.address, toDecimal(34.93), { from: alice }),
                     "free collateral is not enough",
                 )
-                await clearingHouse.removeMargin(amm.address, toDecimal(35.4), { from: alice })
+                const freeCollateral = await clearingHouseViewer.getFreeCollateral(amm.address, alice)
+                await clearingHouse.removeMargin(amm.address, toDecimal(34.92), { from: alice })
             })
 
             it("remove margin when a short position with profit", async () => {

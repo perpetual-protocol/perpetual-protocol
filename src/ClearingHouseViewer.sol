@@ -144,7 +144,13 @@ contract ClearingHouseViewer {
         SignedDecimal.signedDecimal memory minCollateral =
             accountValue.subD(position.margin).toInt() > 0 ? MixedDecimal.fromDecimal(position.margin) : accountValue;
 
-        return minCollateral.subD(positionNotional.mulD(Decimal.decimal(clearingHouse.initMarginRatio())));
+        Decimal.decimal memory initMarginRatio = Decimal.decimal(clearingHouse.initMarginRatio());
+        SignedDecimal.signedDecimal memory marginRequirement =
+            position.size.toInt() > 0
+                ? MixedDecimal.fromDecimal(position.openNotional).mulD(initMarginRatio)
+                : MixedDecimal.fromDecimal(positionNotional).mulD(initMarginRatio);
+
+        return minCollateral.subD(marginRequirement);
     }
 
     //

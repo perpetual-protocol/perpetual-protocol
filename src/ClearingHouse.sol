@@ -1356,6 +1356,7 @@ contract ClearingHouse is
         address _trader,
         Decimal.decimal memory _marginWithFundingPayment
     ) internal view returns (SignedDecimal.signedDecimal memory) {
+        Position memory pos = getPosition(_amm, _trader);
         (SignedDecimal.signedDecimal memory unrealizedPnl, Decimal.decimal memory positionNotional) =
             getPreferencePositionNotionalAndUnrealizedPnl(_amm, _trader, PnlPreferenceOption.MIN_PNL);
 
@@ -1364,7 +1365,15 @@ contract ClearingHouse is
         SignedDecimal.signedDecimal memory minCollateral =
             unrealizedPnl.toInt() > 0 ? MixedDecimal.fromDecimal(_marginWithFundingPayment) : accountValue;
 
-        return minCollateral.subD(positionNotional.mulD(initMarginRatio));
+        // margin requirement
+        // if holding a long position, using open notional (mapping to quote debt in Curie)
+        // if holding a short position, using position notional (mapping to base debt in Curie)
+        SignedDecimal.signedDecimal memory marginRequirement =
+            pos.size.toInt() > 0
+                ? MixedDecimal.fromDecimal(pos.openNotional).mulD(initMarginRatio)
+                : MixedDecimal.fromDecimal(positionNotional).mulD(initMarginRatio);
+
+        return minCollateral.subD(marginRequirement);
     }
 
     function getPreferencePositionNotionalAndUnrealizedPnl(
