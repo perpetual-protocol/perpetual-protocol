@@ -1,7 +1,7 @@
-import { web3 } from "hardhat"
 import { expectEvent, expectRevert } from "@openzeppelin/test-helpers"
 import { default as BN } from "bn.js"
 import { use } from "chai"
+import { web3 } from "hardhat"
 import {
     AmmFakeInstance,
     ClearingHouseFakeInstance,
@@ -470,7 +470,7 @@ describe("Protocol shutdown test", () => {
 
                 await expectRevert(
                     clearingHouse.settlePosition(amm.address, { from: bob }),
-                    "VM Exception while processing transaction: revert DecimalERC20: transfer failed",
+                    "DecimalERC20: transfer failed",
                 )
                 const r = await clearingHouse.settlePosition(amm.address, { from: carol })
                 expectEvent.inTransaction(r.tx, clearingHouse, "PositionSettled", { valueTransferred: "0" })
