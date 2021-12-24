@@ -132,7 +132,7 @@ describe("Bad Debt Test", () => {
         const spotPriceAfter = new BigNumber((await amm.getSpotPrice()).d)
 
         // bad debt: balanceAfter - balanceBefore = 545.294114
-        expect(balanceAfter.gt(balanceBefore))
+        expect(balanceAfter.sub(balanceBefore)).eq("545294114")
         expect(spotPriceAfter.sub(new BigNumber("1")).eq(spotPriceBefore))
     })
 })
