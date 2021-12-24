@@ -83,16 +83,16 @@ describe("Bad Debt Test", () => {
     })
 
     it("bad debt simulation", async () => {
+        // balanceBefore: 5180
         let balanceBefore = new BigNumber("0")
         for (let i = 1; i < 20; i++) {
             balanceBefore = balanceBefore.add(await quoteToken.balanceOf(addresses[i]))
         }
+
+        // spot price before: 10
         const spotPriceBefore = new BigNumber((await amm.getSpotPrice()).d)
 
-        console.log(`balanceBefore: ${balanceBefore.toString()}`)
-        console.log(`spot price before: ${spotPriceBefore.toString()}`)
-
-        // hacker open small long/short
+        // open small long/short
         for (let i = 2; i < 20; i++) {
             if (i % 2 == 0) {
                 await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
@@ -105,38 +105,33 @@ describe("Bad Debt Test", () => {
             }
         }
 
-        // hacker drop spot price
+        // drop spot price
         for (let i = 0; i < 5; i++) {
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
                 from: addresses[1],
             })
         }
 
-        // hacker close
+        await forwardBlockTimestamp(1)
+
+        // close
         for (let i = 2; i < 20; i++) {
             await clearingHouse.closePosition(amm.address, toDecimal(0), { from: addresses[i] })
-            await forwardBlockTimestamp(1)
         }
 
-        // hacker pump spot price
-        while (
-            new BigNumber((await clearingHouse.getPosition(amm.address, addresses[1])).size.d)
-                .abs()
-                .gt(new BigNumber("0"))
-        ) {
-            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: addresses[1] })
-        }
+        // pump spot price
+        await clearingHouse.closePosition(amm.address, toDecimal(0), { from: addresses[1] })
 
+        // balanceAfter: 5725.294114
         let balanceAfter = new BigNumber("0")
         for (let i = 1; i < 20; i++) {
             balanceAfter = balanceAfter.add(await quoteToken.balanceOf(addresses[i]))
         }
+
+        // spot price after: 10.000000000000000001
         const spotPriceAfter = new BigNumber((await amm.getSpotPrice()).d)
 
-        console.log(`balanceAfter: ${balanceAfter.toString()}`)
-        console.log(`spot price before: ${spotPriceAfter.toString()}`)
-        console.log(`bad debt: ${balanceAfter.sub(balanceBefore).toString()}`)
-
+        // bad debt: balanceAfter - balanceBefore = 545.294114
         expect(balanceAfter.gt(balanceBefore))
         expect(spotPriceAfter.sub(new BigNumber("1")).eq(spotPriceBefore))
     })
