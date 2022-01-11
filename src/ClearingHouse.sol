@@ -492,9 +492,7 @@ contract ClearingHouse is
             }
 
             // to prevent attacker to leverage the bad debt to withdraw extra token from  insurance fund
-            if (positionResp.badDebt.toUint() > 0) {
-                enterRestrictionMode(_amm);
-            }
+            require(positionResp.badDebt.toUint() == 0, "bad debt");
 
             // transfer the actual token between trader and vault
             if (positionResp.marginToVault.toInt() > 0) {
@@ -591,13 +589,11 @@ contract ClearingHouse is
                 positionResp = internalClosePosition(_amm, trader, _quoteAssetAmountLimit);
             }
 
+            require(positionResp.badDebt.toUint() == 0, "bad debt");
+
             // add scope for stack too deep error
             // transfer the actual token from trader and vault
             IERC20 quoteToken = _amm.quoteAsset();
-            if (positionResp.badDebt.toUint() > 0) {
-                enterRestrictionMode(_amm);
-                realizeBadDebt(quoteToken, positionResp.badDebt);
-            }
             withdraw(quoteToken, trader, positionResp.marginToVault.abs());
         }
 
