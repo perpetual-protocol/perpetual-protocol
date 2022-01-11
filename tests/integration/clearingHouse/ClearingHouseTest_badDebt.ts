@@ -20,6 +20,8 @@ use(assertionHelper)
 describe("Bad Debt Test", () => {
     let addresses: string[]
     let admin: string
+    let whale: string
+    let shrimp: string
 
     let amm: AmmFakeInstance
     let insuranceFund: InsuranceFundFakeInstance
@@ -68,13 +70,16 @@ describe("Bad Debt Test", () => {
         clearingHouse = contracts.clearingHouse
         supplySchedule = contracts.supplySchedule
 
-        await quoteToken.transfer(addresses[1], toFullDigit(5000, +(await quoteToken.decimals())))
-        await approve(addresses[1], clearingHouse.address, 5000)
+        // for manipulating the price
+        whale = addresses[1]
+        await quoteToken.transfer(whale, toFullDigit(5000, +(await quoteToken.decimals())))
+        await approve(whale, clearingHouse.address, 5000)
 
-        for (let i = 2; i < 20; i++) {
-            await quoteToken.transfer(addresses[i], toFullDigit(10, +(await quoteToken.decimals())))
-            await approve(addresses[i], clearingHouse.address, 10)
-        }
+        // account that will incur bad debt
+        shrimp = addresses[2]
+        await quoteToken.transfer(shrimp, toFullDigit(15, +(await quoteToken.decimals())))
+        await approve(shrimp, clearingHouse.address, 15)
+
         await quoteToken.transfer(insuranceFund.address, toFullDigit(50000, +(await quoteToken.decimals())))
 
         await amm.setCap(toDecimal(0), toDecimal(0))
@@ -82,57 +87,126 @@ describe("Bad Debt Test", () => {
         await syncAmmPriceToOracle()
     })
 
-    it("bad debt simulation", async () => {
-        // balanceBefore: 5180
-        let balanceBefore = new BigNumber("0")
-        for (let i = 1; i < 20; i++) {
-            balanceBefore = balanceBefore.add(await quoteToken.balanceOf(addresses[i]))
-        }
+    // TODO deprecated
+    // it("bad debt simulation", async () => {
+    //     // balanceBefore: 5180
+    //     let balanceBefore = new BigNumber("0")
+    //     for (let i = 1; i < 20; i++) {
+    //         balanceBefore = balanceBefore.add(await quoteToken.balanceOf(addresses[i]))
+    //     }
 
-        // spot price before: 10
-        const spotPriceBefore = new BigNumber((await amm.getSpotPrice()).d)
+    //     // spot price before: 10
+    //     const spotPriceBefore = new BigNumber((await amm.getSpotPrice()).d)
 
+    //     // open small long/short
+    //     for (let i = 2; i < 20; i++) {
+    //         if (i % 2 == 0) {
+    //             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
+    //                 from: addresses[i],
+    //             })
+    //         } else {
+    //             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+    //                 from: addresses[i],
+    //             })
+    //         }
+    //     }
+
+    //     // drop spot price
+    //     for (let i = 0; i < 5; i++) {
+    //         await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
+    //             from: addresses[1],
+    //         })
+    //     }
+
+    //     await forwardBlockTimestamp(1)
+
+    //     // close
+    //     for (let i = 2; i < 20; i++) {
+    //         await clearingHouse.closePosition(amm.address, toDecimal(0), { from: addresses[i] })
+    //     }
+
+    //     // pump spot price
+    //     await clearingHouse.closePosition(amm.address, toDecimal(0), { from: addresses[1] })
+
+    //     // balanceAfter: 5725.294114
+    //     let balanceAfter = new BigNumber("0")
+    //     for (let i = 1; i < 20; i++) {
+    //         balanceAfter = balanceAfter.add(await quoteToken.balanceOf(addresses[i]))
+    //     }
+
+    //     // spot price after: 10.000000000000000001
+    //     const spotPriceAfter = new BigNumber((await amm.getSpotPrice()).d)
+
+    //     // bad debt: balanceAfter - balanceBefore = 545.294114
+    //     expect(balanceAfter.sub(balanceBefore)).eq("545294114")
+    //     expect(spotPriceAfter.sub(new BigNumber("1")).eq(spotPriceBefore))
+    // })
+
+    it.only("cannot increase position when bad debt", async () => {
         // open small long/short
-        for (let i = 2; i < 20; i++) {
-            if (i % 2 == 0) {
-                await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
-                    from: addresses[i],
-                })
-            } else {
-                await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
-                    from: addresses[i],
-                })
-            }
-        }
+        await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(8), toDecimal(0), {
+            from: shrimp,
+        })
 
         // drop spot price
         for (let i = 0; i < 5; i++) {
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
-                from: addresses[1],
+                from: whale,
             })
         }
 
         await forwardBlockTimestamp(1)
 
-        // close
-        for (let i = 2; i < 20; i++) {
-            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: addresses[i] })
-        }
+        // increase position should fail since the position has bad debt
+        await expect(
+            clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+                from: shrimp,
+            }),
+        ).to.be.revertedWith("Margin ratio not meet criteria")
 
         // pump spot price
-        await clearingHouse.closePosition(amm.address, toDecimal(0), { from: addresses[1] })
+        await clearingHouse.closePosition(amm.address, toDecimal(0), { from: whale })
 
-        // balanceAfter: 5725.294114
-        let balanceAfter = new BigNumber("0")
-        for (let i = 1; i < 20; i++) {
-            balanceAfter = balanceAfter.add(await quoteToken.balanceOf(addresses[i]))
+        // increase position should succeed since the position no longer has bad debt
+        clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0), {
+            from: shrimp,
+        })
+    })
+
+    it("cannot reduce position when bad debt", async () => {
+        // open small long/short
+        await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+            from: shrimp,
+        })
+
+        // drop spot price
+        for (let i = 0; i < 5; i++) {
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
+                from: whale,
+            })
         }
 
-        // spot price after: 10.000000000000000001
-        const spotPriceAfter = new BigNumber((await amm.getSpotPrice()).d)
+        await forwardBlockTimestamp(1)
 
-        // bad debt: balanceAfter - balanceBefore = 545.294114
-        expect(balanceAfter.sub(balanceBefore)).eq("545294114")
-        expect(spotPriceAfter.sub(new BigNumber("1")).eq(spotPriceBefore))
+        // increase position should fail since the position has bad debt
+        await expect(
+            clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(2), toDecimal(0), {
+                from: shrimp,
+            }),
+        ).to.be.revertedWith("bad debt")
+
+        // pump spot price
+        await clearingHouse.closePosition(amm.address, toDecimal(0), { from: whale })
+
+        // increase position should succeed since the position no longer has bad debt
+        clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+            from: shrimp,
+        })
     })
+
+    // it("cannot close position when bad debt", async () => {})
+
+    // it("cannot partial close position when bad debt", async () => {})
+
+    // it("can liquidate position when bad debt", async () => {})
 })
