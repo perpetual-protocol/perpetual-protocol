@@ -85,79 +85,26 @@ describe("Bad Debt Test", () => {
         await amm.setCap(toDecimal(0), toDecimal(0))
 
         await syncAmmPriceToOracle()
-    })
 
-    // TODO deprecated
-    // it("bad debt simulation", async () => {
-    //     // balanceBefore: 5180
-    //     let balanceBefore = new BigNumber("0")
-    //     for (let i = 1; i < 20; i++) {
-    //         balanceBefore = balanceBefore.add(await quoteToken.balanceOf(addresses[i]))
-    //     }
-
-    //     // spot price before: 10
-    //     const spotPriceBefore = new BigNumber((await amm.getSpotPrice()).d)
-
-    //     // open small long/short
-    //     for (let i = 2; i < 20; i++) {
-    //         if (i % 2 == 0) {
-    //             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
-    //                 from: addresses[i],
-    //             })
-    //         } else {
-    //             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
-    //                 from: addresses[i],
-    //             })
-    //         }
-    //     }
-
-    //     // drop spot price
-    //     for (let i = 0; i < 5; i++) {
-    //         await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
-    //             from: addresses[1],
-    //         })
-    //     }
-
-    //     await forwardBlockTimestamp(1)
-
-    //     // close
-    //     for (let i = 2; i < 20; i++) {
-    //         await clearingHouse.closePosition(amm.address, toDecimal(0), { from: addresses[i] })
-    //     }
-
-    //     // pump spot price
-    //     await clearingHouse.closePosition(amm.address, toDecimal(0), { from: addresses[1] })
-
-    //     // balanceAfter: 5725.294114
-    //     let balanceAfter = new BigNumber("0")
-    //     for (let i = 1; i < 20; i++) {
-    //         balanceAfter = balanceAfter.add(await quoteToken.balanceOf(addresses[i]))
-    //     }
-
-    //     // spot price after: 10.000000000000000001
-    //     const spotPriceAfter = new BigNumber((await amm.getSpotPrice()).d)
-
-    //     // bad debt: balanceAfter - balanceBefore = 545.294114
-    //     expect(balanceAfter.sub(balanceBefore)).eq("545294114")
-    //     expect(spotPriceAfter.sub(new BigNumber("1")).eq(spotPriceBefore))
-    // })
-
-    it.only("cannot increase position when bad debt", async () => {
-        // open small long/short
+        // shrimp open small long
+        // position size: 7.40740741
         await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(8), toDecimal(0), {
             from: shrimp,
         })
 
-        // drop spot price
+        // whale drop spot price
         for (let i = 0; i < 5; i++) {
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
                 from: whale,
             })
         }
 
+        // spot price: 3.364
         await forwardBlockTimestamp(1)
+    })
 
-        // increase position should fail since the position has bad debt
+    it("cannot increase position when bad debt", async () => {
+        // increase position should fail since margin is not enough
         await expect(
             clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
                 from: shrimp,
@@ -174,23 +121,30 @@ describe("Bad Debt Test", () => {
     })
 
     it("cannot reduce position when bad debt", async () => {
-        // open small long/short
-        await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+        // reduce position should fail since margin is not enough
+        await expect(
+            clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
+                from: shrimp,
+            }),
+        ).to.be.revertedWith("Margin ratio not meet criteria")
+
+        // pump spot price
+        await clearingHouse.closePosition(amm.address, toDecimal(0), { from: whale })
+
+        // reduce position should succeed since the position no longer has bad debt
+        clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
             from: shrimp,
         })
+    })
 
-        // drop spot price
-        for (let i = 0; i < 5; i++) {
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
-                from: whale,
-            })
-        }
-
-        await forwardBlockTimestamp(1)
-
-        // increase position should fail since the position has bad debt
+    it("cannot close position when bad debt", async () => {
+        // close position should fail since bad debt
+        // open notional = 80
+        // estimated realized PnL (partial close) = 7.4 * 3.36 - 80 = -55.136
+        // estimated remaining margin = 10 + (-55.136) = -45.136
+        // real bad debt: 46.10795455
         await expect(
-            clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(2), toDecimal(0), {
+            clearingHouse.closePosition(amm.address, toDecimal(0), {
                 from: shrimp,
             }),
         ).to.be.revertedWith("bad debt")
@@ -199,14 +153,65 @@ describe("Bad Debt Test", () => {
         await clearingHouse.closePosition(amm.address, toDecimal(0), { from: whale })
 
         // increase position should succeed since the position no longer has bad debt
-        clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(10), toDecimal(0), {
+        clearingHouse.closePosition(amm.address, toDecimal(0), {
             from: shrimp,
         })
     })
 
-    // it("cannot close position when bad debt", async () => {})
+    it("can not partial close position when bad debt", async () => {
+        // set fluctuation limit ratio to trigger partial close
+        await amm.setFluctuationLimitRatio(toDecimal("0.000001"))
+        await clearingHouse.setPartialLiquidationRatio(toDecimal("0.25"))
 
-    // it("cannot partial close position when bad debt", async () => {})
+        // position size: 7.4074074074
+        // open notional = 80
+        // estimated realized PnL (partial close) = 7.4 * 0.25 * 3.36 - 80 * 0.25 = -13.784
+        // estimated remaining margin = 10 + (-13.784) = -3.784
+        // real bad debt = 4.027
+        await expect(
+            clearingHouse.closePosition(amm.address, toDecimal(0), {
+                from: shrimp,
+            }),
+        ).to.be.revertedWith("bad debt")
+    })
 
-    // it("can liquidate position when bad debt", async () => {})
+    it("can partial close position as long as it does not incur bad debt", async () => {
+        // set fluctuation limit ratio to trigger partial close
+        await amm.setFluctuationLimitRatio(toDecimal("0.000001"))
+        await clearingHouse.setPartialLiquidationRatio(toDecimal("0.1"))
+
+        // position size: 7.4074074074
+        // open notional = 80
+        // estimated realized PnL (partial close) = 7.4 * 0.1 * 3.36 - 80 * 0.1 = -5.5136
+        // estimated remaining margin = 10 + (-5.5136) = 4.4864
+        // real bad debt = 0
+        await clearingHouse.closePosition(amm.address, toDecimal(0), {
+            from: shrimp,
+        })
+
+        // remaining position size = 7.4074074074 * 0.9 = 6.66666667
+        expect((await clearingHouse.getPosition(amm.address, shrimp)).size).to.be.eq("6666666666666666667")
+    })
+
+    it("can liquidate position when bad debt", async () => {
+        // close position should fail since bad debt
+        // open notional = 80
+        // estimated realized PnL (partial close) = 7.4 * 3.36 - 80 = -55.136
+        // estimated remaining margin = 10 + (-55.136) = -45.136
+        // real bad debt: 46.10795455
+        await expect(
+            clearingHouse.closePosition(amm.address, toDecimal(0), {
+                from: shrimp,
+            }),
+        ).to.be.revertedWith("bad debt")
+
+        // no need to manipulate TWAP because the spot price movement is large enough
+        // that getMarginRatio() returns negative value already
+        await syncAmmPriceToOracle()
+
+        // can liquidate bad debt position
+        await clearingHouse.liquidate(amm.address, shrimp, {
+            from: whale,
+        })
+    })
 })

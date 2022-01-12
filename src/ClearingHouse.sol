@@ -491,7 +491,7 @@ contract ClearingHouse is
                 requireMoreMarginRatio(getMarginRatio(_amm, trader), maintenanceMarginRatio, true);
             }
 
-            // to prevent attacker to leverage the bad debt to withdraw extra token from  insurance fund
+            // to prevent attacker to leverage the bad debt to withdraw extra token from insurance fund
             require(positionResp.badDebt.toUint() == 0, "bad debt");
 
             // transfer the actual token between trader and vault
@@ -589,6 +589,7 @@ contract ClearingHouse is
                 positionResp = internalClosePosition(_amm, trader, _quoteAssetAmountLimit);
             }
 
+            // to prevent attacker to leverage the bad debt to withdraw extra token from insurance fund
             require(positionResp.badDebt.toUint() == 0, "bad debt");
 
             // add scope for stack too deep error
