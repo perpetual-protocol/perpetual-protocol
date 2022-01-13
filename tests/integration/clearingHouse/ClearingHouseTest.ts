@@ -240,8 +240,11 @@ describe("ClearingHouse Test", () => {
                 from: bob,
             })
 
-            // when alice close, it create bad debt (bob's position is bankrupt)
-            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
+            // when alice close, it create bad debt (bob's position is bankrupt), so we can only liquidate her position
+            // await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
+            await clearingHouse.liquidate(amm.address, alice, {
+                from: bob,
+            })
 
             // bypass the restrict mode
             await forwardBlockTimestamp(15)
@@ -475,7 +478,8 @@ describe("ClearingHouse Test", () => {
                 toFullDigit(0),
             )
 
-            const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
+            // liquidate the bad debt position
+            const receipt = await clearingHouse.liquidate(amm.address, bob, { from: alice })
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 badDebt: toFullDigitStr(2550),
                 fundingPayment: toFullDigitStr(3750),
@@ -526,8 +530,9 @@ describe("ClearingHouse Test", () => {
             await approve(bob, clearingHouse.address, 10)
             await clearingHouse.addMargin(amm.address, toDecimal(10), { from: bob })
 
+            // close bad debt position
             // badDebt 2550 - 10 margin = 2540
-            const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
+            const receipt = await clearingHouse.liquidate(amm.address, bob, { from: alice })
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 badDebt: toFullDigitStr(2540),
                 fundingPayment: toFullDigitStr(3750),
@@ -2076,7 +2081,8 @@ describe("ClearingHouse Test", () => {
             })
 
             await forwardBlockTimestamp(15)
-            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: bob })
+            // liquidate bad debt position
+            await clearingHouse.liquidate(amm.address, bob, { from: alice })
 
             const blockNumber = new BigNumber(await clearingHouse.mock_getCurrentBlockNumber())
             expect(await clearingHouse.isInRestrictMode(amm.address, blockNumber)).eq(true)
