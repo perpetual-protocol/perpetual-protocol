@@ -36,6 +36,7 @@ contract ClearingHouse is
     //
     event MarginRatioChanged(uint256 marginRatio);
     event LiquidationFeeRatioChanged(uint256 liquidationFeeRatio);
+    event BackstopLiquidityProviderChanged(address indexed account, bool indexed isProvider);
     event MarginChanged(address indexed sender, address indexed amm, int256 amount, int256 fundingPayment);
     event PositionAdjusted(
         address indexed amm,
@@ -198,6 +199,8 @@ contract ClearingHouse is
     //◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤ add state variables below ◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤//
     Decimal.decimal public partialLiquidationRatio;
 
+    mapping(address => bool) public backstopLiquidityProviderMap;
+
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
     //
 
@@ -266,6 +269,17 @@ contract ClearingHouse is
      */
     function setWhitelist(address _whitelist) external onlyOwner {
         whitelist = _whitelist;
+    }
+
+    /**
+     * @notice set backstop liquidity provider
+     * @dev only owner can call
+     * @param account provider address
+     * @param isProvider wether the account is a backstop liquidity provider
+     */
+    function setBackstopLiquidityProvider(address account, bool isProvider) external onlyOwner {
+        backstopLiquidityProviderMap[account] = isProvider;
+        emit BackstopLiquidityProviderChanged(account, isProvider);
     }
 
     /**
@@ -650,7 +664,7 @@ contract ClearingHouse is
             Decimal.decimal memory feeToLiquidator;
             Decimal.decimal memory feeToInsuranceFund;
             IERC20 quoteAsset = _amm.quoteAsset();
-
+            Decimal.decimal memory totalBadDebt;
             if (
                 marginRatio.toInt() > int256(liquidationFeeRatio.toUint()) &&
                 partialLiquidationRatio.cmp(Decimal.one()) < 0 &&
@@ -673,12 +687,48 @@ contract ClearingHouse is
                     true
                 );
 
-                // half of the liquidationFee goes to liquidator & another half goes to insurance fund
-                liquidationPenalty = positionResp.exchangedQuoteAssetAmount.mulD(liquidationFeeRatio);
-                feeToLiquidator = liquidationPenalty.divScalar(2);
-                feeToInsuranceFund = liquidationPenalty.subD(feeToLiquidator);
+                // case #1:
+                //   - no bad debt during reduce
+                //   - feeToLiquidator <= remainMargin
+                //   - liquidationPenalty = feeToLiquidator + feeToInsuranceFund
+                //   - remainMargin -= feeToLiquidator
+                //
+                // case #2:
+                //   - no bad debt during reduce
+                //   - feeToLiquidator > remainMargin
+                //   - liquidationPenalty = remainMargin
+                //   - remainMargin = 0
+                //
+                // case #3:
+                //   - has bad debt during reduce
+                //   - remainMargin = 0
+                //   - liquidationPenalty = 0
+                //   - badDebt += feeToLiquidator
 
-                positionResp.position.margin = positionResp.position.margin.subD(liquidationPenalty);
+                Decimal.decimal memory liquidationFee =
+                    positionResp.exchangedQuoteAssetAmount.mulD(liquidationFeeRatio);
+                feeToLiquidator = liquidationFee.divScalar(2);
+
+                if (feeToLiquidator <= positionResp.position.margin) {
+                    // case #1
+                    feeToInsuranceFund = liquidationFee <= positionResp.position.margin
+                        ? liquidationFee.subD(feeToLiquidator)
+                        : positionResp.position.margin.subD(feeToLiquidator);
+                    liquidationPenalty = feeToLiquidator.addD(feeToInsuranceFund);
+                    positionResp.position.margin = positionResp.position.margin.subD(liquidationPenalty);
+                } else if (positionResp.badDebt == 0) {
+                    // case #2
+                    liquidationPenalty = positionResp.position.margin;
+                    liquidationBadDebt = feeToLiquidator.subD(positionResp.position.margin);
+                    totalBadDebt = liquidationBadDebt;
+                    positionResp.position.margin = Decimal.zero();
+                } else {
+                    // case #3
+                    liquidationPenalty = Decimal.zero();
+                    liquidationBadDebt = feeToLiquidator;
+                    totalBadDebt = positionResp.badDebt.addD(liquidationBadDebt);
+                }
+
                 setPosition(_amm, _trader, positionResp.position);
             } else {
                 liquidationPenalty = getPosition(_amm, _trader).margin;
@@ -688,7 +738,7 @@ contract ClearingHouse is
 
                 // if the remainMargin is not enough for liquidationFee, count it as bad debt
                 // else, then the rest will be transferred to insuranceFund
-                Decimal.decimal memory totalBadDebt = positionResp.badDebt;
+                totalBadDebt = positionResp.badDebt;
                 if (feeToLiquidator.toUint() > remainMargin.toUint()) {
                     liquidationBadDebt = feeToLiquidator.subD(remainMargin);
                     totalBadDebt = totalBadDebt.addD(liquidationBadDebt);
@@ -696,13 +746,15 @@ contract ClearingHouse is
                     remainMargin = remainMargin.subD(feeToLiquidator);
                 }
 
-                // transfer the actual token between trader and vault
-                if (totalBadDebt.toUint() > 0) {
-                    realizeBadDebt(quoteAsset, totalBadDebt);
-                }
                 if (remainMargin.toUint() > 0) {
                     feeToInsuranceFund = remainMargin;
                 }
+            }
+
+            // transfer the actual token between trader and vault
+            if (totalBadDebt.toUint() > 0) {
+                require(backstopLiquidityProviderMap[_msgSender()], "not backstop LP");
+                realizeBadDebt(quoteAsset, totalBadDebt);
             }
 
             if (feeToInsuranceFund.toUint() > 0) {
