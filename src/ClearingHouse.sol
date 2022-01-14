@@ -709,14 +709,14 @@ contract ClearingHouse is
                     positionResp.exchangedQuoteAssetAmount.mulD(liquidationFeeRatio);
                 feeToLiquidator = liquidationFee.divScalar(2);
 
-                if (feeToLiquidator <= positionResp.position.margin) {
+                if (feeToLiquidator.toUint() <= positionResp.position.margin.toUint()) {
                     // case #1
-                    feeToInsuranceFund = liquidationFee <= positionResp.position.margin
+                    feeToInsuranceFund = liquidationFee.toUint() <= positionResp.position.margin.toUint()
                         ? liquidationFee.subD(feeToLiquidator)
                         : positionResp.position.margin.subD(feeToLiquidator);
                     liquidationPenalty = feeToLiquidator.addD(feeToInsuranceFund);
                     positionResp.position.margin = positionResp.position.margin.subD(liquidationPenalty);
-                } else if (positionResp.badDebt == 0) {
+                } else if (positionResp.badDebt.toUint() == 0) {
                     // case #2
                     liquidationPenalty = positionResp.position.margin;
                     liquidationBadDebt = feeToLiquidator.subD(positionResp.position.margin);
