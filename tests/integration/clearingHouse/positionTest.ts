@@ -890,6 +890,8 @@ describe("ClearingHouse - open/close position Test", () => {
         })
 
         it("alice take profit from bob's unrealized under-collateral position, then bob got liquidate", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(carol, true)
+
             // avoid actions from exceeding the fluctuation limit
             await amm.setFluctuationLimitRatio(toDecimal(0.8))
 
@@ -958,6 +960,8 @@ describe("ClearingHouse - open/close position Test", () => {
         })
 
         it("alice's position got liquidated and not enough margin left for paying liquidation fee", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(carol, true)
+
             // alice opens long position
             await approve(alice, clearingHouse.address, 150)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(150), toDecimal(4), toDecimal(0), {
@@ -1910,6 +1914,8 @@ describe("ClearingHouse - open/close position Test", () => {
         })
 
         it("close a under collateral position when fee is 10%", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(bob, true)
+
             await approve(alice, clearingHouse.address, 60) // 20(first margin) + 20(open fee) + 17.04(close fee)
             await approve(bob, clearingHouse.address, 2000)
 
