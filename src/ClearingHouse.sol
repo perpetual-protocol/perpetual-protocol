@@ -235,7 +235,9 @@ contract ClearingHouse is
     //
 
     /**
+     * @notice set liquidation fee ratio
      * @dev only owner can call
+     * @param _liquidationFeeRatio new liquidation fee ratio in 18 digits
      */
     function setLiquidationFeeRatio(Decimal.decimal memory _liquidationFeeRatio) external onlyOwner {
         liquidationFeeRatio = _liquidationFeeRatio;
@@ -243,7 +245,9 @@ contract ClearingHouse is
     }
 
     /**
+     * @notice set maintenance margin ratio
      * @dev only owner can call
+     * @param _maintenanceMarginRatio new maintenance margin ratio in 18 digits
      */
     function setMaintenanceMarginRatio(Decimal.decimal memory _maintenanceMarginRatio) external onlyOwner {
         maintenanceMarginRatio = _maintenanceMarginRatio;
@@ -279,13 +283,16 @@ contract ClearingHouse is
     }
 
     /**
+     * @notice set the margin ratio after deleveraging
      * @dev only owner can call
      */
     function setPartialLiquidationRatio(Decimal.decimal memory _ratio) external onlyOwner {
+        require(_ratio.cmp(Decimal.one()) <= 0, "invalid partial liquidation ratio");
         partialLiquidationRatio = _ratio;
     }
 
     /**
+     * @notice add margin to increase margin ratio
      * @param _amm IAmm address
      * @param _addedMargin added margin in 18 digits
      */
@@ -307,6 +314,7 @@ contract ClearingHouse is
     }
 
     /**
+     * @notice remove margin to decrease margin ratio
      * @param _amm IAmm address
      * @param _removedMargin removed margin in 18 digits
      */
@@ -492,6 +500,7 @@ contract ClearingHouse is
 
             // update the position state
             setPosition(_amm, trader, positionResp.position);
+            // if opening the exact position size as the existing one == closePosition, can skip the margin ratio check
             if (!isNewPosition && positionResp.position.size.toInt() != 0) {
                 requireMoreMarginRatio(getMarginRatio(_amm, trader), maintenanceMarginRatio, true);
             }
@@ -627,6 +636,7 @@ contract ClearingHouse is
     }
 
     /**
+     * @notice liquidate trader's underwater position. Require trader's margin ratio less than maintenance margin ratio
      * @dev liquidator can NOT open any positions in the same block to prevent from price manipulation.
      * @param _amm IAmm address
      * @param _trader trader address
@@ -637,6 +647,7 @@ contract ClearingHouse is
         SignedDecimal.signedDecimal memory marginRatioBasedOnSpot =
             _getMarginRatio(_amm, _trader, PnlCalcOption.SPOT_PRICE);
 
+        // including oracle-based margin ratio as reference price when amm is over spread limit
         if (_amm.isOverSpreadLimit()) {
             SignedDecimal.signedDecimal memory marginRatioBasedOnOracle =
                 _getMarginRatio(_amm, _trader, PnlCalcOption.ORACLE);
@@ -656,6 +667,7 @@ contract ClearingHouse is
             Decimal.decimal memory feeToLiquidator;
             Decimal.decimal memory feeToInsuranceFund;
             IERC20 quoteAsset = _amm.quoteAsset();
+
             if (
                 marginRatioBasedOnSpot.toInt() > int256(liquidationFeeRatio.toUint()) &&
                 partialLiquidationRatio.cmp(Decimal.one()) < 0 &&
@@ -706,7 +718,6 @@ contract ClearingHouse is
                     require(backstopLiquidityProviderMap[_msgSender()], "not backstop LP");
                     realizeBadDebt(quoteAsset, totalBadDebt);
                 }
-
                 if (remainMargin.toUint() > 0) {
                     feeToInsuranceFund = remainMargin;
                 }
@@ -790,9 +801,11 @@ contract ClearingHouse is
     //
 
     /**
+     * @notice get margin ratio, marginRatio = (margin + funding payment + unrealized Pnl) / positionNotional
      * use spot and twap price to calculate unrealized Pnl, final unrealized Pnl depends on which one is higher
      * @param _amm IAmm address
      * @param _trader trader address
+     * @return margin ratio in 18 digits
      */
     function getMarginRatio(IAmm _amm, address _trader) public view returns (SignedDecimal.signedDecimal memory) {
         Position memory position = getPosition(_amm, _trader);
