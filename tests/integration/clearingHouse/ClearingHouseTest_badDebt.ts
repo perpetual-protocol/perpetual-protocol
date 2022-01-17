@@ -115,7 +115,7 @@ describe("Bad Debt Test", () => {
         await clearingHouse.closePosition(amm.address, toDecimal(0), { from: whale })
 
         // increase position should succeed since the position no longer has bad debt
-        clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0), {
+        await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0), {
             from: shrimp,
         })
     })
@@ -132,7 +132,7 @@ describe("Bad Debt Test", () => {
         await clearingHouse.closePosition(amm.address, toDecimal(0), { from: whale })
 
         // reduce position should succeed since the position no longer has bad debt
-        clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
+        await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(1), toDecimal(1), toDecimal(0), {
             from: shrimp,
         })
     })
@@ -153,7 +153,7 @@ describe("Bad Debt Test", () => {
         await clearingHouse.closePosition(amm.address, toDecimal(0), { from: whale })
 
         // increase position should succeed since the position no longer has bad debt
-        clearingHouse.closePosition(amm.address, toDecimal(0), {
+        await clearingHouse.closePosition(amm.address, toDecimal(0), {
             from: shrimp,
         })
     })
