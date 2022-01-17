@@ -633,11 +633,13 @@ contract ClearingHouse is
      */
     function liquidate(IAmm _amm, address _trader) external nonReentrant() {
         requireAmm(_amm, true);
-        SignedDecimal.signedDecimal memory marginRatioBasedOnSpot = getMarginRatio(_amm, _trader);
-        SignedDecimal.signedDecimal memory marginRatio = marginRatioBasedOnSpot;
+        SignedDecimal.signedDecimal memory marginRatio = getMarginRatio(_amm, _trader);
+        SignedDecimal.signedDecimal memory marginRatioBasedOnSpot =
+            _getMarginRatio(_amm, _trader, PnlCalcOption.SPOT_PRICE);
 
         if (_amm.isOverSpreadLimit()) {
-            SignedDecimal.signedDecimal memory marginRatioBasedOnOracle = _getMarginRatioBasedOnOracle(_amm, _trader);
+            SignedDecimal.signedDecimal memory marginRatioBasedOnOracle =
+                _getMarginRatio(_amm, _trader, PnlCalcOption.ORACLE);
             if (marginRatioBasedOnOracle.subD(marginRatio).toInt() > 0) {
                 marginRatio = marginRatioBasedOnOracle;
             }
@@ -654,7 +656,6 @@ contract ClearingHouse is
             Decimal.decimal memory feeToLiquidator;
             Decimal.decimal memory feeToInsuranceFund;
             IERC20 quoteAsset = _amm.quoteAsset();
-            Decimal.decimal memory totalBadDebt;
             if (
                 marginRatioBasedOnSpot.toInt() > int256(liquidationFeeRatio.toUint()) &&
                 partialLiquidationRatio.cmp(Decimal.one()) < 0 &&
@@ -692,7 +693,7 @@ contract ClearingHouse is
 
                 // if the remainMargin is not enough for liquidationFee, count it as bad debt
                 // else, then the rest will be transferred to insuranceFund
-                totalBadDebt = positionResp.badDebt;
+                Decimal.decimal memory totalBadDebt = positionResp.badDebt;
                 if (feeToLiquidator.toUint() > remainMargin.toUint()) {
                     liquidationBadDebt = feeToLiquidator.subD(remainMargin);
                     totalBadDebt = totalBadDebt.addD(liquidationBadDebt);
@@ -798,22 +799,22 @@ contract ClearingHouse is
         requirePositionSize(position.size);
         (SignedDecimal.signedDecimal memory unrealizedPnl, Decimal.decimal memory positionNotional) =
             getPreferencePositionNotionalAndUnrealizedPnl(_amm, _trader, PnlPreferenceOption.MAX_PNL);
-        return _getMarginRatio(_amm, position, unrealizedPnl, positionNotional);
-    }
-
-    function _getMarginRatioBasedOnOracle(IAmm _amm, address _trader)
-        internal
-        view
-        returns (SignedDecimal.signedDecimal memory)
-    {
-        Position memory position = getPosition(_amm, _trader);
-        requirePositionSize(position.size);
-        (Decimal.decimal memory oraclePositionNotional, SignedDecimal.signedDecimal memory oraclePricePnl) =
-            (getPositionNotionalAndUnrealizedPnl(_amm, _trader, PnlCalcOption.ORACLE));
-        return _getMarginRatio(_amm, position, oraclePricePnl, oraclePositionNotional);
+        return _getMarginRatioByPositionNotional(_amm, position, unrealizedPnl, positionNotional);
     }
 
     function _getMarginRatio(
+        IAmm _amm,
+        address _trader,
+        PnlCalcOption _pnlCalcOption
+    ) internal view returns (SignedDecimal.signedDecimal memory) {
+        Position memory position = getPosition(_amm, _trader);
+        requirePositionSize(position.size);
+        (Decimal.decimal memory positionNotional, SignedDecimal.signedDecimal memory pnl) =
+            getPositionNotionalAndUnrealizedPnl(_amm, _trader, _pnlCalcOption);
+        return _getMarginRatioByPositionNotional(_amm, position, pnl, positionNotional);
+    }
+
+    function _getMarginRatioByPositionNotional(
         IAmm _amm,
         Position memory _position,
         SignedDecimal.signedDecimal memory _unrealizedPnl,
@@ -1450,6 +1451,7 @@ contract ClearingHouse is
         int256 remainingMarginRatio = _marginRatio.subD(_baseMarginRatio).toInt();
         require(
             _largerThanOrEqualTo ? remainingMarginRatio >= 0 : remainingMarginRatio < 0,
+            "Margin ratio not meet criteria"
         );
     }
 }
