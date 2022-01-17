@@ -644,13 +644,11 @@ contract ClearingHouse is
     function liquidate(IAmm _amm, address _trader) external nonReentrant() {
         requireAmm(_amm, true);
         SignedDecimal.signedDecimal memory marginRatio = getMarginRatio(_amm, _trader);
-        SignedDecimal.signedDecimal memory marginRatioBasedOnSpot =
-            _getMarginRatio(_amm, _trader, PnlCalcOption.SPOT_PRICE);
 
         // including oracle-based margin ratio as reference price when amm is over spread limit
         if (_amm.isOverSpreadLimit()) {
             SignedDecimal.signedDecimal memory marginRatioBasedOnOracle =
-                _getMarginRatio(_amm, _trader, PnlCalcOption.ORACLE);
+                _getMarginRatioByCalcOption(_amm, _trader, PnlCalcOption.ORACLE);
             if (marginRatioBasedOnOracle.subD(marginRatio).toInt() > 0) {
                 marginRatio = marginRatioBasedOnOracle;
             }
@@ -668,8 +666,13 @@ contract ClearingHouse is
             Decimal.decimal memory feeToInsuranceFund;
             IERC20 quoteAsset = _amm.quoteAsset();
 
+            int256 marginRatioBasedOnSpot =
+                _getMarginRatioByCalcOption(_amm, _trader, PnlCalcOption.SPOT_PRICE).toInt();
             if (
-                marginRatioBasedOnSpot.toInt() > int256(liquidationFeeRatio.toUint()) &&
+                // check margin(based on spot price) is enough to pay the liquidation fee
+                // after partially close, otherwise we fully close the position.
+                // that also means we can ensure no bad debt happen when partially liquidate
+                marginRatioBasedOnSpot > int256(liquidationFeeRatio.toUint()) &&
                 partialLiquidationRatio.cmp(Decimal.one()) < 0 &&
                 partialLiquidationRatio.toUint() != 0
             ) {
@@ -812,10 +815,10 @@ contract ClearingHouse is
         requirePositionSize(position.size);
         (SignedDecimal.signedDecimal memory unrealizedPnl, Decimal.decimal memory positionNotional) =
             getPreferencePositionNotionalAndUnrealizedPnl(_amm, _trader, PnlPreferenceOption.MAX_PNL);
-        return _getMarginRatioByPositionNotional(_amm, position, unrealizedPnl, positionNotional);
+        return _getMarginRatio(_amm, position, unrealizedPnl, positionNotional);
     }
 
-    function _getMarginRatio(
+    function _getMarginRatioByCalcOption(
         IAmm _amm,
         address _trader,
         PnlCalcOption _pnlCalcOption
@@ -824,10 +827,10 @@ contract ClearingHouse is
         requirePositionSize(position.size);
         (Decimal.decimal memory positionNotional, SignedDecimal.signedDecimal memory pnl) =
             getPositionNotionalAndUnrealizedPnl(_amm, _trader, _pnlCalcOption);
-        return _getMarginRatioByPositionNotional(_amm, position, pnl, positionNotional);
+        return _getMarginRatio(_amm, position, pnl, positionNotional);
     }
 
-    function _getMarginRatioByPositionNotional(
+    function _getMarginRatio(
         IAmm _amm,
         Position memory _position,
         SignedDecimal.signedDecimal memory _unrealizedPnl,
