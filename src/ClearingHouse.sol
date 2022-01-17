@@ -235,9 +235,7 @@ contract ClearingHouse is
     //
 
     /**
-     * @notice set liquidation fee ratio
      * @dev only owner can call
-     * @param _liquidationFeeRatio new liquidation fee ratio in 18 digits
      */
     function setLiquidationFeeRatio(Decimal.decimal memory _liquidationFeeRatio) external onlyOwner {
         liquidationFeeRatio = _liquidationFeeRatio;
@@ -245,9 +243,7 @@ contract ClearingHouse is
     }
 
     /**
-     * @notice set maintenance margin ratio
      * @dev only owner can call
-     * @param _maintenanceMarginRatio new maintenance margin ratio in 18 digits
      */
     function setMaintenanceMarginRatio(Decimal.decimal memory _maintenanceMarginRatio) external onlyOwner {
         maintenanceMarginRatio = _maintenanceMarginRatio;
@@ -283,16 +279,13 @@ contract ClearingHouse is
     }
 
     /**
-     * @notice set the margin ratio after deleveraging
      * @dev only owner can call
      */
     function setPartialLiquidationRatio(Decimal.decimal memory _ratio) external onlyOwner {
-        require(_ratio.cmp(Decimal.one()) <= 0, "invalid partial liquidation ratio");
         partialLiquidationRatio = _ratio;
     }
 
     /**
-     * @notice add margin to increase margin ratio
      * @param _amm IAmm address
      * @param _addedMargin added margin in 18 digits
      */
@@ -314,7 +307,6 @@ contract ClearingHouse is
     }
 
     /**
-     * @notice remove margin to decrease margin ratio
      * @param _amm IAmm address
      * @param _removedMargin removed margin in 18 digits
      */
@@ -500,7 +492,6 @@ contract ClearingHouse is
 
             // update the position state
             setPosition(_amm, trader, positionResp.position);
-            // if opening the exact position size as the existing one == closePosition, can skip the margin ratio check
             if (!isNewPosition && positionResp.position.size.toInt() != 0) {
                 requireMoreMarginRatio(getMarginRatio(_amm, trader), maintenanceMarginRatio, true);
             }
@@ -636,16 +627,15 @@ contract ClearingHouse is
     }
 
     /**
-     * @notice liquidate trader's underwater position. Require trader's margin ratio less than maintenance margin ratio
      * @dev liquidator can NOT open any positions in the same block to prevent from price manipulation.
      * @param _amm IAmm address
      * @param _trader trader address
      */
     function liquidate(IAmm _amm, address _trader) external nonReentrant() {
         requireAmm(_amm, true);
-        SignedDecimal.signedDecimal memory marginRatio = getMarginRatio(_amm, _trader);
+        SignedDecimal.signedDecimal memory marginRatioBasedOnSpot = getMarginRatio(_amm, _trader);
+        SignedDecimal.signedDecimal memory marginRatio = marginRatioBasedOnSpot;
 
-        // including oracle-based margin ratio as reference price when amm is over spread limit
         if (_amm.isOverSpreadLimit()) {
             SignedDecimal.signedDecimal memory marginRatioBasedOnOracle = _getMarginRatioBasedOnOracle(_amm, _trader);
             if (marginRatioBasedOnOracle.subD(marginRatio).toInt() > 0) {
@@ -666,7 +656,7 @@ contract ClearingHouse is
             IERC20 quoteAsset = _amm.quoteAsset();
             Decimal.decimal memory totalBadDebt;
             if (
-                marginRatio.toInt() > int256(liquidationFeeRatio.toUint()) &&
+                marginRatioBasedOnSpot.toInt() > int256(liquidationFeeRatio.toUint()) &&
                 partialLiquidationRatio.cmp(Decimal.one()) < 0 &&
                 partialLiquidationRatio.toUint() != 0
             ) {
@@ -687,48 +677,12 @@ contract ClearingHouse is
                     true
                 );
 
-                // case #1:
-                //   - no bad debt during reduce
-                //   - feeToLiquidator <= remainMargin
-                //   - liquidationPenalty = feeToLiquidator + feeToInsuranceFund
-                //   - remainMargin -= feeToLiquidator
-                //
-                // case #2:
-                //   - no bad debt during reduce
-                //   - feeToLiquidator > remainMargin
-                //   - liquidationPenalty = remainMargin
-                //   - remainMargin = 0
-                //
-                // case #3:
-                //   - has bad debt during reduce
-                //   - remainMargin = 0
-                //   - liquidationPenalty = 0
-                //   - badDebt += feeToLiquidator
+                // half of the liquidationFee goes to liquidator & another half goes to insurance fund
+                liquidationPenalty = positionResp.exchangedQuoteAssetAmount.mulD(liquidationFeeRatio);
+                feeToLiquidator = liquidationPenalty.divScalar(2);
+                feeToInsuranceFund = liquidationPenalty.subD(feeToLiquidator);
 
-                Decimal.decimal memory liquidationFee =
-                    positionResp.exchangedQuoteAssetAmount.mulD(liquidationFeeRatio);
-                feeToLiquidator = liquidationFee.divScalar(2);
-
-                if (feeToLiquidator.toUint() <= positionResp.position.margin.toUint()) {
-                    // case #1
-                    feeToInsuranceFund = liquidationFee.toUint() <= positionResp.position.margin.toUint()
-                        ? liquidationFee.subD(feeToLiquidator)
-                        : positionResp.position.margin.subD(feeToLiquidator);
-                    liquidationPenalty = feeToLiquidator.addD(feeToInsuranceFund);
-                    positionResp.position.margin = positionResp.position.margin.subD(liquidationPenalty);
-                } else if (positionResp.badDebt.toUint() == 0) {
-                    // case #2
-                    liquidationPenalty = positionResp.position.margin;
-                    liquidationBadDebt = feeToLiquidator.subD(positionResp.position.margin);
-                    totalBadDebt = liquidationBadDebt;
-                    positionResp.position.margin = Decimal.zero();
-                } else {
-                    // case #3
-                    liquidationPenalty = Decimal.zero();
-                    liquidationBadDebt = feeToLiquidator;
-                    totalBadDebt = positionResp.badDebt.addD(liquidationBadDebt);
-                }
-
+                positionResp.position.margin = positionResp.position.margin.subD(liquidationPenalty);
                 setPosition(_amm, _trader, positionResp.position);
             } else {
                 liquidationPenalty = getPosition(_amm, _trader).margin;
@@ -746,15 +700,15 @@ contract ClearingHouse is
                     remainMargin = remainMargin.subD(feeToLiquidator);
                 }
 
+                // transfer the actual token between trader and vault
+                if (totalBadDebt.toUint() > 0) {
+                    require(backstopLiquidityProviderMap[_msgSender()], "not backstop LP");
+                    realizeBadDebt(quoteAsset, totalBadDebt);
+                }
+
                 if (remainMargin.toUint() > 0) {
                     feeToInsuranceFund = remainMargin;
                 }
-            }
-
-            // transfer the actual token between trader and vault
-            if (totalBadDebt.toUint() > 0) {
-                require(backstopLiquidityProviderMap[_msgSender()], "not backstop LP");
-                realizeBadDebt(quoteAsset, totalBadDebt);
             }
 
             if (feeToInsuranceFund.toUint() > 0) {
@@ -835,11 +789,9 @@ contract ClearingHouse is
     //
 
     /**
-     * @notice get margin ratio, marginRatio = (margin + funding payment + unrealized Pnl) / positionNotional
      * use spot and twap price to calculate unrealized Pnl, final unrealized Pnl depends on which one is higher
      * @param _amm IAmm address
      * @param _trader trader address
-     * @return margin ratio in 18 digits
      */
     function getMarginRatio(IAmm _amm, address _trader) public view returns (SignedDecimal.signedDecimal memory) {
         Position memory position = getPosition(_amm, _trader);
@@ -1498,7 +1450,6 @@ contract ClearingHouse is
         int256 remainingMarginRatio = _marginRatio.subD(_baseMarginRatio).toInt();
         require(
             _largerThanOrEqualTo ? remainingMarginRatio >= 0 : remainingMarginRatio < 0,
-            "Margin ratio not meet criteria"
         );
     }
 }
