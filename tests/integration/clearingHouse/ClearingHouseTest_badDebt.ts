@@ -193,7 +193,10 @@ describe("Bad Debt Test", () => {
         expect((await clearingHouse.getPosition(amm.address, shrimp)).size).to.be.eq("6666666666666666667")
     })
 
-    it("can liquidate position when bad debt", async () => {
+    it("can liquidate position by backstop LP when bad debt", async () => {
+        // set whale to backstop LP
+        await clearingHouse.setBackstopLiquidityProvider(whale, true)
+
         // close position should fail since bad debt
         // open notional = 80
         // estimated realized PnL (partial close) = 7.4 * 3.36 - 80 = -55.136
@@ -213,5 +216,29 @@ describe("Bad Debt Test", () => {
         await clearingHouse.liquidate(amm.address, shrimp, {
             from: whale,
         })
+    })
+
+    it("cannot liquidate position by non backstop LP when bad debt", async () => {
+        // close position should fail since bad debt
+        // open notional = 80
+        // estimated realized PnL (partial close) = 7.4 * 3.36 - 80 = -55.136
+        // estimated remaining margin = 10 + (-55.136) = -45.136
+        // real bad debt: 46.10795455
+        await expect(
+            clearingHouse.closePosition(amm.address, toDecimal(0), {
+                from: shrimp,
+            }),
+        ).to.be.revertedWith("bad debt")
+
+        // no need to manipulate TWAP because the spot price movement is large enough
+        // that getMarginRatio() returns negative value already
+        await syncAmmPriceToOracle()
+
+        // can liquidate bad debt position
+        await expect(
+            clearingHouse.liquidate(amm.address, shrimp, {
+                from: whale,
+            }),
+        ).to.be.revertedWith("not backstop LP")
     })
 })
