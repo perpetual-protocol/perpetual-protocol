@@ -2349,4 +2349,21 @@ describe("ClearingHouse Test", () => {
             await expectEvent.not.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged")
         })
     })
+
+    describe("backstop LP setter", async () => {
+        it("set backstop LP by owner", async () => {
+            expect(await clearingHouse.backstopLiquidityProviderMap(alice)).to.be.false
+            await clearingHouse.setBackstopLiquidityProvider(alice, true)
+            expect(await clearingHouse.backstopLiquidityProviderMap(alice)).to.be.true
+            await clearingHouse.setBackstopLiquidityProvider(alice, false)
+            expect(await clearingHouse.backstopLiquidityProviderMap(alice)).to.be.false
+        })
+
+        it("not allowed to set backstop LP by non-owner", async () => {
+            await expectRevert(
+                clearingHouse.setBackstopLiquidityProvider(bob, true, { from: alice }),
+                "PerpFiOwnableUpgrade: caller is not the owner",
+            )
+        })
+    })
 })
