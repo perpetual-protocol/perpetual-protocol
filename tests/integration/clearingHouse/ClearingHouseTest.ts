@@ -233,6 +233,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("is 0 when everyone close position, one of them is bankrupt position", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(bob, true)
             await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(250), toDecimal(1), toDecimal(0), {
                 from: alice,
             })
@@ -467,6 +468,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("has huge funding payment loss that the margin become 0 with bad debt of long position", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(alice, true)
             // given the underlying twap price is 21.6, and current snapShot price is 400B/250Q = $1.6
             await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
             await gotoNextFundingTime()
@@ -518,6 +520,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("reduce bad debt after adding margin to a underwater position", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(alice, true)
             // given the underlying twap price is 21.6, and current snapShot price is 400B/250Q = $1.6
             await mockPriceFeed.setTwapPrice(toFullDigit(21.6))
             await gotoNextFundingTime()
@@ -939,6 +942,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("a long position is under water, thus liquidating the complete position", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(carol, true)
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
             await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
@@ -990,6 +994,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("a short position is under water, thus liquidating the complete position", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(carol, true)
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
             await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
@@ -1221,6 +1226,7 @@ describe("ClearingHouse Test", () => {
             it("partially liquidate three positions within the fluctuation limit", async () => {
                 await amm.setFluctuationLimitRatio(toDecimal(0.06))
                 traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
+                await clearingHouse.setBackstopLiquidityProvider(traderWallet1.address, true)
 
                 await transfer(admin, traderWallet1.address, 1000)
                 await transfer(admin, bob, 1000)
@@ -1549,6 +1555,7 @@ describe("ClearingHouse Test", () => {
             }
 
             it("liquidator can open position and liquidate in the next block", async () => {
+                await clearingHouse.setBackstopLiquidityProvider(carol, true)
                 await makeAliceLiquidatableByShort()
 
                 await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(5), toDecimal(0), {
@@ -1560,6 +1567,7 @@ describe("ClearingHouse Test", () => {
             })
 
             it("can open position (short) and liquidate, but can't do anything more action in the same block", async () => {
+                await clearingHouse.setBackstopLiquidityProvider(carol, true)
                 await makeAliceLiquidatableByShort()
 
                 // short to make alice loss more and make insuranceFund loss more
@@ -1575,6 +1583,7 @@ describe("ClearingHouse Test", () => {
             })
 
             it("can open position (long) and liquidate, but can't do anything more action in the same block", async () => {
+                await clearingHouse.setBackstopLiquidityProvider(carol, true)
                 await makeAliceLiquidatableByLong()
 
                 // short to make alice loss more and make insuranceFund loss more
@@ -1605,6 +1614,7 @@ describe("ClearingHouse Test", () => {
             })
 
             it("can open position (even the same side, short), but can't do anything more action in the same block", async () => {
+                await clearingHouse.setBackstopLiquidityProvider(carol, true)
                 await makeAliceLiquidatableByLong()
 
                 // open a short position, make alice loss less
@@ -1628,6 +1638,7 @@ describe("ClearingHouse Test", () => {
 
                 traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
                 traderWallet2 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
+                await clearingHouse.setBackstopLiquidityProvider(traderWallet2.address, true)
 
                 await approve(alice, traderWallet1.address, 500)
                 await approve(alice, traderWallet2.address, 500)
@@ -1652,6 +1663,7 @@ describe("ClearingHouse Test", () => {
 
                 traderWallet1 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
                 traderWallet2 = await TraderWallet.new(clearingHouse.address, quoteToken.address)
+                await clearingHouse.setBackstopLiquidityProvider(traderWallet2.address, true)
 
                 await approve(alice, traderWallet1.address, 500)
                 await approve(alice, traderWallet2.address, 500)
@@ -2069,6 +2081,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("trigger restriction mode", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(alice, true)
             // just make some trades to make bob's bad debt larger than 0 by checking args[8] of event
             // price become 11.03 after openPosition
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(10), toDecimal(5), toDecimal(0), {
@@ -2150,6 +2163,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("failed if open, liquidate then close", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(traderWallet1.address, true)
             await makeLiquidatableByShort(alice)
             await forwardBlockTimestamp(15)
             await traderWallet1.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(5), toDecimal(0))
@@ -2192,6 +2206,7 @@ describe("ClearingHouse Test", () => {
         })
 
         it("close then liquidate", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(admin, true)
             // avoid two actions from exceeding the fluctuation limit
             await amm.setFluctuationLimitRatio(toDecimal(0.5))
 
@@ -2332,6 +2347,23 @@ describe("ClearingHouse Test", () => {
                 { from: alice },
             )
             await expectEvent.not.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged")
+        })
+    })
+
+    describe("backstop LP setter", async () => {
+        it("set backstop LP by owner", async () => {
+            expect(await clearingHouse.backstopLiquidityProviderMap(alice)).to.be.false
+            await clearingHouse.setBackstopLiquidityProvider(alice, true)
+            expect(await clearingHouse.backstopLiquidityProviderMap(alice)).to.be.true
+            await clearingHouse.setBackstopLiquidityProvider(alice, false)
+            expect(await clearingHouse.backstopLiquidityProviderMap(alice)).to.be.false
+        })
+
+        it("not allowed to set backstop LP by non-owner", async () => {
+            await expectRevert(
+                clearingHouse.setBackstopLiquidityProvider(bob, true, { from: alice }),
+                "PerpFiOwnableUpgrade: caller is not the owner",
+            )
         })
     })
 })
