@@ -36,6 +36,7 @@ contract ClearingHouse is
     //
     event MarginRatioChanged(uint256 marginRatio);
     event LiquidationFeeRatioChanged(uint256 liquidationFeeRatio);
+    event BackstopLiquidityProviderChanged(address indexed account, bool indexed isProvider);
     event MarginChanged(address indexed sender, address indexed amm, int256 amount, int256 fundingPayment);
     event PositionAdjusted(
         address indexed amm,
@@ -198,6 +199,8 @@ contract ClearingHouse is
     //◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤ add state variables below ◥◤◥◤◥◤◥◤◥◤◥◤◥◤◥◤//
     Decimal.decimal public partialLiquidationRatio;
 
+    mapping(address => bool) public backstopLiquidityProviderMap;
+
     //◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣ add state variables above ◢◣◢◣◢◣◢◣◢◣◢◣◢◣◢◣//
     //
 
@@ -266,6 +269,17 @@ contract ClearingHouse is
      */
     function setWhitelist(address _whitelist) external onlyOwner {
         whitelist = _whitelist;
+    }
+
+    /**
+     * @notice set backstop liquidity provider
+     * @dev only owner can call
+     * @param account provider address
+     * @param isProvider wether the account is a backstop liquidity provider
+     */
+    function setBackstopLiquidityProvider(address account, bool isProvider) external onlyOwner {
+        backstopLiquidityProviderMap[account] = isProvider;
+        emit BackstopLiquidityProviderChanged(account, isProvider);
     }
 
     /**
@@ -491,10 +505,8 @@ contract ClearingHouse is
                 requireMoreMarginRatio(getMarginRatio(_amm, trader), maintenanceMarginRatio, true);
             }
 
-            // to prevent attacker to leverage the bad debt to withdraw extra token from  insurance fund
-            if (positionResp.badDebt.toUint() > 0) {
-                enterRestrictionMode(_amm);
-            }
+            // to prevent attacker to leverage the bad debt to withdraw extra token from insurance fund
+            require(positionResp.badDebt.toUint() == 0, "bad debt");
 
             // transfer the actual token between trader and vault
             if (positionResp.marginToVault.toInt() > 0) {
@@ -591,13 +603,12 @@ contract ClearingHouse is
                 positionResp = internalClosePosition(_amm, trader, _quoteAssetAmountLimit);
             }
 
+            // to prevent attacker to leverage the bad debt to withdraw extra token from insurance fund
+            require(positionResp.badDebt.toUint() == 0, "bad debt");
+
             // add scope for stack too deep error
             // transfer the actual token from trader and vault
             IERC20 quoteToken = _amm.quoteAsset();
-            if (positionResp.badDebt.toUint() > 0) {
-                enterRestrictionMode(_amm);
-                realizeBadDebt(quoteToken, positionResp.badDebt);
-            }
             withdraw(quoteToken, trader, positionResp.marginToVault.abs());
         }
 
@@ -636,7 +647,8 @@ contract ClearingHouse is
 
         // including oracle-based margin ratio as reference price when amm is over spread limit
         if (_amm.isOverSpreadLimit()) {
-            SignedDecimal.signedDecimal memory marginRatioBasedOnOracle = _getMarginRatioBasedOnOracle(_amm, _trader);
+            SignedDecimal.signedDecimal memory marginRatioBasedOnOracle =
+                _getMarginRatioByCalcOption(_amm, _trader, PnlCalcOption.ORACLE);
             if (marginRatioBasedOnOracle.subD(marginRatio).toInt() > 0) {
                 marginRatio = marginRatioBasedOnOracle;
             }
@@ -654,8 +666,13 @@ contract ClearingHouse is
             Decimal.decimal memory feeToInsuranceFund;
             IERC20 quoteAsset = _amm.quoteAsset();
 
+            int256 marginRatioBasedOnSpot =
+                _getMarginRatioByCalcOption(_amm, _trader, PnlCalcOption.SPOT_PRICE).toInt();
             if (
-                marginRatio.toInt() > int256(liquidationFeeRatio.toUint()) &&
+                // check margin(based on spot price) is enough to pay the liquidation fee
+                // after partially close, otherwise we fully close the position.
+                // that also means we can ensure no bad debt happen when partially liquidate
+                marginRatioBasedOnSpot > int256(liquidationFeeRatio.toUint()) &&
                 partialLiquidationRatio.cmp(Decimal.one()) < 0 &&
                 partialLiquidationRatio.toUint() != 0
             ) {
@@ -701,6 +718,7 @@ contract ClearingHouse is
 
                 // transfer the actual token between trader and vault
                 if (totalBadDebt.toUint() > 0) {
+                    require(backstopLiquidityProviderMap[_msgSender()], "not backstop LP");
                     realizeBadDebt(quoteAsset, totalBadDebt);
                 }
                 if (remainMargin.toUint() > 0) {
@@ -800,16 +818,16 @@ contract ClearingHouse is
         return _getMarginRatio(_amm, position, unrealizedPnl, positionNotional);
     }
 
-    function _getMarginRatioBasedOnOracle(IAmm _amm, address _trader)
-        internal
-        view
-        returns (SignedDecimal.signedDecimal memory)
-    {
+    function _getMarginRatioByCalcOption(
+        IAmm _amm,
+        address _trader,
+        PnlCalcOption _pnlCalcOption
+    ) internal view returns (SignedDecimal.signedDecimal memory) {
         Position memory position = getPosition(_amm, _trader);
         requirePositionSize(position.size);
-        (Decimal.decimal memory oraclePositionNotional, SignedDecimal.signedDecimal memory oraclePricePnl) =
-            (getPositionNotionalAndUnrealizedPnl(_amm, _trader, PnlCalcOption.ORACLE));
-        return _getMarginRatio(_amm, position, oraclePricePnl, oraclePositionNotional);
+        (Decimal.decimal memory positionNotional, SignedDecimal.signedDecimal memory pnl) =
+            getPositionNotionalAndUnrealizedPnl(_amm, _trader, _pnlCalcOption);
+        return _getMarginRatio(_amm, position, pnl, positionNotional);
     }
 
     function _getMarginRatio(
