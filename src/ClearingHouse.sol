@@ -635,13 +635,37 @@ contract ClearingHouse is
         );
     }
 
+    function liquidateWithSlippage(
+        IAmm _amm,
+        address _trader,
+        Decimal.decimal memory _quoteAssetAmountLimit
+    ) external returns (Decimal.decimal memory quoteAssetAmount, bool isPartialClose) {
+        Position memory position = getUnadjustedPosition(_amm, _trader);
+        (quoteAssetAmount, isPartialClose) = liquidate(_amm, _trader);
+
+        Decimal.decimal memory quoteAssetAmountLimit =
+            isPartialClose ? _quoteAssetAmountLimit.mulD(partialLiquidationRatio) : _quoteAssetAmountLimit;
+
+        if (position.size.toInt() > 0) {
+            require(quoteAssetAmount.toUint() >= quoteAssetAmountLimit.toUint(), "Less than minimal quote token");
+        } else if (position.size.toInt() < 0 && quoteAssetAmountLimit.cmp(Decimal.zero()) != 0) {
+            require(quoteAssetAmount.toUint() <= quoteAssetAmountLimit.toUint(), "More than maximal quote token");
+        }
+
+        return (quoteAssetAmount, isPartialClose);
+    }
+
     /**
      * @notice liquidate trader's underwater position. Require trader's margin ratio less than maintenance margin ratio
      * @dev liquidator can NOT open any positions in the same block to prevent from price manipulation.
      * @param _amm IAmm address
      * @param _trader trader address
      */
-    function liquidate(IAmm _amm, address _trader) external nonReentrant() {
+    function liquidate(IAmm _amm, address _trader)
+        public
+        nonReentrant()
+        returns (Decimal.decimal memory quoteAssetAmount, bool isPartialClose)
+    {
         requireAmm(_amm, true);
         SignedDecimal.signedDecimal memory marginRatio = getMarginRatio(_amm, _trader);
 
@@ -700,6 +724,8 @@ contract ClearingHouse is
 
                 positionResp.position.margin = positionResp.position.margin.subD(liquidationPenalty);
                 setPosition(_amm, _trader, positionResp.position);
+
+                isPartialClose = true;
             } else {
                 liquidationPenalty = getPosition(_amm, _trader).margin;
                 positionResp = internalClosePosition(_amm, _trader, Decimal.zero());
@@ -761,6 +787,8 @@ contract ClearingHouse is
             spotPrice,
             fundingPayment
         );
+
+        return (positionResp.exchangedQuoteAssetAmount, isPartialClose);
     }
 
     /**
