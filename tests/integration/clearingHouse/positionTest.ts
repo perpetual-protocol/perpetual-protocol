@@ -926,7 +926,7 @@ describe("ClearingHouse - open/close position Test", () => {
             // which is already prepaid by insurance fund when alice close the position
             const bobMarginRatio = await clearingHouse.getMarginRatio(amm.address, bob)
             expect(new BN(bobMarginRatio.d).isNeg()).eq(true)
-            await clearingHouse.liquidate(amm.address, bob, { from: carol })
+            await clearingHouse.liquidateWithSlippage(amm.address, bob, { d: 0 }, { from: carol })
 
             // liquidator get half of the 5% liquidation fee = 294.11 * 2.5% ~= 7.352941
             // clearingHouse is depleted
@@ -954,7 +954,7 @@ describe("ClearingHouse - open/close position Test", () => {
             // liquidationFee: 321.23 * 5% = 16.06
             // margin ratio: = (margin + unrealizedPnl) / positionNotional = 21.23 / 321.23 = 6.608971765%
             await expectRevert(
-                clearingHouse.liquidate(amm.address, alice, { from: carol }),
+                clearingHouse.liquidateWithSlippage(amm.address, alice, { d: 0 }, { from: carol }),
                 "Margin ratio not meet criteria",
             )
         })
@@ -976,7 +976,14 @@ describe("ClearingHouse - open/close position Test", () => {
 
             // alice's margin ratio = (margin + unrealizedPnl) / openNotional = (150 + (-278.77)) / 600 = -21.46%
 
-            const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
+            const receipt = await clearingHouse.liquidateWithSlippage(
+                amm.address,
+                alice,
+                { d: 0 },
+                {
+                    from: carol,
+                },
+            )
 
             // liquidationFee = 321.23 * 2.5% = 16.06
             // the "liquidationFee" of PositionLiquidated event refers to liquidator's fee: 16.06 * 0.5 = 8.03
@@ -1027,7 +1034,7 @@ describe("ClearingHouse - open/close position Test", () => {
             //   unrealizedPnl = 960 - 600 = 360
             //   margin ratio = (150 + 360) / 960 = 53.125% (won't liquidate)
             await expectRevert(
-                clearingHouse.liquidate(amm.address, alice, { from: carol }),
+                clearingHouse.liquidateWithSlippage(amm.address, alice, { d: 0 }, { from: carol }),
                 "Margin ratio not meet criteria",
             )
         })
@@ -1065,7 +1072,7 @@ describe("ClearingHouse - open/close position Test", () => {
             //   unrealizedPnl = 200 - 160 = 40
             //   margin ratio = (20 + 40) / 160 = 37.5% (won't liquidate)
             await expectRevert(
-                clearingHouse.liquidate(amm.address, alice, { from: carol }),
+                clearingHouse.liquidateWithSlippage(amm.address, alice, { d: 0 }, { from: carol }),
                 "Margin ratio not meet criteria",
             )
         })

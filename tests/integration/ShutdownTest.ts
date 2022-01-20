@@ -310,7 +310,10 @@ describe("Protocol shutdown test", () => {
             await expectRevert(clearingHouse.addMargin(amm.address, toDecimal(10), { from: alice }), error)
             await expectRevert(clearingHouse.removeMargin(amm.address, toDecimal(10), { from: alice }), error)
             await expectRevert(clearingHouse.payFunding(amm.address, { from: alice }), error)
-            await expectRevert(clearingHouse.liquidate(amm.address, alice, { from: carol }), error)
+            await expectRevert(
+                clearingHouse.liquidateWithSlippage(amm.address, alice, { d: 0 }, { from: carol }),
+                error,
+            )
         })
 
         it("close amm1 should not affect amm2", async () => {
