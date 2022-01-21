@@ -1096,6 +1096,9 @@ describe("ClearingHouse Test", () => {
                 { from: bob },
             )
 
+            // set carol to backstop LP
+            await clearingHouse.setBackstopLiquidityProvider(carol, true)
+
             // liquidatedPositionNotional = 224.089635855963718818
             await expectRevert(
                 clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(224.1), {
