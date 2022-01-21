@@ -2428,9 +2428,9 @@ describe("ClearingHouse Test", () => {
                 },
             )
 
-            await expectEvent.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged", {
-                referralCode: toBytes32("Hello world"),
-            })
+            // await expectEvent.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged", {
+            //     referralCode: toBytes32("Hello world"),
+            // })
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
@@ -2452,7 +2452,7 @@ describe("ClearingHouse Test", () => {
                 },
             )
 
-            await expectEvent.not.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged")
+            // await expectEvent.not.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged")
             expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq(toFullDigit(25))
         })
 
@@ -2476,9 +2476,9 @@ describe("ClearingHouse Test", () => {
                 { from: alice },
             )
 
-            await expectEvent.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged", {
-                referralCode: toBytes32("Hello world"),
-            })
+            // await expectEvent.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged", {
+            //     referralCode: toBytes32("Hello world"),
+            // })
             expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq(toFullDigit(0))
         })
 
@@ -2501,7 +2501,7 @@ describe("ClearingHouse Test", () => {
                 EMPTY_STRING_IN_BYTES32,
                 { from: alice },
             )
-            await expectEvent.not.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged")
+            // await expectEvent.not.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged")
         })
     })
 
