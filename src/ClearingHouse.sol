@@ -638,9 +638,9 @@ contract ClearingHouse is
         IAmm _amm,
         address _trader,
         Decimal.decimal memory _quoteAssetAmountLimit
-    ) external returns (Decimal.decimal memory quoteAssetAmount, bool isPartialClose) {
+    ) external nonReentrant() returns (Decimal.decimal memory quoteAssetAmount, bool isPartialClose) {
         Position memory position = getPosition(_amm, _trader);
-        (quoteAssetAmount, isPartialClose) = liquidate(_amm, _trader);
+        (quoteAssetAmount, isPartialClose) = internalLiquidate(_amm, _trader);
 
         Decimal.decimal memory quoteAssetAmountLimit =
             isPartialClose ? _quoteAssetAmountLimit.mulD(partialLiquidationRatio) : _quoteAssetAmountLimit;
@@ -660,131 +660,8 @@ contract ClearingHouse is
      * @param _amm IAmm address
      * @param _trader trader address
      */
-    function liquidate(IAmm _amm, address _trader)
-        public
-        nonReentrant()
-        returns (Decimal.decimal memory quoteAssetAmount, bool isPartialClose)
-    {
-        requireAmm(_amm, true);
-        SignedDecimal.signedDecimal memory marginRatio = getMarginRatio(_amm, _trader);
-
-        // including oracle-based margin ratio as reference price when amm is over spread limit
-        if (_amm.isOverSpreadLimit()) {
-            SignedDecimal.signedDecimal memory marginRatioBasedOnOracle =
-                _getMarginRatioByCalcOption(_amm, _trader, PnlCalcOption.ORACLE);
-            if (marginRatioBasedOnOracle.subD(marginRatio).toInt() > 0) {
-                marginRatio = marginRatioBasedOnOracle;
-            }
-        }
-        requireMoreMarginRatio(marginRatio, maintenanceMarginRatio, false);
-
-        PositionResp memory positionResp;
-        Decimal.decimal memory liquidationPenalty;
-        {
-            Decimal.decimal memory liquidationBadDebt;
-            Decimal.decimal memory feeToLiquidator;
-            Decimal.decimal memory feeToInsuranceFund;
-            IERC20 quoteAsset = _amm.quoteAsset();
-
-            int256 marginRatioBasedOnSpot =
-                _getMarginRatioByCalcOption(_amm, _trader, PnlCalcOption.SPOT_PRICE).toInt();
-            if (
-                // check margin(based on spot price) is enough to pay the liquidation fee
-                // after partially close, otherwise we fully close the position.
-                // that also means we can ensure no bad debt happen when partially liquidate
-                marginRatioBasedOnSpot > int256(liquidationFeeRatio.toUint()) &&
-                partialLiquidationRatio.cmp(Decimal.one()) < 0 &&
-                partialLiquidationRatio.toUint() != 0
-            ) {
-                Position memory position = getPosition(_amm, _trader);
-                Decimal.decimal memory partiallyLiquidatedPositionNotional =
-                    _amm.getOutputPrice(
-                        position.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
-                        position.size.mulD(partialLiquidationRatio).abs()
-                    );
-
-                positionResp = openReversePosition(
-                    _amm,
-                    position.size.toInt() > 0 ? Side.SELL : Side.BUY,
-                    _trader,
-                    partiallyLiquidatedPositionNotional,
-                    Decimal.one(),
-                    Decimal.zero(),
-                    true
-                );
-
-                // half of the liquidationFee goes to liquidator & another half goes to insurance fund
-                liquidationPenalty = positionResp.exchangedQuoteAssetAmount.mulD(liquidationFeeRatio);
-                feeToLiquidator = liquidationPenalty.divScalar(2);
-                feeToInsuranceFund = liquidationPenalty.subD(feeToLiquidator);
-
-                positionResp.position.margin = positionResp.position.margin.subD(liquidationPenalty);
-                setPosition(_amm, _trader, positionResp.position);
-
-                isPartialClose = true;
-            } else {
-                liquidationPenalty = getPosition(_amm, _trader).margin;
-                positionResp = internalClosePosition(_amm, _trader, Decimal.zero());
-                Decimal.decimal memory remainMargin = positionResp.marginToVault.abs();
-                feeToLiquidator = positionResp.exchangedQuoteAssetAmount.mulD(liquidationFeeRatio).divScalar(2);
-
-                // if the remainMargin is not enough for liquidationFee, count it as bad debt
-                // else, then the rest will be transferred to insuranceFund
-                Decimal.decimal memory totalBadDebt = positionResp.badDebt;
-                if (feeToLiquidator.toUint() > remainMargin.toUint()) {
-                    liquidationBadDebt = feeToLiquidator.subD(remainMargin);
-                    totalBadDebt = totalBadDebt.addD(liquidationBadDebt);
-                } else {
-                    remainMargin = remainMargin.subD(feeToLiquidator);
-                }
-
-                // transfer the actual token between trader and vault
-                if (totalBadDebt.toUint() > 0) {
-                    require(backstopLiquidityProviderMap[_msgSender()], "not backstop LP");
-                    realizeBadDebt(quoteAsset, totalBadDebt);
-                }
-                if (remainMargin.toUint() > 0) {
-                    feeToInsuranceFund = remainMargin;
-                }
-            }
-
-            if (feeToInsuranceFund.toUint() > 0) {
-                transferToInsuranceFund(quoteAsset, feeToInsuranceFund);
-            }
-            withdraw(quoteAsset, _msgSender(), feeToLiquidator);
-            enterRestrictionMode(_amm);
-
-            emit PositionLiquidated(
-                _trader,
-                address(_amm),
-                positionResp.exchangedQuoteAssetAmount.toUint(),
-                positionResp.exchangedPositionSize.toUint(),
-                feeToLiquidator.toUint(),
-                _msgSender(),
-                liquidationBadDebt.toUint()
-            );
-        }
-
-        // emit event
-        uint256 spotPrice = _amm.getSpotPrice().toUint();
-        int256 fundingPayment = positionResp.fundingPayment.toInt();
-        emit PositionChanged(
-            _trader,
-            address(_amm),
-            positionResp.position.margin.toUint(),
-            positionResp.exchangedQuoteAssetAmount.toUint(),
-            positionResp.exchangedPositionSize.toInt(),
-            0,
-            positionResp.position.size.toInt(),
-            positionResp.realizedPnl.toInt(),
-            positionResp.unrealizedPnlAfter.toInt(),
-            positionResp.badDebt.toUint(),
-            liquidationPenalty.toUint(),
-            spotPrice,
-            fundingPayment
-        );
-
-        return (positionResp.exchangedQuoteAssetAmount, isPartialClose);
+    function liquidate(IAmm _amm, address _trader) public nonReentrant() {
+        internalLiquidate(_amm, _trader);
     }
 
     /**
@@ -948,6 +825,132 @@ contract ClearingHouse is
             blockNumber: _blockNumber(),
             liquidityHistoryIndex: 0
         });
+    }
+
+    function internalLiquidate(IAmm _amm, address _trader)
+        internal
+        returns (Decimal.decimal memory quoteAssetAmount, bool isPartialClose)
+    {
+        requireAmm(_amm, true);
+        SignedDecimal.signedDecimal memory marginRatio = getMarginRatio(_amm, _trader);
+
+        // including oracle-based margin ratio as reference price when amm is over spread limit
+        if (_amm.isOverSpreadLimit()) {
+            SignedDecimal.signedDecimal memory marginRatioBasedOnOracle =
+                _getMarginRatioByCalcOption(_amm, _trader, PnlCalcOption.ORACLE);
+            if (marginRatioBasedOnOracle.subD(marginRatio).toInt() > 0) {
+                marginRatio = marginRatioBasedOnOracle;
+            }
+        }
+        requireMoreMarginRatio(marginRatio, maintenanceMarginRatio, false);
+
+        PositionResp memory positionResp;
+        Decimal.decimal memory liquidationPenalty;
+        {
+            Decimal.decimal memory liquidationBadDebt;
+            Decimal.decimal memory feeToLiquidator;
+            Decimal.decimal memory feeToInsuranceFund;
+            IERC20 quoteAsset = _amm.quoteAsset();
+
+            int256 marginRatioBasedOnSpot =
+                _getMarginRatioByCalcOption(_amm, _trader, PnlCalcOption.SPOT_PRICE).toInt();
+            if (
+                // check margin(based on spot price) is enough to pay the liquidation fee
+                // after partially close, otherwise we fully close the position.
+                // that also means we can ensure no bad debt happen when partially liquidate
+                marginRatioBasedOnSpot > int256(liquidationFeeRatio.toUint()) &&
+                partialLiquidationRatio.cmp(Decimal.one()) < 0 &&
+                partialLiquidationRatio.toUint() != 0
+            ) {
+                Position memory position = getPosition(_amm, _trader);
+                Decimal.decimal memory partiallyLiquidatedPositionNotional =
+                    _amm.getOutputPrice(
+                        position.size.toInt() > 0 ? IAmm.Dir.ADD_TO_AMM : IAmm.Dir.REMOVE_FROM_AMM,
+                        position.size.mulD(partialLiquidationRatio).abs()
+                    );
+
+                positionResp = openReversePosition(
+                    _amm,
+                    position.size.toInt() > 0 ? Side.SELL : Side.BUY,
+                    _trader,
+                    partiallyLiquidatedPositionNotional,
+                    Decimal.one(),
+                    Decimal.zero(),
+                    true
+                );
+
+                // half of the liquidationFee goes to liquidator & another half goes to insurance fund
+                liquidationPenalty = positionResp.exchangedQuoteAssetAmount.mulD(liquidationFeeRatio);
+                feeToLiquidator = liquidationPenalty.divScalar(2);
+                feeToInsuranceFund = liquidationPenalty.subD(feeToLiquidator);
+
+                positionResp.position.margin = positionResp.position.margin.subD(liquidationPenalty);
+                setPosition(_amm, _trader, positionResp.position);
+
+                isPartialClose = true;
+            } else {
+                liquidationPenalty = getPosition(_amm, _trader).margin;
+                positionResp = internalClosePosition(_amm, _trader, Decimal.zero());
+                Decimal.decimal memory remainMargin = positionResp.marginToVault.abs();
+                feeToLiquidator = positionResp.exchangedQuoteAssetAmount.mulD(liquidationFeeRatio).divScalar(2);
+
+                // if the remainMargin is not enough for liquidationFee, count it as bad debt
+                // else, then the rest will be transferred to insuranceFund
+                Decimal.decimal memory totalBadDebt = positionResp.badDebt;
+                if (feeToLiquidator.toUint() > remainMargin.toUint()) {
+                    liquidationBadDebt = feeToLiquidator.subD(remainMargin);
+                    totalBadDebt = totalBadDebt.addD(liquidationBadDebt);
+                } else {
+                    remainMargin = remainMargin.subD(feeToLiquidator);
+                }
+
+                // transfer the actual token between trader and vault
+                if (totalBadDebt.toUint() > 0) {
+                    require(backstopLiquidityProviderMap[_msgSender()], "not backstop LP");
+                    realizeBadDebt(quoteAsset, totalBadDebt);
+                }
+                if (remainMargin.toUint() > 0) {
+                    feeToInsuranceFund = remainMargin;
+                }
+            }
+
+            if (feeToInsuranceFund.toUint() > 0) {
+                transferToInsuranceFund(quoteAsset, feeToInsuranceFund);
+            }
+            withdraw(quoteAsset, _msgSender(), feeToLiquidator);
+            enterRestrictionMode(_amm);
+
+            emit PositionLiquidated(
+                _trader,
+                address(_amm),
+                positionResp.exchangedQuoteAssetAmount.toUint(),
+                positionResp.exchangedPositionSize.toUint(),
+                feeToLiquidator.toUint(),
+                _msgSender(),
+                liquidationBadDebt.toUint()
+            );
+        }
+
+        // emit event
+        uint256 spotPrice = _amm.getSpotPrice().toUint();
+        int256 fundingPayment = positionResp.fundingPayment.toInt();
+        emit PositionChanged(
+            _trader,
+            address(_amm),
+            positionResp.position.margin.toUint(),
+            positionResp.exchangedQuoteAssetAmount.toUint(),
+            positionResp.exchangedPositionSize.toInt(),
+            0,
+            positionResp.position.size.toInt(),
+            positionResp.realizedPnl.toInt(),
+            positionResp.unrealizedPnlAfter.toInt(),
+            positionResp.badDebt.toUint(),
+            liquidationPenalty.toUint(),
+            spotPrice,
+            fundingPayment
+        );
+
+        return (positionResp.exchangedQuoteAssetAmount, isPartialClose);
     }
 
     // only called from openPosition and closeAndOpenReversePosition. caller need to ensure there's enough marginRatio
