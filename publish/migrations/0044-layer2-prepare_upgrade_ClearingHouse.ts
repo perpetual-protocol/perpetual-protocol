@@ -14,7 +14,6 @@ const migration: MigrationDefinition = {
     // deploy the flattened clearingHouse and init it just in case
     getTasks: (context: MigrationContext) => [
         async (): Promise<void> => {
-            const emptyAddr = "0x0000000000000000000000000000000000000001"
             const filename = `${ContractName.ClearingHouse}.sol`
 
             // after flatten sol file we must re-compile again
@@ -25,13 +24,7 @@ const migration: MigrationDefinition = {
             const clearingHouseContract = await context.factory.create<ClearingHouse>(
                 ContractFullyQualifiedName.FlattenClearingHouse,
             )
-            await clearingHouseContract.prepareUpgradeContract(
-                context.deployConfig.initMarginRequirement,
-                context.deployConfig.maintenanceMarginRequirement,
-                context.deployConfig.liquidationFeeRatio,
-                emptyAddr,
-                emptyAddr,
-            )
+            await clearingHouseContract.prepareUpgradeContractLegacy()
         },
     ],
 }

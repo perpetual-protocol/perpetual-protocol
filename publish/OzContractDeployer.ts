@@ -67,7 +67,7 @@ export class OzContractDeployer {
 
     async prepareUpgradeLegacy(proxy: string, contractFullyQualifiedName: string): Promise<string> {
         const factory = await ethers.getContractFactory(contractFullyQualifiedName)
-        const impAddr = await upgrades.prepareUpgrade(proxy, factory)
+        const impAddr = await upgrades.prepareUpgrade(proxy, factory, { unsafeAllowCustomTypes: false })
         console.log(
             `prepareUpgradeLegacy proxy=${proxy}, contractFullyQualifiedName=${contractFullyQualifiedName}, address=${impAddr}`,
         )
