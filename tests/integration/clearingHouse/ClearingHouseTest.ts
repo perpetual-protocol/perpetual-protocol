@@ -838,7 +838,7 @@ describe("ClearingHouse Test", () => {
                 },
             )
 
-            const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
+            const receipt = await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), { from: carol })
             // partially liquidate 25%
             // liquidated positionNotional: getOutputPrice(20 (original position) * 0.25) = 68.455
             // remain positionNotional: 233.945 - 68.455 = 165.49
@@ -876,6 +876,43 @@ describe("ClearingHouse Test", () => {
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("5000855695")
         })
 
+        it("partially liquidate a long position with quoteAssetAmountLimit", async () => {
+            await approve(alice, clearingHouse.address, 100)
+            await approve(bob, clearingHouse.address, 100)
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
+
+            // when alice create a 25 margin * 10x position to get 20 long position
+            // AMM after: 1250 : 80
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+
+            // when bob create a 45.18072289 margin * 1x position to get 3 short position
+            // AMM after: 1204.819277 : 83
+            await forwardBlockTimestamp(15) // 15 secs. later
+            await clearingHouse.openPosition(
+                amm.address,
+                Side.SELL,
+                toDecimal(45.18072289),
+                toDecimal(1),
+                toDecimal(0),
+                {
+                    from: bob,
+                },
+            )
+
+            // partially liquidate 25%
+            // liquidated positionNotional: getOutputPrice(20 (original position) * 0.25) = 68.455
+            // if quoteAssetAmountLimit == 273.85 > 68.455 * 4 = 273.82, quote asset gets is less than expected, thus tx reverts
+            await expectRevert(
+                clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(273.85), { from: carol }),
+                "Less than minimal quote token",
+            )
+
+            // if quoteAssetAmountLimit == 273.8 < 68.455 * 4 = 273.82, quote asset gets is more than expected
+            await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(273.8), { from: carol })
+        })
+
         it("partially liquidate a short position", async () => {
             await approve(alice, clearingHouse.address, 100)
             await approve(bob, clearingHouse.address, 100)
@@ -903,7 +940,8 @@ describe("ClearingHouse Test", () => {
             // marginRatio = remainMargin / openNotional = 4.62 / 100 = 0.0462 < minMarginRatio(0.05)
             // then anyone (eg. carol) can liquidate alice's position
             await syncAmmPriceToOracle()
-            const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
+            const receipt = await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), { from: carol })
+
             // partially liquidate 25%
             // liquidated positionNotional: getOutputPrice(25 (original position) * 0.25) = 44.258
             // remain positionNotional: 211.255 - 44.258 = 166.997
@@ -941,6 +979,46 @@ describe("ClearingHouse Test", () => {
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("5000553234")
         })
 
+        it("partially liquidate a short position with quoteAssetAmountLimit", async () => {
+            await approve(alice, clearingHouse.address, 100)
+            await approve(bob, clearingHouse.address, 100)
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
+
+            // when alice create a 20 margin * 10x position to get 25 short position
+            // AMM after: 800 : 125
+            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(20), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+
+            // when bob create a 19.67213115 margin * 1x position to get 3 long position
+            // AMM after: 819.6721311 : 122
+            await forwardBlockTimestamp(15) // 15 secs. later
+            await clearingHouse.openPosition(
+                amm.address,
+                Side.BUY,
+                toDecimal(19.67213115),
+                toDecimal(1),
+                toDecimal(0),
+                { from: bob },
+            )
+
+            // remainMargin = (margin + unrealizedPnL) = 20 - 15.38 = 4.62
+            // marginRatio = remainMargin / openNotional = 4.62 / 100 = 0.0462 < minMarginRatio(0.05)
+            // then anyone (eg. carol) can liquidate alice's position
+            await syncAmmPriceToOracle()
+
+            // partially liquidate 25%
+            // liquidated positionNotional: getOutputPrice(25 (original position) * 0.25) = 44.258
+            // if quoteAssetAmountLimit == 177 > 44.258 * 4 = 177.032, quote asset pays is more than expected, thus tx reverts
+            await expectRevert(
+                clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(177), { from: carol }),
+                "More than maximal quote token",
+            )
+
+            // if quoteAssetAmountLimit == 177.1 < 44.258 * 4 = 177.032, quote asset pays is less than expected
+            await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(177.1), { from: carol })
+        })
+
         it("a long position is under water, thus liquidating the complete position", async () => {
             await clearingHouse.setBackstopLiquidityProvider(carol, true)
             await approve(alice, clearingHouse.address, 100)
@@ -965,7 +1043,9 @@ describe("ClearingHouse Test", () => {
                 { from: bob },
             )
 
-            const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
+            const receipt = await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), {
+                from: carol,
+            })
             // the badDebt params of the two events are different
             expectEvent(receipt, "PositionLiquidated", {
                 amm: amm.address,
@@ -991,6 +1071,45 @@ describe("ClearingHouse Test", () => {
             expect(await quoteToken.balanceOf(carol)).to.eq("2801120")
             // 5000 - 0.91 - 2.8
             expect(await quoteToken.balanceOf(insuranceFund.address)).to.eq("4996288516")
+        })
+
+        it("a long position is under water, thus liquidating the complete position with quoteAssetAmountLimit", async () => {
+            await approve(alice, clearingHouse.address, 100)
+            await approve(bob, clearingHouse.address, 100)
+            await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
+
+            // when alice create a 25 margin * 10x position to get 20 long position
+            // AMM after: 1250 : 80
+            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(25), toDecimal(10), toDecimal(0), {
+                from: alice,
+            })
+
+            // when bob create a 73.52941176 margin * 1x position to get 3 short position
+            // AMM after: 1176.470588 : 85
+            await forwardBlockTimestamp(15) // 15 secs. later
+            await clearingHouse.openPosition(
+                amm.address,
+                Side.SELL,
+                toDecimal(73.52941176),
+                toDecimal(1),
+                toDecimal(0),
+                { from: bob },
+            )
+
+            // set carol to backstop LP
+            await clearingHouse.setBackstopLiquidityProvider(carol, true)
+
+            // liquidatedPositionNotional = 224.089635855963718818
+            await expectRevert(
+                clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(224.1), {
+                    from: carol,
+                }),
+                "Less than minimal quote token",
+            )
+
+            await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(224), {
+                from: carol,
+            })
         })
 
         it("a short position is under water, thus liquidating the complete position", async () => {
@@ -1020,7 +1139,9 @@ describe("ClearingHouse Test", () => {
             )
 
             await syncAmmPriceToOracle()
-            const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
+            const receipt = await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), {
+                from: carol,
+            })
             expectEvent(receipt, "PositionLiquidated", {
                 amm: amm.address,
                 trader: alice,
@@ -1089,7 +1210,9 @@ describe("ClearingHouse Test", () => {
             // then anyone (eg. carol) calling liquidate() would get an exception
             await syncAmmPriceToOracle()
             await expectRevert(
-                clearingHouse.liquidate(amm.address, alice, { from: carol }),
+                clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), {
+                    from: carol,
+                }),
                 "Margin ratio not meet criteria",
             )
         })
@@ -1123,13 +1246,20 @@ describe("ClearingHouse Test", () => {
             // then anyone (eg. carol) calling liquidate() would get an exception
             await syncAmmPriceToOracle()
             await expectRevert(
-                clearingHouse.liquidate(amm.address, alice, { from: carol }),
+                clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), {
+                    from: carol,
+                }),
                 "Margin ratio not meet criteria",
             )
         })
 
         it("force error, can't liquidate an empty position", async () => {
-            await expectRevert(clearingHouse.liquidate(amm.address, alice, { from: carol }), "positionSize is 0")
+            await expectRevert(
+                clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), {
+                    from: carol,
+                }),
+                "positionSize is 0",
+            )
         })
 
         describe("fluctuation check when liquidating", () => {
@@ -1173,7 +1303,9 @@ describe("ClearingHouse Test", () => {
                 // fluctuation: (12.1 - 11.61116202) / 12.1 = 0.04039983306
                 // values can be retrieved with amm.quoteAssetReserve() & amm.baseAssetReserve()
                 await syncAmmPriceToOracle()
-                const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
+                const receipt = await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), {
+                    from: carol,
+                })
                 expectEvent(receipt, "PositionLiquidated")
 
                 const baseAssetReserve = await amm.baseAssetReserve()
@@ -1337,7 +1469,12 @@ describe("ClearingHouse Test", () => {
                 // AMM after: 1015.384615384615384672 : 98.484848484848484854, price: 10.31
                 // fluctuation: (12.1 - 10.31) / 12.1 = 0.1479
                 await syncAmmPriceToOracle()
-                expectEvent(await clearingHouse.liquidate(amm.address, alice, { from: carol }), "PositionLiquidated")
+                expectEvent(
+                    await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), {
+                        from: carol,
+                    }),
+                    "PositionLiquidated",
+                )
             })
 
             it("partially liquidate one position with the price impact exceeding the fluctuation limit ", async () => {
@@ -1374,7 +1511,12 @@ describe("ClearingHouse Test", () => {
 
                 await clearingHouse.setMaintenanceMarginRatio(toDecimal(0.1), { from: admin })
                 await syncAmmPriceToOracle()
-                expectEvent(await clearingHouse.liquidate(amm.address, alice, { from: carol }), "PositionLiquidated")
+                expectEvent(
+                    await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), {
+                        from: carol,
+                    }),
+                    "PositionLiquidated",
+                )
             })
 
             it("force error, partially liquidate two positions while exceeding the fluctuation limit", async () => {
@@ -1563,7 +1705,12 @@ describe("ClearingHouse Test", () => {
                 })
                 await forwardBlockTimestamp(15)
                 await syncAmmPriceToOracle()
-                expectEvent(await clearingHouse.liquidate(amm.address, alice, { from: carol }), "PositionLiquidated")
+                expectEvent(
+                    await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), {
+                        from: carol,
+                    }),
+                    "PositionLiquidated",
+                )
             })
 
             it("can open position (short) and liquidate, but can't do anything more action in the same block", async () => {
@@ -1575,7 +1722,9 @@ describe("ClearingHouse Test", () => {
                     from: carol,
                 })
                 await syncAmmPriceToOracle()
-                await clearingHouse.liquidate(amm.address, alice, { from: carol })
+                await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), {
+                    from: carol,
+                })
                 await expectRevert(
                     clearingHouse.closePosition(amm.address, toDecimal(0), { from: carol }),
                     "only one action allowed",
@@ -1591,7 +1740,9 @@ describe("ClearingHouse Test", () => {
                     from: carol,
                 })
                 await syncAmmPriceToOracle()
-                await clearingHouse.liquidate(amm.address, alice, { from: carol })
+                await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), {
+                    from: carol,
+                })
                 await expectRevert(
                     clearingHouse.closePosition(amm.address, toDecimal(0), { from: carol }),
                     "only one action allowed",
@@ -1606,7 +1757,9 @@ describe("ClearingHouse Test", () => {
                     from: carol,
                 })
                 await syncAmmPriceToOracle()
-                await clearingHouse.liquidate(amm.address, alice, { from: carol })
+                await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), {
+                    from: carol,
+                })
                 await expectRevert(
                     clearingHouse.closePosition(amm.address, toDecimal(0), { from: carol }),
                     "only one action allowed",
@@ -1622,7 +1775,9 @@ describe("ClearingHouse Test", () => {
                     from: carol,
                 })
                 await syncAmmPriceToOracle()
-                await clearingHouse.liquidate(amm.address, alice, { from: carol })
+                await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0), {
+                    from: carol,
+                })
                 await expectRevert(
                     clearingHouse.closePosition(amm.address, toDecimal(0), { from: carol }),
                     "only one action allowed",
@@ -1650,7 +1805,7 @@ describe("ClearingHouse Test", () => {
                     from: bob,
                 })
                 await syncAmmPriceToOracle()
-                await traderWallet2.liquidate(amm.address, alice, { from: bob })
+                await traderWallet2.liquidate(amm.address, alice, toDecimal(0), { from: bob })
                 await expectRevert(traderWallet1.closePosition(amm.address, { from: bob }), "only one action allowed")
             })
 
@@ -1675,7 +1830,7 @@ describe("ClearingHouse Test", () => {
                     from: bob,
                 })
                 await syncAmmPriceToOracle()
-                await traderWallet2.liquidate(amm.address, alice, { from: carol })
+                await traderWallet2.liquidate(amm.address, alice, toDecimal(0), { from: carol })
                 await expectRevert(traderWallet1.closePosition(amm.address, { from: admin }), "only one action allowed")
             })
         })
@@ -2142,7 +2297,7 @@ describe("ClearingHouse Test", () => {
         it("open then liquidate", async () => {
             await makeLiquidatableByShort(alice)
             await syncAmmPriceToOracle()
-            await clearingHouse.liquidate(amm.address, alice)
+            await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0))
         })
 
         it("liquidate then open", async () => {
@@ -2217,7 +2372,7 @@ describe("ClearingHouse Test", () => {
             await forwardBlockTimestamp(15)
             await clearingHouse.closePosition(amm.address, toDecimal(0))
             await syncAmmPriceToOracle()
-            await clearingHouse.liquidate(amm.address, alice)
+            await clearingHouse.liquidateWithSlippage(amm.address, alice, toDecimal(0))
         })
 
         it("force error, close then liquidate then open", async () => {
@@ -2273,9 +2428,9 @@ describe("ClearingHouse Test", () => {
                 },
             )
 
-            await expectEvent.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged", {
-                referralCode: toBytes32("Hello world"),
-            })
+            // await expectEvent.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged", {
+            //     referralCode: toBytes32("Hello world"),
+            // })
             await expectEvent.inTransaction(receipt.tx, clearingHouse, "PositionChanged", {
                 trader: alice,
                 amm: amm.address,
@@ -2297,7 +2452,7 @@ describe("ClearingHouse Test", () => {
                 },
             )
 
-            await expectEvent.not.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged")
+            // await expectEvent.not.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged")
             expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq(toFullDigit(25))
         })
 
@@ -2321,9 +2476,9 @@ describe("ClearingHouse Test", () => {
                 { from: alice },
             )
 
-            await expectEvent.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged", {
-                referralCode: toBytes32("Hello world"),
-            })
+            // await expectEvent.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged", {
+            //     referralCode: toBytes32("Hello world"),
+            // })
             expect((await clearingHouse.getPosition(amm.address, alice)).margin).to.eq(toFullDigit(0))
         })
 
@@ -2346,7 +2501,7 @@ describe("ClearingHouse Test", () => {
                 EMPTY_STRING_IN_BYTES32,
                 { from: alice },
             )
-            await expectEvent.not.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged")
+            // await expectEvent.not.inTransaction(receipt.tx, clearingHouse, "ReferredPositionChanged")
         })
     })
 

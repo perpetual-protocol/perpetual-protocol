@@ -52,7 +52,10 @@ function generateContractMetadata(): void {
     const codeSizeMap = new Map()
     const artifactsDir = resolve(ARTIFACTS_DIR)
     ls(`${artifactsDir}/**/*.json`)
-        .filter(fullPath => !(fullPath.endsWith(".dbg.json") || fullPath.includes("/build-info/")))
+        .filter(
+            fullPath =>
+                !(fullPath.endsWith(".dbg.json") || fullPath.includes("/build-info/")) && !fullPath.includes("legacy"),
+        )
         .map(fullPath => {
             const contractName = getContractName(fullPath)
             const metadata: ContractMetadata = {
