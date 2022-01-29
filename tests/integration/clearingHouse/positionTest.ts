@@ -483,7 +483,7 @@ describe("ClearingHouse - open/close position Test", () => {
             expect(margin).to.eq(0)
         })
 
-        it("close a under collateral position", async () => {
+        it("cannot close position with bad debt", async () => {
             // deposit to 2000
             await approve(alice, clearingHouse.address, 2000)
 
@@ -505,24 +505,9 @@ describe("ClearingHouse - open/close position Test", () => {
              * positionValue of 20 quoteAsset is 166.67 now
              * marginRatio = (margin(25) + unrealizedPnl(166.67-250)) / openNotionalSize(250) = -23%
              */
-            await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
-
-            // Alice's realizedPnl = 166.66 - 250 = -83.33, she lost all her margin(25)
-            // alice.balance = all(5000) - margin(25) = 4975
-            // insuranceFund.balance = 5000 + realizedPnl(-58.33) = 4941.66...
-            // clearingHouse.balance = 250 + +25 + 58.33(pnl from insuranceFund) = 333.33
-            const position = await clearingHouse.getPosition(amm.address, alice)
-            expect(position.size).to.eq(0)
-            const alicemargin = await clearingHouseViewer.getPersonalBalanceWithFundingPayment(
-                quoteToken.address,
-                alice,
+            await expect(clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })).to.be.revertedWith(
+                "bad debt",
             )
-            expect(alicemargin).to.eq(0)
-            const aliceBalance = await quoteToken.balanceOf(alice)
-            expect(aliceBalance).eq(toFullDigit(4975, +(await quoteToken.decimals())))
-            const insuranceFundBalance = await quoteToken.balanceOf(insuranceFund.address)
-            expect(insuranceFundBalance).eq("4941666667")
-            expect(await quoteToken.balanceOf(clearingHouse.address)).to.eq("333333333")
         })
 
         it("close an empty position", async () => {
@@ -905,6 +890,8 @@ describe("ClearingHouse - open/close position Test", () => {
         })
 
         it("alice take profit from bob's unrealized under-collateral position, then bob got liquidate", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(carol, true)
+
             // avoid actions from exceeding the fluctuation limit
             await amm.setFluctuationLimitRatio(toDecimal(0.8))
 
@@ -939,7 +926,7 @@ describe("ClearingHouse - open/close position Test", () => {
             // which is already prepaid by insurance fund when alice close the position
             const bobMarginRatio = await clearingHouse.getMarginRatio(amm.address, bob)
             expect(new BN(bobMarginRatio.d).isNeg()).eq(true)
-            await clearingHouse.liquidate(amm.address, bob, { from: carol })
+            await clearingHouse.liquidateWithSlippage(amm.address, bob, { d: 0 }, { from: carol })
 
             // liquidator get half of the 5% liquidation fee = 294.11 * 2.5% ~= 7.352941
             // clearingHouse is depleted
@@ -967,12 +954,14 @@ describe("ClearingHouse - open/close position Test", () => {
             // liquidationFee: 321.23 * 5% = 16.06
             // margin ratio: = (margin + unrealizedPnl) / positionNotional = 21.23 / 321.23 = 6.608971765%
             await expectRevert(
-                clearingHouse.liquidate(amm.address, alice, { from: carol }),
+                clearingHouse.liquidateWithSlippage(amm.address, alice, { d: 0 }, { from: carol }),
                 "Margin ratio not meet criteria",
             )
         })
 
         it("alice's position got liquidated and not enough margin left for paying liquidation fee", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(carol, true)
+
             // alice opens long position
             await approve(alice, clearingHouse.address, 150)
             await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(150), toDecimal(4), toDecimal(0), {
@@ -987,7 +976,14 @@ describe("ClearingHouse - open/close position Test", () => {
 
             // alice's margin ratio = (margin + unrealizedPnl) / openNotional = (150 + (-278.77)) / 600 = -21.46%
 
-            const receipt = await clearingHouse.liquidate(amm.address, alice, { from: carol })
+            const receipt = await clearingHouse.liquidateWithSlippage(
+                amm.address,
+                alice,
+                { d: 0 },
+                {
+                    from: carol,
+                },
+            )
 
             // liquidationFee = 321.23 * 2.5% = 16.06
             // the "liquidationFee" of PositionLiquidated event refers to liquidator's fee: 16.06 * 0.5 = 8.03
@@ -1038,7 +1034,7 @@ describe("ClearingHouse - open/close position Test", () => {
             //   unrealizedPnl = 960 - 600 = 360
             //   margin ratio = (150 + 360) / 960 = 53.125% (won't liquidate)
             await expectRevert(
-                clearingHouse.liquidate(amm.address, alice, { from: carol }),
+                clearingHouse.liquidateWithSlippage(amm.address, alice, { d: 0 }, { from: carol }),
                 "Margin ratio not meet criteria",
             )
         })
@@ -1076,7 +1072,7 @@ describe("ClearingHouse - open/close position Test", () => {
             //   unrealizedPnl = 200 - 160 = 40
             //   margin ratio = (20 + 40) / 160 = 37.5% (won't liquidate)
             await expectRevert(
-                clearingHouse.liquidate(amm.address, alice, { from: carol }),
+                clearingHouse.liquidateWithSlippage(amm.address, alice, { d: 0 }, { from: carol }),
                 "Margin ratio not meet criteria",
             )
         })
@@ -1332,6 +1328,84 @@ describe("ClearingHouse - open/close position Test", () => {
                 expect(pos.size).eq(toFullDigit(0))
                 expect(pos.margin).eq(toFullDigit(0))
                 expect(await quoteToken.balanceOf(alice)).eq(toFullDigit(5000, +(await quoteToken.decimals())))
+            })
+        })
+
+        describe("quote amount is at the boundary of minimum value of USDC (10 ^ -6)", () => {
+            describe("valid token amount (>= 10 ^ -6)", () => {
+                it("openPosition", async () => {
+                    const r = await clearingHouse.openPosition(
+                        amm.address,
+                        Side.BUY,
+                        toDecimal(1e-6),
+                        toDecimal(1),
+                        toDecimal(0),
+                        {
+                            from: alice,
+                        },
+                    )
+                    expectEvent.inTransaction(r.tx, clearingHouse, "PositionChanged")
+                })
+
+                it("addMargin", async () => {
+                    await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0), {
+                        from: alice,
+                    })
+                    const r = await clearingHouse.addMargin(amm.address, toDecimal(1e-6), {
+                        from: alice,
+                    })
+                    expectEvent.inTransaction(r.tx, clearingHouse, "MarginChanged")
+                })
+
+                it("removeMargin", async () => {
+                    await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0), {
+                        from: alice,
+                    })
+
+                    const r = await clearingHouse.removeMargin(amm.address, toDecimal(1e-6), {
+                        from: alice,
+                    })
+                    expectEvent.inTransaction(r.tx, clearingHouse, "MarginChanged")
+                })
+            })
+
+            describe("force error, the token amount is invalid/too small (< 10 ^ -6)", () => {
+                it("openPosition", async () => {
+                    await expectRevert(
+                        clearingHouse.openPosition(
+                            amm.address,
+                            Side.BUY,
+                            toDecimal(0.9e-6),
+                            toDecimal(10),
+                            toDecimal(0),
+                            {
+                                from: alice,
+                            },
+                        ),
+                        "invalid token amount",
+                    )
+                })
+
+                it("addMargin", async () => {
+                    // can addMargin even if there is no position opened yet
+                    await expectRevert(
+                        clearingHouse.addMargin(amm.address, toDecimal(0.9e-6), { from: alice }),
+                        "invalid token amount",
+                    )
+                })
+
+                it("removeMargin", async () => {
+                    // cannot removeMargin if there is no position opened yet
+                    // thus, have to open a position first
+                    await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(1), toDecimal(1), toDecimal(0), {
+                        from: alice,
+                    })
+
+                    await expectRevert(
+                        clearingHouse.removeMargin(amm.address, toDecimal(0.9e-6), { from: alice }),
+                        "invalid token amount",
+                    )
+                })
             })
         })
     })
@@ -1847,6 +1921,8 @@ describe("ClearingHouse - open/close position Test", () => {
         })
 
         it("close a under collateral position when fee is 10%", async () => {
+            await clearingHouse.setBackstopLiquidityProvider(bob, true)
+
             await approve(alice, clearingHouse.address, 60) // 20(first margin) + 20(open fee) + 17.04(close fee)
             await approve(bob, clearingHouse.address, 2000)
 
@@ -1860,34 +1936,11 @@ describe("ClearingHouse - open/close position Test", () => {
             })
 
             // alice PnL is -29.577464788732394365
-            // closed notional size = 200 - 29.577 = 170.422
-            // fee would be 170.422 * 10% = 17.04
-            const receipt = await clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice })
+            // can only liquidate her without fee incurred
+            await clearingHouse.liquidate(amm.address, alice, { from: bob })
 
-            // fee is 10 + 5 + 17.04/2 = 23.52
-            expect(await quoteToken.balanceOf(tollPool.address)).to.eq("23521126")
-        })
-
-        it("force error, close a under collateral position when fee is 10%", async () => {
-            await approve(alice, clearingHouse.address, 57) // need 20(first margin) + 20(open fee) + 17.04(close fee)
-            await approve(bob, clearingHouse.address, 2000)
-
-            await clearingHouse.openPosition(amm.address, Side.BUY, toDecimal(20), toDecimal(10), toDecimal(0), {
-                from: alice,
-            })
-
-            // bob short position to let Alice PnL is negative
-            await clearingHouse.openPosition(amm.address, Side.SELL, toDecimal(10), toDecimal(10), toDecimal(0), {
-                from: bob,
-            })
-
-            // alice PnL is -29.577464788732394365
-            // closed notional size = 200 - 29.577 = 170.422
-            // fee would be 170.422 * 10% = 17.04
-            await expectRevert(
-                clearingHouse.closePosition(amm.address, toDecimal(0), { from: alice }),
-                "DecimalERC20: transferFrom failed",
-            )
+            // fee is 10 + 5 = 15
+            expect(await quoteToken.balanceOf(tollPool.address)).to.eq("15000000")
         })
 
         it("force error, not enough balance to open position when total fee is 10%", async () => {

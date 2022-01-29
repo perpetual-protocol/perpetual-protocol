@@ -294,6 +294,12 @@ export class DeployConfig {
     // PerpRewardVesting = default is 24 weeks
     readonly defaultPerpRewardVestingPeriod = WEEK.mul(24)
 
+    // RootBridgeV2: min deposit amount is 500 USDC
+    readonly minDepositAmount = BigNumber.from(500).mul(DEFAULT_DIGITS)
+
+    // ClientBridge: min deposit amount is 100 USDC
+    readonly minWithdrawalAmount = BigNumber.from(100).mul(DEFAULT_DIGITS)
+
     constructor(stage: Stage) {
         this.stage = stage
         switch (stage) {

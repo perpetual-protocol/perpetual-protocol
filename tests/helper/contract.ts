@@ -200,7 +200,7 @@ export async function deployClearingHouse(
     trustedForwarder: string,
 ): Promise<ClearingHouseFakeInstance> {
     const instance = await ClearingHouseFake.new()
-    await instance.initialize(
+    await instance.initialize_Fake(
         initMarginRatio.d.toString(),
         maintenanceMarginRatio.d.toString(),
         liquidationFeeRatio.d.toString(),

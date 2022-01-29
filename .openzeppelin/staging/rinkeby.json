@@ -1001,6 +1001,466 @@
           }
         }
       }
+    },
+    "ef7c9816be9c656792f27386d6f169be879f8f331c145d348515b9f054aa1cbd": {
+      "address": "0x1f5558d6D593278e6d35178Dd28C88723468113C",
+      "txHash": "0xefe8fa752d92358a811819af9949b339eeb47e9ba95f9289745a90a8a3ee6e95",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
+          },
+          {
+            "contract": "Initializable",
+            "label": "______gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
+          },
+          {
+            "contract": "ContextUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol:37"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:20"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_candidate",
+            "type": "t_address",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:21"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:95"
+          },
+          {
+            "contract": "LowLevelErrorMessage",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/utils/LowLevelErrorMessage.sol:15"
+          },
+          {
+            "contract": "MetaTxGateway",
+            "label": "domainSeperatorL1",
+            "type": "t_bytes32",
+            "src": "src/MetaTxGateway.sol:53"
+          },
+          {
+            "contract": "MetaTxGateway",
+            "label": "domainSeperatorL2",
+            "type": "t_bytes32",
+            "src": "src/MetaTxGateway.sol:54"
+          },
+          {
+            "contract": "MetaTxGateway",
+            "label": "nonces",
+            "type": "t_mapping(t_address,t_uint256)",
+            "src": "src/MetaTxGateway.sol:55"
+          },
+          {
+            "contract": "MetaTxGateway",
+            "label": "whitelistMap",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "src/MetaTxGateway.sol:58"
+          },
+          {
+            "contract": "MetaTxGateway",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/MetaTxGateway.sol:74"
+          }
+        ],
+        "types": {
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
+    },
+    "bfb6e4095d6f8a92945f458eb62a153e7b21acf3060fe119f595f3f90fcd6156": {
+      "address": "0xE70E994265BE09aE54a8DA0969898d5fe073c9cB",
+      "txHash": "0xf8ba172af7b3571f9c32adcdabfbc271d60e0c06bd4030ef37ef347a24a33a15",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
+          },
+          {
+            "contract": "Initializable",
+            "label": "______gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
+          },
+          {
+            "contract": "ContextUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol:37"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:20"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_candidate",
+            "type": "t_address",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:21"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:95"
+          },
+          {
+            "contract": "DecimalERC20",
+            "label": "decimalMap",
+            "type": "t_mapping(t_address,t_uint256)",
+            "src": "src/utils/DecimalERC20.sol:12"
+          },
+          {
+            "contract": "DecimalERC20",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/utils/DecimalERC20.sol:23"
+          },
+          {
+            "contract": "BaseBridge",
+            "label": "ambBridge",
+            "type": "t_contract(IAMB)16943",
+            "src": "src/bridge/BaseBridge.sol:27"
+          },
+          {
+            "contract": "BaseBridge",
+            "label": "multiTokenMediator",
+            "type": "t_contract(IMultiTokenMediator)16955",
+            "src": "src/bridge/BaseBridge.sol:30"
+          },
+          {
+            "contract": "BaseBridge",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/bridge/BaseBridge.sol:44"
+          },
+          {
+            "contract": "BaseRelayRecipient",
+            "label": "trustedForwarder",
+            "type": "t_address",
+            "src": "@opengsn/gsn/contracts/BaseRelayRecipient.sol:16"
+          },
+          {
+            "contract": "ClientBridge",
+            "label": "versionRecipient",
+            "type": "t_string_storage",
+            "src": "src/bridge/xDai/ClientBridge.sol:17"
+          },
+          {
+            "contract": "ClientBridge",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/bridge/xDai/ClientBridge.sol:19"
+          },
+          {
+            "contract": "ClientBridge",
+            "label": "minWithdrawalAmountMap",
+            "type": "t_mapping(t_address,t_struct(decimal)32217_storage)",
+            "src": "src/bridge/xDai/ClientBridge.sol:26"
+          }
+        ],
+        "types": {
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_address,t_struct(decimal)32217_storage)": {
+            "label": "mapping(address => struct Decimal.decimal)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(decimal)32217_storage": {
+            "label": "struct Decimal.decimal",
+            "members": [
+              {
+                "label": "d",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_contract(IAMB)16943": {
+            "label": "contract IAMB"
+          },
+          "t_contract(IMultiTokenMediator)16955": {
+            "label": "contract IMultiTokenMediator"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        }
+      }
+    },
+    "8d396f2a6ce9829100283c4864e7526a81f0c58ea42e739b622c4b4092b646fb": {
+      "address": "0x30474dd46fd3d5138adb3fBc431DE4e8BF00dEaC",
+      "txHash": "0xa1c585e2901b4f3f4cc72bb6c300ad31ddfdb382a6a251fac24941acc463dbaf",
+      "layout": {
+        "storage": [
+          {
+            "contract": "DecimalERC20",
+            "label": "decimalMap",
+            "type": "t_mapping(t_address,t_uint256)",
+            "src": "src/utils/DecimalERC20.sol:12"
+          },
+          {
+            "contract": "DecimalERC20",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/utils/DecimalERC20.sol:23"
+          },
+          {
+            "contract": "Initializable",
+            "label": "initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
+          },
+          {
+            "contract": "Initializable",
+            "label": "______gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
+          },
+          {
+            "contract": "ContextUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol:37"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:20"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "_candidate",
+            "type": "t_address",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:21"
+          },
+          {
+            "contract": "PerpFiOwnableUpgrade",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/utils/PerpFiOwnableUpgrade.sol:95"
+          },
+          {
+            "contract": "BlockContext",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/utils/BlockContext.sol:13"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "name",
+            "type": "t_string_storage",
+            "src": "src/staking/StakedPerpToken.sol:40"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "symbol",
+            "type": "t_string_storage",
+            "src": "src/staking/StakedPerpToken.sol:41"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "decimals",
+            "type": "t_uint8",
+            "src": "src/staking/StakedPerpToken.sol:42"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "totalSupplyHistory",
+            "type": "t_struct(History)31669_storage",
+            "src": "src/staking/StakedPerpToken.sol:46"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "balancesHistory",
+            "type": "t_mapping(t_address,t_struct(History)31669_storage)",
+            "src": "src/staking/StakedPerpToken.sol:49"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "stakerCooldown",
+            "type": "t_mapping(t_address,t_uint256)",
+            "src": "src/staking/StakedPerpToken.sol:52"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "stakerWithdrawPendingBalance",
+            "type": "t_mapping(t_address,t_struct(decimal)32236_storage)",
+            "src": "src/staking/StakedPerpToken.sol:55"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "stakeModules",
+            "type": "t_array(t_address)dyn_storage",
+            "src": "src/staking/StakedPerpToken.sol:57"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "perpToken",
+            "type": "t_contract(IERC20)2022",
+            "src": "src/staking/StakedPerpToken.sol:58"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "cooldownPeriod",
+            "type": "t_uint256",
+            "src": "src/staking/StakedPerpToken.sol:59"
+          },
+          {
+            "contract": "StakedPerpToken",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "src/staking/StakedPerpToken.sol:73"
+          }
+        ],
+        "types": {
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_uint8": {
+            "label": "uint8"
+          },
+          "t_struct(History)31669_storage": {
+            "label": "struct Checkpointing.History",
+            "members": [
+              {
+                "label": "history",
+                "type": "t_array(t_struct(Checkpoint)31665_storage)dyn_storage"
+              }
+            ]
+          },
+          "t_array(t_struct(Checkpoint)31665_storage)dyn_storage": {
+            "label": "struct Checkpointing.Checkpoint[]"
+          },
+          "t_struct(Checkpoint)31665_storage": {
+            "label": "struct Checkpointing.Checkpoint",
+            "members": [
+              {
+                "label": "time",
+                "type": "t_uint64"
+              },
+              {
+                "label": "value",
+                "type": "t_uint192"
+              }
+            ]
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_uint192": {
+            "label": "uint192"
+          },
+          "t_mapping(t_address,t_struct(History)31669_storage)": {
+            "label": "mapping(address => struct Checkpointing.History)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_address,t_struct(decimal)32236_storage)": {
+            "label": "mapping(address => struct Decimal.decimal)"
+          },
+          "t_struct(decimal)32236_storage": {
+            "label": "struct Decimal.decimal",
+            "members": [
+              {
+                "label": "d",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_contract(IERC20)2022": {
+            "label": "contract IERC20"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        }
+      }
     }
   },
   "admin": {

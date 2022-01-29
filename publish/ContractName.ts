@@ -17,6 +17,11 @@ export enum AmmInstanceName {
     PERPUSDC = "PERPUSDC",
     UNIUSDC = "UNIUSDC",
     CRVUSDC = "CRVUSDC",
+    MKRUSDC = "MKRUSDC",
+    CREAMUSDC = "CREAMUSDC",
+    GRTUSDC = "GRTUSDC",
+    ALPHAUSDC = "ALPHAUSDC",
+    FTTUSDC = "FTTUSDC",
 }
 
 export enum ContractName {
@@ -32,6 +37,7 @@ export enum ContractName {
     AmmReader = "AmmReader",
     ClientBridge = "ClientBridge",
     RootBridge = "RootBridge",
+    RootBridgeV2 = "RootBridgeV2",
     KeeperRewardL1 = "KeeperRewardL1",
     KeeperRewardL2 = "KeeperRewardL2",
     PerpRewardVesting = "PerpRewardVesting",
@@ -55,6 +61,7 @@ export enum ContractFullyQualifiedName {
     AmmReader = "src/AmmReader.sol:AmmReader",
     ClientBridge = "src/bridge/xDai/ClientBridge.sol:ClientBridge",
     RootBridge = "src/bridge/ethereum/RootBridge.sol:RootBridge",
+    RootBridgeV2 = "src/bridge/ethereum/RootBridgeV2.sol:RootBridgeV2",
     KeeperRewardL1 = "src/keeper/KeeperRewardL1.sol:KeeperRewardL1",
     KeeperRewardL2 = "src/keeper/KeeperRewardL2.sol:KeeperRewardL2",
     PerpRewardVesting = "src/staking/PerpRewardVesting.sol:PerpRewardVesting",

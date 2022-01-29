@@ -37,6 +37,14 @@
         "PerpStakingRewardNoVesting": {
           "name": "PerpRewardVesting",
           "address": "0xc2a9e84D77f4B534F049b593C282c5c91F24808A"
+        },
+        "MetaTxGateway": {
+          "name": "MetaTxGateway",
+          "address": "0x4B0E18570024598700268C73ce161BC587f9A69D"
+        },
+        "RootBridgeV2": {
+          "name": "RootBridgeV2",
+          "address": "0x09b0aBf075136189b60bEC98E2c9F4E971b24E86"
         }
       },
       "accounts": [],
@@ -84,7 +92,7 @@
         },
         "ClearingHouseViewer": {
           "name": "ClearingHouseViewer",
-          "address": "0xef8093561D193d24b7677F784e41A10714E7FE25"
+          "address": "0xA34FF755a75136517622EB75Ef839E527D71a013"
         },
         "AmmReader": {
           "name": "AmmReader",
@@ -137,6 +145,26 @@
         "CRVUSDC": {
           "name": "Amm",
           "address": "0xAB08fF2c726F2F333802630EE19F4146385CC343"
+        },
+        "MKRUSDC": {
+          "name": "Amm",
+          "address": "0xb48F7aCcc03a3C64114170291F352b37eEa26c0B"
+        },
+        "CREAMUSDC": {
+          "name": "Amm",
+          "address": "0x7B479a0a816ca33F8EB5A3312d1705a34d2d4C82"
+        },
+        "GRTUSDC": {
+          "name": "Amm",
+          "address": "0x187C938543f2BDE09Fe39034Fe3Ff797A3D35cA0"
+        },
+        "ALPHAUSDC": {
+          "name": "Amm",
+          "address": "0x26789518695b56e16F14008c35Dc1b281Bd5fc0E"
+        },
+        "FTTUSDC": {
+          "name": "Amm",
+          "address": "0x838B322610BD99a449091D3bF3FBA60D794909a9"
         }
       },
       "accounts": [],
@@ -148,7 +176,8 @@
         "tether": "0x4ECaBa5870353805a9F068101A40E0f32ed605C6",
         "ambBridgeOnXDai": "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59",
         "multiTokenMediatorOnXDai": "0xf6A78083ca3e2a662D6dd1703c939c8aCE2e268d",
-        "proxyAdmin": "0x29853EcF31eaedcD9074a11A85A8C8b689165F0b"
+        "proxyAdmin": "0x29853EcF31eaedcD9074a11A85A8C8b689165F0b",
+        "referral": "0xF1d5BA04a25A6D88c468af932BFe2B1e78db7B45"
       }
     }
   }

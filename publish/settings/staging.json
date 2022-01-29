@@ -11,7 +11,8 @@
         "usdc": "0x40D3B2F06f198D2B789B823CdBEcD1DB78090D74",
         "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
         "ambBridgeOnEth": "0xD4075FB57fCf038bFc702c915Ef9592534bED5c1",
-        "multiTokenMediatorOnEth": "0x30F693708fc604A57F1958E3CFa059F902e6d4CB"
+        "multiTokenMediatorOnEth": "0x30F693708fc604A57F1958E3CFa059F902e6d4CB",
+        "proxyAdmin": "0x0C55fE453eC5166FA56e495Dc02953cB0E29A67a"
       }
     },
     "layer2": {
@@ -19,17 +20,19 @@
       "network": "xdai",
       "externalContracts": {
         "foundationGovernance": "0x44883405Eb9826448d3E8eCC25889C5941E79d9b",
-        "arbitrageur": "0x68dfc526037E9030c8F813D014919CC89E7d4d74",
+        "arbitrageur": "0xf76cFe9FcAFA43Ab5E1B74030BA329b291c545c9",
         "testnetFaucet": "0x9E9DFaCCABeEcDA6dD913b3685c9fe908F28F58c",
         "ambBridgeOnXDai": "0xc38D4991c951fE8BCE1a12bEef2046eF36b0FA4A",
         "multiTokenMediatorOnXDai": "0xA34c65d76b997a824a5E384471bBa73b0013F5DA",
         "tether": "0xe0B887D54e71329318a036CF50f30Dbe4444563c",
-        "usdc": "0xe0B887D54e71329318a036CF50f30Dbe4444563c"
+        "usdc": "0xe0B887D54e71329318a036CF50f30Dbe4444563c",
+        "proxyAdmin": "0x773F8ff05Faa57F915a70713CD33787F826ECdc7",
+        "referral": "0xEBF01cc4af96cfE356c90aB6AE9f83A0D6d8b6A4"
       }
     }
   },
   "nextMigration": {
-    "batchIndex": 35,
+    "batchIndex": 46,
     "taskIndex": 0
   }
 }

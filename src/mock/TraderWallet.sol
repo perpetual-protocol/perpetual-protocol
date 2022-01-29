@@ -27,8 +27,12 @@ contract TraderWallet {
         clearingHouse.openPosition(_amm, _side, _quoteAssetAmount, _leverage, _minBaseAssetAmount);
     }
 
-    function liquidate(Amm _amm, address _trader) external {
-        clearingHouse.liquidate(_amm, _trader);
+    function liquidate(
+        Amm _amm,
+        address _trader,
+        Decimal.decimal memory _quoteAssetAmount
+    ) external {
+        clearingHouse.liquidateWithSlippage(_amm, _trader, _quoteAssetAmount);
     }
 
     function closePosition(Amm _amm) external {
