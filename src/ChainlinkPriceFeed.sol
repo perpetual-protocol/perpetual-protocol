@@ -109,7 +109,7 @@ contract ChainlinkPriceFeed is IPriceFeed, PerpFiOwnableUpgrade, BlockContext {
         // 3 different timestamps, `previous`, `current`, `target`
         // `base` = now - _interval
         // `current` = current round timestamp from aggregator
-        // `previous` = previous round timestamp form aggregator
+        // `previous` = previous round timestamp from aggregator
         // now >= previous > current > = < base
         //
         //  while loop i = 0
