@@ -1,4 +1,4 @@
-#  Perpetual Protocol <img src="https://github.com/perpetual-protocol/perp-contract/blob/develop/docs/Perpetual.png" width="40">
+#  Perpetual Protocol <img src="https://perp.fi/images/color.png" width="40">
 
 ℹ️ **This code is for Perp v1 which has been deprecated.**
 
