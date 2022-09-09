@@ -208,27 +208,27 @@ contract ClearingHouse is
     //
     // openzeppelin doesn't support struct input
     // https://github.com/OpenZeppelin/openzeppelin-sdk/issues/1523
-    // function initialize(
-    //     uint256 _initMarginRatio,
-    //     uint256 _maintenanceMarginRatio,
-    //     uint256 _liquidationFeeRatio,
-    //     IInsuranceFund _insuranceFund,
-    //     address _trustedForwarder
-    // ) public initializer {
-    // require(address(_insuranceFund) != address(0), "Invalid IInsuranceFund");
+    function initialize(
+        uint256 _initMarginRatio,
+        uint256 _maintenanceMarginRatio,
+        uint256 _liquidationFeeRatio,
+        IInsuranceFund _insuranceFund,
+        address _trustedForwarder
+    ) public initializer {
+        require(address(_insuranceFund) != address(0), "Invalid IInsuranceFund");
 
-    // __OwnerPausable_init();
+        __OwnerPausable_init();
 
-    // comment these out for reducing bytecode size
-    // __ReentrancyGuard_init();
+        // comment these out for reducing bytecode size
+        __ReentrancyGuard_init();
 
-    // versionRecipient = "1.0.0"; // we are not using it atm
-    // initMarginRatio = Decimal.decimal(_initMarginRatio);
-    // maintenanceMarginRatio = Decimal.decimal(_maintenanceMarginRatio);
-    // liquidationFeeRatio = Decimal.decimal(_liquidationFeeRatio);
-    // insuranceFund = _insuranceFund;
-    // trustedForwarder = _trustedForwarder;
-    // }
+        versionRecipient = "1.0.0"; // we are not using it atm
+        initMarginRatio = Decimal.decimal(_initMarginRatio);
+        maintenanceMarginRatio = Decimal.decimal(_maintenanceMarginRatio);
+        liquidationFeeRatio = Decimal.decimal(_liquidationFeeRatio);
+        insuranceFund = _insuranceFund;
+        trustedForwarder = _trustedForwarder;
+    }
 
     //
     // External
